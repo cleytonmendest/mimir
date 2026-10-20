@@ -218,8 +218,10 @@ web3 = 30
 # secret = ""
 
 [auth.email]
-# Allow/disallow new user signups via email to your project.
-enable_signup = false
+# Atenção: aqui false DESLIGA o provedor de e-mail inteiro (GOTRUE_EXTERNAL_EMAIL_ENABLED), e com ele o
+# login por e-mail e senha. Quem impede o auto-cadastro é [auth] enable_signup = false: os usuários
+# são criados pelo líder/administrador.
+enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
