@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { carryOver, closeDay } from './carryover'
+import { carryOver, closeDay, NO_CHECKOUT_REASON } from './carryover'
+import { checkIn } from './execution'
 import {
   addVisit,
   cancelVisit,
@@ -16,7 +17,7 @@ import { ana, deepFreeze, idGenerator, leader, makeVisit } from './testing'
 /**
  * Regras combinadas entre amigo e liderança, escritas como teste.
  * Se uma delas quebrar, o CI fica vermelho: é a memória do projeto.
- * Cada regra ainda sem código vive como test.todo no fim do arquivo.
+ * Regra decidida mas ainda sem código entra aqui como it.todo, nunca só numa conversa.
  */
 
 const TODAY = '2026-10-20' // terça
@@ -144,15 +145,47 @@ describe('regras confirmadas', () => {
     }
   })
 
-  // Regras decididas mas ainda sem implementação. Ao implementar, trocar por it().
-  it.todo(
-    'repositor não pode ter dois check-ins abertos ao mesmo tempo (decidir: bloquear ou encerrar o anterior)',
-  )
-  it.todo('reabrir visita que já foi adiada para o dia seguinte oferece cancelar a adiada')
-  it.todo(
-    'visita esquecida "em andamento" de dias anteriores: definir se vira "não foi" ao fechar o dia',
-  )
-  it.todo(
-    'foto da gôndola feita offline entra numa fila de envio com nova tentativa e não bloqueia o check-out',
-  )
+  it('repositor com dois check-ins abertos: o novo check-in encerra o anterior sozinho', () => {
+    const a = makeVisit({ id: 'a', marketId: 'market-a', date: TODAY })
+    const b = makeVisit({ id: 'b', marketId: 'market-b', date: TODAY, order: 1 })
+    const afterA = checkIn([a, b], 'a', {
+      actor: ana,
+      now: '2026-10-20T10:00:00.000Z',
+      today: TODAY,
+    })
+    const state = [...afterA, b]
+    const changed = checkIn(state, 'b', { actor: ana, now: NOW, today: TODAY })
+
+    expect(changed.map((visit) => [visit.id, visit.status])).toEqual([
+      ['b', 'in_progress'],
+      ['a', 'done'],
+    ])
+    expect(changed.find((visit) => visit.id === 'a')?.checkOutAt).toBe(NOW)
+  })
+
+  it('reabrir visita que já foi adiada para o dia seguinte oferece cancelar a adiada', () => {
+    const missed = makeVisit({ id: 'm1', date: TODAY, status: 'not_done', skipReason: 'Fechado' })
+    const [copy] = carryOver({
+      visits: [missed],
+      fromDate: TODAY,
+      toDate: '2026-10-21',
+      newId: idGenerator('c'),
+    })
+    const result = reopenVisit([missed, copy!], 'm1', ctx())
+
+    expect(result.postponedCopy?.id).toBe(copy!.id)
+    const afterCancel = cancelVisit(result.visits, copy!.id, ctx()).visits
+    expect(afterCancel.find((visit) => visit.id === copy!.id)?.status).toBe('cancelled')
+  })
+
+  it('visita esquecida "em andamento" de dia anterior vira "não foi" ao fechar o dia', () => {
+    const forgotten = makeVisit({
+      id: 'f1',
+      date: TODAY,
+      status: 'in_progress',
+      checkInAt: '2026-10-20T09:00:00.000Z',
+    })
+    const [closed] = closeDay([forgotten], TODAY, '2026-10-21')
+    expect(closed).toMatchObject({ status: 'not_done', skipReason: NO_CHECKOUT_REASON })
+  })
 })

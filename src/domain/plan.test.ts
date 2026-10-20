@@ -204,6 +204,33 @@ describe('exceções no plano', () => {
   })
 
   describe('reopenVisit', () => {
+    it('só oferece cancelar a cópia adiada que ainda não começou e é desta mesma visita', () => {
+      const original = makeVisit({
+        id: 'o',
+        date: '2026-10-19',
+        status: 'not_done',
+        skipReason: 'x',
+      })
+      const copy = (overrides: Partial<Visit>) =>
+        makeVisit({
+          id: 'c',
+          date: '2026-10-20',
+          origin: 'carryover',
+          carriedFromDate: '2026-10-19',
+          ...overrides,
+        })
+      const offered = (other: Visit) => reopenVisit([original, other], 'o', ctx()).postponedCopy
+
+      expect(offered(copy({}))?.id).toBe('c')
+      expect(offered(copy({ status: 'in_progress', checkInAt: NOW }))).toBeNull()
+      expect(offered(copy({ status: 'done', checkInAt: NOW, checkOutAt: NOW }))).toBeNull()
+      expect(offered(copy({ marketId: 'outro' }))).toBeNull()
+      expect(offered(copy({ repositorId: bruno.id }))).toBeNull()
+      expect(offered(copy({ carriedFromDate: '2026-10-18' }))).toBeNull()
+      expect(offered(copy({ origin: 'exception', carriedFromDate: null }))).toBeNull()
+      expect(reopenVisit([original], 'o', ctx()).postponedCopy).toBeNull()
+    })
+
     it.each([
       ['done', { checkInAt: '2026-10-20T10:00:00.000Z', checkOutAt: '2026-10-20T11:00:00.000Z' }],
       ['not_done', { skipReason: 'Fechado' }],

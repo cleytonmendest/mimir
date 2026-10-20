@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { carryOver, closeDay, NO_RECORD_REASON } from './carryover'
+import { carryOver, closeDay, NO_CHECKOUT_REASON, NO_RECORD_REASON } from './carryover'
 import { DomainError } from './errors'
 import { ana, bruno, deepFreeze, idGenerator, makeVisit } from './testing'
 
@@ -16,8 +16,23 @@ describe('fechar o dia', () => {
 
   it('planejada de dia que passou vira "não foi" com motivo padrão', () => {
     const changed = closeDay(visits, D1, D2)
-    expect(changed).toHaveLength(1)
-    expect(changed[0]).toMatchObject({ id: 'p', status: 'not_done', skipReason: NO_RECORD_REASON })
+    expect(changed.find((visit) => visit.id === 'p')).toMatchObject({
+      status: 'not_done',
+      skipReason: NO_RECORD_REASON,
+    })
+  })
+
+  it('"em andamento" esquecida (sem check-out) de dia que passou também vira "não foi"', () => {
+    const changed = closeDay(visits, D1, D2)
+    expect(changed.map((visit) => visit.id).sort()).toEqual(['i', 'p'])
+    expect(changed.find((visit) => visit.id === 'i')).toMatchObject({
+      status: 'not_done',
+      skipReason: NO_CHECKOUT_REASON,
+    })
+  })
+
+  it('o que já foi feito não é mexido', () => {
+    expect(closeDay(visits, D1, D2).some((visit) => visit.id === 'd')).toBe(false)
   })
 
   it('não fecha o dia de hoje nem dias futuros', () => {

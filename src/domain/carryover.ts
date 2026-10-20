@@ -3,16 +3,24 @@ import { keyOf } from './keys'
 import type { IsoDate, Visit } from './types'
 
 export const NO_RECORD_REASON = 'Sem registro'
+export const NO_CHECKOUT_REASON = 'Sem check-out'
 
 /**
- * Fecha o dia: o que ficou "planejado" num dia que já passou vira "não foi".
- * Devolve só as visitas que mudaram.
+ * Fecha o dia: o que ficou "planejado" ou "em andamento" (check-in sem check-out) num dia que
+ * já passou vira "não foi". Devolve só as visitas que mudaram.
  */
 export function closeDay(visits: readonly Visit[], date: IsoDate, today: IsoDate): Visit[] {
   if (date >= today) return []
   return visits
-    .filter((visit) => visit.date === date && visit.status === 'planned')
-    .map((visit) => ({ ...visit, status: 'not_done', skipReason: NO_RECORD_REASON }))
+    .filter(
+      (visit) =>
+        visit.date === date && (visit.status === 'planned' || visit.status === 'in_progress'),
+    )
+    .map((visit): Visit => ({
+      ...visit,
+      status: 'not_done',
+      skipReason: visit.status === 'in_progress' ? NO_CHECKOUT_REASON : NO_RECORD_REASON,
+    }))
 }
 
 /**

@@ -176,12 +176,20 @@ export function moveVisitToDate(
   )
 }
 
+export interface ReopenResult extends PlanResult {
+  /**
+   * Cópia "adiada" que esta visita já gerou no dia seguinte e que ainda não começou.
+   * A tela oferece cancelá-la (cancelVisit) para o mercado não ficar duplicado.
+   */
+  postponedCopy: Visit | null
+}
+
 /** Só o líder reabre o que já foi concluído, não realizado ou cancelado. */
 export function reopenVisit(
   visits: readonly Visit[],
   visitId: string,
   ctx: PlanContext,
-): PlanResult {
+): ReopenResult {
   assertCan(ctx.actor, 'reopenVisit')
   const visit = findVisit(visits, visitId)
   if (visit.status === 'planned' || visit.status === 'in_progress') {
@@ -194,5 +202,14 @@ export function reopenVisit(
     checkOutAt: null,
     skipReason: null,
   }
-  return commit(visits, [{ before: visit, after }], ctx)
+  const postponedCopy =
+    visits.find(
+      (candidate) =>
+        candidate.origin === 'carryover' &&
+        candidate.carriedFromDate === visit.date &&
+        candidate.repositorId === visit.repositorId &&
+        candidate.marketId === visit.marketId &&
+        candidate.status === 'planned',
+    ) ?? null
+  return { ...commit(visits, [{ before: visit, after }], ctx), postponedCopy }
 }
