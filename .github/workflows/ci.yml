@@ -1,0 +1,146 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  STORYBOOK_DISABLE_TELEMETRY: '1'
+
+jobs:
+  static:
+    name: Formatação, lint, tipos e guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: Guards (migration imutável, sem chave de servidor, design system...)
+        env:
+          GUARD_BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+        run: npm run guard
+
+  unit:
+    name: Testes e cobertura do domínio (TZ ${{ matrix.tz }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tz: [UTC, America/Sao_Paulo, America/Los_Angeles, Pacific/Kiritimati]
+    env:
+      TZ: ${{ matrix.tz }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run test:coverage
+
+  storybook:
+    name: Storybook compila
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build-storybook
+
+  build:
+    name: Build de produção
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  database:
+    name: Banco (migrations do zero, pgTAP, lint, tipos)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Sobe o Supabase local aplicando todas as migrations do zero
+        run: supabase start
+      - name: Testes pgTAP (RLS, auditoria, constraints)
+        run: supabase test db
+      - name: Lint do schema
+        run: npm run db:lint
+      - name: Tipos do Supabase estão atualizados
+        # Liga sozinho quando src/lib/database.types.ts existir (gere com "npm run db:types").
+        if: ${{ hashFiles('src/lib/database.types.ts') != '' }}
+        run: |
+          supabase gen types typescript --local > "$RUNNER_TEMP/database.types.ts"
+          diff -u src/lib/database.types.ts "$RUNNER_TEMP/database.types.ts"
+
+  e2e:
+    name: E2E (fluxos críticos no celular)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+  secrets:
+    name: Varredura de segredos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --redact --verbose
+
+  # Único check obrigatório na proteção de branch: renomear um job acima não solta a proteção.
+  ci-ok:
+    name: CI ok
+    if: ${{ always() }}
+    needs: [static, unit, storybook, build, database, e2e, secrets]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Todos os jobs passaram?
+        run: |
+          echo '${{ toJSON(needs) }}'
+          test "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}" = "false"

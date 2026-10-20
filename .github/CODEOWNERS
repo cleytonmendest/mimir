@@ -1,0 +1,22 @@
+# Quem precisa aprovar mudança no que mais dói se quebrar.
+# (Só vale como bloqueio quando a proteção de branch exige revisão de code owner: scripts/apply-branch-protection.sh team)
+
+# Banco: schema, RLS, testes de RLS
+/supabase/                      @cleytonmendest
+
+# Regras de negócio e os testes que as definem
+/src/domain/                    @cleytonmendest
+
+# O que protege o resto: CI, guards, lint, configuração de tipos e de testes
+/.github/                       @cleytonmendest
+/.husky/                        @cleytonmendest
+/scripts/                       @cleytonmendest
+/eslint.config.js               @cleytonmendest
+/vite.config.ts                 @cleytonmendest
+/playwright.config.ts           @cleytonmendest
+/tsconfig*.json                 @cleytonmendest
+/package.json                   @cleytonmendest
+
+# Design system: cores e Storybook
+/src/design-system/tokens.css   @cleytonmendest
+/.storybook/                    @cleytonmendest

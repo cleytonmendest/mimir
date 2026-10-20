@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+@import './design-system/tokens.css';
+
+@layer base {
+  body {
+    @apply bg-surface text-text antialiased;
+    font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  }
+}

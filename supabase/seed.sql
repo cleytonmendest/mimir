@@ -1,0 +1,1 @@
+-- Sem dados de seed: os testes criam os próprios dados dentro de uma transação.
