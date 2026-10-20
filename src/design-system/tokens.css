@@ -1,24 +1,15 @@
 /*
- * ÚNICO lugar onde cor existe. O resto do código usa só os nomes (bg-brand, text-muted...).
+ * ÚNICO lugar onde cor existe. O resto do código usa só os nomes (bg-primary, text-muted-foreground...).
  * A paleta padrão do Tailwind é zerada de propósito: classe como bg-red-500 não gera nada,
  * e o guard (scripts/guards/design-system.ts) derruba o CI se alguém escrever uma.
+ *
+ * Os nomes são os do shadcn/ui (background, primary, muted...): é o que os componentes trazidos
+ * por `npx shadcn add` esperam. A cor de status de visita é do domínio e fica à parte (status-*).
  */
 @theme {
   --color-*: initial;
 
-  --color-surface: #ffffff;
-  --color-surface-muted: #f4f4f5;
-  --color-text: #18181b;
-  --color-text-muted: #52525b;
-  --color-border: #d4d4d8;
-
-  --color-brand: #1d4ed8;
-  --color-brand-strong: #1e40af;
-  --color-brand-contrast: #ffffff;
-
-  --color-danger: #b91c1c;
-  --color-danger-strong: #991b1b;
-  --color-danger-contrast: #ffffff;
+  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
 
   /* Um par fundo/texto por status de visita. StatusBadge exige todos (tipo exaustivo). */
   --color-status-planned: #e0e7ff;
@@ -31,4 +22,62 @@
   --color-status-not-done-fg: #7f1d1d;
   --color-status-cancelled: #f4f4f5;
   --color-status-cancelled-fg: #3f3f46;
+}
+
+/* Valores. Só tema claro: o app é usado em pé, dentro de mercado, muitas vezes sob luz forte. */
+:root {
+  --background: #ffffff;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --primary: #1d4ed8;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #52525b;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --destructive: #b91c1c;
+  --destructive-foreground: #ffffff;
+  --border: #d4d4d8;
+  --input: #d4d4d8;
+  --ring: #1d4ed8;
+
+  --radius: 0.5rem;
+}
+
+/* Liga os valores acima às classes (bg-primary, text-muted-foreground, rounded-md...). */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --font-heading: var(--font-sans);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }

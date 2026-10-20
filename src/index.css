@@ -1,9 +1,16 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 @import './design-system/tokens.css';
 
+/* Sem isso, `dark:` dos componentes do shadcn seguiria o modo escuro do sistema (e quebraria o tema claro). */
+@custom-variant dark (&:is(.dark *));
+
 @layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
   body {
-    @apply bg-surface text-text antialiased;
-    font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+    @apply bg-background font-sans text-foreground antialiased;
   }
 }

@@ -84,6 +84,11 @@ export default defineConfig([
     files: ['src/design-system/**/*.{ts,tsx}'],
     rules: { 'no-restricted-imports': ['error', { patterns: UP_FROM_DESIGN_SYSTEM }] },
   },
+  {
+    // Componentes copiados pelo `shadcn add`: exportam as variantes (cva) junto do componente.
+    files: ['src/design-system/components/ui/**/*.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
   { files: ['src/lib/**/*.ts'], rules: { 'no-restricted-imports': 'off' } },
 
   // Testes e stories: mesmas fronteiras, menos rigor de tipos nos matchers do Vitest.
