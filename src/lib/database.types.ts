@@ -149,7 +149,10 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "is_leader":
+            "company_date":
+{ Args: { "instant": string }; Returns: string
+                           },
+"is_leader":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            }
           }

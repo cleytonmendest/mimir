@@ -14,8 +14,9 @@ describe('formatLongDate', () => {
 })
 
 describe('formatTime', () => {
-  it('mostra a hora no relógio do aparelho, com dois dígitos', () => {
-    expect(formatTime(new Date(2026, 9, 21, 8, 5).toISOString())).toBe('08:05')
-    expect(formatTime(new Date(2026, 9, 21, 23, 59).toISOString())).toBe('23:59')
+  it('mostra a hora de Brasília com dois dígitos, igual em qualquer fuso do aparelho', () => {
+    expect(formatTime('2026-10-21T11:05:00.000Z')).toBe('08:05')
+    expect(formatTime('2026-10-21T02:59:00.000Z')).toBe('23:59')
+    expect(formatTime('2026-10-21T03:00:00.000Z')).toBe('00:00')
   })
 })

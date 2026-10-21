@@ -1,6 +1,52 @@
 import { describe, expect, it } from 'vitest'
-import { addDays, parseIsoDate, startOfWeek, toIsoDate, weekDates, weekdayOf } from './dates'
+import {
+  addDays,
+  COMPANY_TIME_ZONE,
+  companyDate,
+  parseIsoDate,
+  startOfWeek,
+  toIsoDate,
+  weekDates,
+  weekdayOf,
+} from './dates'
 import { DomainError } from './errors'
+
+describe('o dia no fuso da empresa', () => {
+  it('o fuso é o de Brasília', () => {
+    expect(COMPANY_TIME_ZONE).toBe('America/Sao_Paulo')
+  })
+
+  it('virada do dia: 23:59 em Brasília ainda é o dia anterior, 00:00 já é o seguinte', () => {
+    expect(companyDate('2026-10-21T02:59:59.999Z')).toBe('2026-10-20')
+    expect(companyDate('2026-10-21T03:00:00.000Z')).toBe('2026-10-21')
+  })
+
+  it('meio-dia e fim de tarde ficam no mesmo dia, mesmo que em UTC já seja o dia seguinte', () => {
+    expect(companyDate('2026-10-21T15:00:00Z')).toBe('2026-10-21')
+    expect(companyDate('2026-10-22T02:30:00Z')).toBe('2026-10-21')
+  })
+
+  it('aceita Date e texto ISO com deslocamento, e dá o mesmo dia', () => {
+    const instant = new Date('2026-10-21T02:30:00Z')
+    expect(companyDate(instant)).toBe('2026-10-20')
+    expect(companyDate('2026-10-20T23:30:00-03:00')).toBe('2026-10-20')
+    expect(companyDate('2026-10-21T10:00:00+10:00')).toBe('2026-10-20')
+  })
+
+  it('usa o fuso certo também em datas antigas, do tempo do horário de verão', () => {
+    expect(companyDate('2018-11-04T02:59:00Z')).toBe('2018-11-03')
+    expect(companyDate('2018-11-04T03:00:00Z')).toBe('2018-11-04')
+  })
+
+  it.each(['abc', '', '2026-13-01T00:00:00Z'])('recusa instante inválido: %s', (value) => {
+    expect(() => companyDate(value)).toThrow(DomainError)
+    expect(() => companyDate(value)).toThrow(/Instante inválido/)
+  })
+
+  it('recusa Date inválida', () => {
+    expect(() => companyDate(new Date('x'))).toThrow(DomainError)
+  })
+})
 
 describe('datas de calendário (independentes de fuso)', () => {
   it('weekdayOf usa 0 = domingo e não muda com o fuso da máquina', () => {
