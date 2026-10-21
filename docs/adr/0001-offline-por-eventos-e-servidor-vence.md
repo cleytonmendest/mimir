@@ -1,0 +1,37 @@
+# ADR 0001: Offline do repositor por eventos, com o servidor vencendo
+
+**Status:** aceito (21/10/2026)
+
+## Contexto
+
+Repositores trabalham dentro de mercados, muitas vezes sem sinal. Hoje a tela "Hoje" grava online, por compare-and-set (`saveVisitChange`), e não abre sem rede. Perder ou duplicar um check-in é o pior defeito possível do produto.
+
+## Decisão
+
+- **O aparelho guarda eventos, não estado**: `checkIn`, `checkOut` e `markNotDone`, cada um com `client_event_id`, a hora em que aconteceu e um `seq` do aparelho, numa fila local (IndexedDB, **um banco por usuário**). A ordem é a do `seq`, nunca a de `occurredAt`.
+- **A tela mostra o servidor mais os eventos pendentes**, aplicados com o próprio domínio (`projectVisits`).
+- **Quando o domínio encerra sozinho uma visita aberta** (check-in em outra visita), o aparelho grava na mesma transação os eventos derivados explícitos. O servidor não tem regra entre visitas.
+- **O servidor aplica por uma função versionada** (`sync_visit_events_v1`), atômica e idempotente, que grava o resultado (aplicado ou recusado, e por quê) junto do evento. **O servidor vence**: se a visita mudou (o líder cancelou, outro aparelho avançou), o evento volta recusado e a tela explica.
+- **Via única**: depois da migração, o repositor deixa de ter `UPDATE` direto em `visits`; online ou offline, tudo passa pelo evento. Garante "tudo é auditado".
+- **As visitas são criadas pelo servidor** (job noturno). O aparelho nunca cria visita sem rede.
+- **Sincroniza** ao abrir, ao voltar o sinal, depois de cada ação e num botão. Sem Background Sync (não existe no iOS).
+- **O app abre sem rede** com a identidade guardada no aparelho.
+
+## O que verificamos (spike S1, supabase-js / auth-js 2.118, contra o GoTrue local)
+
+| Situação                                   | O que acontece                                                                                         | Consequência                                                         |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| Token válido, sem rede                     | `getSession()` devolve a sessão na hora                                                                | funciona                                                             |
+| Token **vencido**, sem rede                | `getSession()` **trava ~25 s** (tentativas com espera crescente) e falha; a sessão continua guardada   | a abertura não pode esperar o SDK: usar a identidade guardada        |
+| Depois dessa falha                         | o SDK repete o erro por **60 s** (`REFRESH_FAILURE_COOLDOWN_MS`), mesmo com rede de volta              | recuperar leva até ~60-90 s; a tela precisa de estado "reconectando" |
+| Rede que "pendura" (sem erro nem resposta) | `getSession()` **nunca retorna**                                                                       | timeout nosso, por fora, é obrigatório                               |
+| Refresh token revogado                     | falha em ~0,2 s, remove a sessão e emite `SIGNED_OUT`                                                  | vai ao login; a fila precisa sobreviver (banco por usuário)          |
+| Admin redefine a senha                     | as sessões caem na hora, mas o **token de acesso já emitido continua valendo no RLS até vencer** (1 h) | desativar usuário tem de ser checado **nas políticas do banco**      |
+
+Pendente de verificar em celular real (spike S2): se IndexedDB e service worker sobrevivem a app encerrado, reinício e dias sem uso, principalmente no iOS.
+
+## Consequências
+
+- Mais código no aparelho (fila, motor de sincronização, PWA) em troca de nunca perder o trabalho de campo.
+- A regra de transição existe no domínio (TypeScript) e na função do banco. Casos de teste compartilhados evitam que divirjam.
+- O líder é online-only; offline é só do repositor.
