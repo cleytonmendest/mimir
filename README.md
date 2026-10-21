@@ -1,10 +1,10 @@
-# Rota do repositor
+# Agenda de Degustações
 
-App para **repositores** (quem repõe produtos em mercados) executarem a rota do dia no celular, mesmo sem sinal, e para o **líder** planejar a semana e acompanhar o dia. Tudo fica auditado.
+App para **fornecedores** reservarem estandes de degustação nos mercados de um dono de supermercados, no dia que quiserem, e para o **administrador** (o dono) definir o limite de estandes por mercado e acompanhar a agenda. Se o dia está lotado, o sistema não deixa reservar. Tudo fica auditado.
 
-> Nomes: o repositório é `mimir`, o pacote é `rota-repositor` e o produto é "Rota do repositor".
+> Nomes: o repositório é `mimir`, o pacote é `agenda-degustacoes` e o produto é "Agenda de Degustações".
 
-**Estado atual:** o repositor entra, vê as visitas de hoje e faz check-in, check-out ou "não fui" (hoje **só online**). O caminho até o MVP (offline, visão do líder, cadastros, fechamento do dia, implantação) está em [`docs/mvp.md`](docs/mvp.md). As decisões de arquitetura estão em [`docs/adr/`](docs/adr).
+**Estado atual:** o produto foi reposicionado (era a "rota do repositor"; ver [ADR 0005](docs/adr/0005-reserva-com-limite-garantido-no-banco.md)). Hoje existem o login por e-mail e senha, os dois papéis (administrador e fornecedor), cada um com a sua área ainda vazia, o fuso de Brasília e a auditoria. O caminho até o MVP (regras de reserva e limite no banco, telas do fornecedor e do administrador, cadastro de fornecedores, implantação) está em [`docs/mvp.md`](docs/mvp.md), e o protótipo aprovado pelo dono em [`docs/prototipo/`](docs/prototipo/agenda-degustacoes.html). As decisões de arquitetura estão em [`docs/adr/`](docs/adr).
 
 ## Rodando localmente
 
@@ -18,10 +18,10 @@ cp .env.example .env.local            # e preencha VITE_SUPABASE_URL (API_URL) e
 npm run dev                           # http://localhost:5173
 ```
 
-Não existe cadastro pela tela (`enable_signup = false`): os usuários são criados pelo líder. Enquanto essa tela não existe, crie pelo Studio local (http://127.0.0.1:54323, Authentication → Add user) e promova a líder por SQL:
+Não existe cadastro pela tela (`enable_signup = false`): as contas são criadas pelo administrador. Enquanto essa tela não existe, crie pelo Studio local (http://127.0.0.1:54323, Authentication → Add user) e promova a administrador por SQL (toda conta nasce como fornecedor):
 
 ```sql
-update public.profiles set role = 'leader' where id = '<id do usuário>';
+update public.profiles set role = 'admin' where id = '<id do usuário>';
 ```
 
 ## Comandos
@@ -33,7 +33,6 @@ update public.profiles set role = 'leader' where id = '<id do usuário>';
 | `npm run test:tz`                    | Testes do domínio em 4 fusos horários (o CI roda a suíte inteira nesses fusos)                                                                |
 | `npm run e2e`                        | E2E no celular simulado (Playwright). Descobre o Supabase local sozinho; precisa de `npm run db:start` e de `npx playwright install chromium` |
 | `npm run db:test`                    | Testes do banco (pgTAP: RLS, auditoria, constraints)                                                                                          |
-| `npm run db:gen-cases`               | Regera o pgTAP da sincronização a partir dos casos compartilhados com o domínio (`src/domain/fixtures/visit-events.cases.json`)               |
 | `npm run db:lint`                    | Lint do schema                                                                                                                                |
 | `npm run db:types`                   | Regera `src/lib/database.types.ts` (commitar a saída **crua**, sem formatar)                                                                  |
 | `npm run storybook`                  | Vitrine do design system                                                                                                                      |
@@ -42,7 +41,7 @@ update public.profiles set role = 'leader' where id = '<id do usuário>';
 
 Camadas, de baixo para cima (o ESLint barra importar para cima):
 
-1. `src/domain`: regras de negócio em TypeScript puro (sem React nem Supabase), 100% testadas. Quem pode o quê, o que um check-in encerra, como se gera a semana.
+1. `src/domain`: regras de negócio em TypeScript puro (sem React nem Supabase), 100% testadas. Hoje: quem pode o quê e o "dia" no fuso da empresa; as regras de reserva entram no Bloco 2.
 2. `src/design-system`: componentes visuais (shadcn/ui + Tailwind). Veja o [README do design system](src/design-system/README.md).
 3. `src/lib`: integração com o mundo. **Único** lugar que importa o SDK do Supabase.
 4. `src/features` e `src/App.tsx`: as telas.

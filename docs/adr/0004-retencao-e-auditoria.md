@@ -1,6 +1,6 @@
 # ADR 0004: Retenção e tamanho do log de auditoria
 
-**Status:** proposto. Decidir o prazo de retenção **antes da produção** (fatia 5.5).
+**Status:** proposto. Decidir o prazo de retenção **antes da produção** (fatia 6.3 do plano).
 
 ## Contexto
 
@@ -18,3 +18,9 @@ Estimativa grosseira para 40 repositores com ~6 visitas por dia: ~88 mil visitas
 
 - O histórico de update fica menor, mas a leitura "como era antes" passa a ser reconstruída a partir das diferenças.
 - Sem decisão de retenção, o crescimento do log é um custo e um risco de LGPD a resolver no marco 5.
+
+## Atualização de 22/10/2026 (reposicionamento do produto)
+
+O produto mudou (ADR 0005): `visits` e `standard_route` não existem mais. Hoje só `markets` é auditado; entram `bookings` e `closed_days` no Bloco 2 e `profiles` (troca de papel e desativação) no Bloco 5.
+
+A estimativa de volume muda de ordem. No pior caso (50 mercados, 3 estandes, 365 dias, tudo reservado) são cerca de 55 mil reservas por ano, com 1 a 2 entradas de log cada: **na casa de 80 MB por ano**, não 300 MB. A proposta 1 (só a diferença no update) já está feita e segue valendo; a retenção (proposta 2) continua a decidir antes da produção.

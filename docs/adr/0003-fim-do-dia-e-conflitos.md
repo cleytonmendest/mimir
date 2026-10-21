@@ -1,6 +1,6 @@
 # ADR 0003: Fim do dia automático só marca "não foi"; evento atrasado vai para o líder
 
-**Status:** aceito (21/10/2026). A tolerância para sincronização atrasada será reavaliada com os dados do teste de campo.
+**Status:** substituído pelo [ADR 0005](0005-reserva-com-limite-garantido-no-banco.md) (22/10/2026). Não há mais visitas, fechamento do dia nem evento atrasado. O texto abaixo fica como registro.
 
 ## Contexto
 

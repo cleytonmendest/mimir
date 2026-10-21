@@ -1,6 +1,6 @@
 # ADR 0001: Offline do repositor por eventos, com o servidor vencendo
 
-**Status:** aceito (21/10/2026)
+**Status:** substituído pelo [ADR 0005](0005-reserva-com-limite-garantido-no-banco.md) (22/10/2026). O produto deixou de ser a rota do repositor e não tem mais offline. O texto abaixo fica como registro do que foi decidido e do porquê.
 
 ## Contexto
 
