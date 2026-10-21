@@ -19,7 +19,7 @@ export function StatusBadge({ status }: { status: VisitStatus }) {
   const { label, className } = STATUS_STYLES[status]
   return (
     <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${className}`}
+      className={`inline-flex shrink-0 items-center rounded-full whitespace-nowrap px-3 py-1 text-sm font-medium ${className}`}
     >
       {label}
     </span>
