@@ -5,7 +5,7 @@
       "name": "check-in no dia da visita",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -15,7 +15,7 @@
       "events": [
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T12:00:00.000Z"
+          "occurredAt": "2026-03-18T12:00:00.000Z"
         }
       ],
       "expect": {
@@ -23,7 +23,7 @@
         "rejected": [],
         "visit": {
           "status": "in_progress",
-          "checkInAt": "2026-10-21T12:00:00.000Z",
+          "checkInAt": "2026-03-18T12:00:00.000Z",
           "checkOutAt": null,
           "note": null,
           "skipReason": null
@@ -34,7 +34,7 @@
       "name": "check-in de visita de amanhã",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-22",
+        "date": "2026-03-19",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -44,7 +44,7 @@
       "events": [
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T12:00:00.000Z"
+          "occurredAt": "2026-03-18T12:00:00.000Z"
         }
       ],
       "expect": {
@@ -68,7 +68,7 @@
       "name": "check-in de visita de ontem",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-20",
+        "date": "2026-03-17",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -78,7 +78,7 @@
       "events": [
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T12:00:00.000Z"
+          "occurredAt": "2026-03-18T12:00:00.000Z"
         }
       ],
       "expect": {
@@ -102,7 +102,7 @@
       "name": "23h59 de Brasília ainda é o dia anterior",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -112,7 +112,7 @@
       "events": [
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T02:59:59.000Z"
+          "occurredAt": "2026-03-18T02:59:59.000Z"
         }
       ],
       "expect": {
@@ -136,7 +136,7 @@
       "name": "00h00 de Brasília já é o dia da visita",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -146,7 +146,7 @@
       "events": [
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T03:00:00.000Z"
+          "occurredAt": "2026-03-18T03:00:00.000Z"
         }
       ],
       "expect": {
@@ -154,7 +154,7 @@
         "rejected": [],
         "visit": {
           "status": "in_progress",
-          "checkInAt": "2026-10-21T03:00:00.000Z",
+          "checkInAt": "2026-03-18T03:00:00.000Z",
           "checkOutAt": null,
           "note": null,
           "skipReason": null
@@ -165,7 +165,7 @@
       "name": "23h59 de Brasília é o último instante do dia da visita",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -175,7 +175,7 @@
       "events": [
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-22T02:59:59.000Z"
+          "occurredAt": "2026-03-19T02:59:59.000Z"
         }
       ],
       "expect": {
@@ -183,7 +183,7 @@
         "rejected": [],
         "visit": {
           "status": "in_progress",
-          "checkInAt": "2026-10-22T02:59:59.000Z",
+          "checkInAt": "2026-03-19T02:59:59.000Z",
           "checkOutAt": null,
           "note": null,
           "skipReason": null
@@ -194,7 +194,7 @@
       "name": "00h00 do dia seguinte já é tarde para o check-in",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -204,7 +204,7 @@
       "events": [
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-22T03:00:00.000Z"
+          "occurredAt": "2026-03-19T03:00:00.000Z"
         }
       ],
       "expect": {
@@ -228,7 +228,7 @@
       "name": "o repositor só inicia as próprias visitas",
       "actor": "other",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -238,7 +238,7 @@
       "events": [
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T12:00:00.000Z"
+          "occurredAt": "2026-03-18T12:00:00.000Z"
         }
       ],
       "expect": {
@@ -262,7 +262,7 @@
       "name": "check-out com a visita em \"planned\"",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -272,7 +272,7 @@
       "events": [
         {
           "type": "checkOut",
-          "occurredAt": "2026-10-21T12:40:00.000Z"
+          "occurredAt": "2026-03-18T12:40:00.000Z"
         }
       ],
       "expect": {
@@ -296,9 +296,9 @@
       "name": "check-in com a visita em \"in_progress\"",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "in_progress",
-        "checkInAt": "2026-10-21T12:00:00.000Z",
+        "checkInAt": "2026-03-18T12:00:00.000Z",
         "checkOutAt": null,
         "note": null,
         "skipReason": null
@@ -306,7 +306,7 @@
       "events": [
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T12:40:00.000Z"
+          "occurredAt": "2026-03-18T12:40:00.000Z"
         }
       ],
       "expect": {
@@ -319,7 +319,7 @@
         ],
         "visit": {
           "status": "in_progress",
-          "checkInAt": "2026-10-21T12:00:00.000Z",
+          "checkInAt": "2026-03-18T12:00:00.000Z",
           "checkOutAt": null,
           "note": null,
           "skipReason": null
@@ -330,17 +330,17 @@
       "name": "check-in com a visita em \"done\"",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "done",
-        "checkInAt": "2026-10-21T12:00:00.000Z",
-        "checkOutAt": "2026-10-21T12:40:00.000Z",
+        "checkInAt": "2026-03-18T12:00:00.000Z",
+        "checkOutAt": "2026-03-18T12:40:00.000Z",
         "note": "Gôndola ok",
         "skipReason": null
       },
       "events": [
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T12:40:00.000Z"
+          "occurredAt": "2026-03-18T12:40:00.000Z"
         }
       ],
       "expect": {
@@ -353,8 +353,8 @@
         ],
         "visit": {
           "status": "done",
-          "checkInAt": "2026-10-21T12:00:00.000Z",
-          "checkOutAt": "2026-10-21T12:40:00.000Z",
+          "checkInAt": "2026-03-18T12:00:00.000Z",
+          "checkOutAt": "2026-03-18T12:40:00.000Z",
           "note": "Gôndola ok",
           "skipReason": null
         }
@@ -364,17 +364,17 @@
       "name": "check-out com a visita em \"done\"",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "done",
-        "checkInAt": "2026-10-21T12:00:00.000Z",
-        "checkOutAt": "2026-10-21T12:40:00.000Z",
+        "checkInAt": "2026-03-18T12:00:00.000Z",
+        "checkOutAt": "2026-03-18T12:40:00.000Z",
         "note": "Gôndola ok",
         "skipReason": null
       },
       "events": [
         {
           "type": "checkOut",
-          "occurredAt": "2026-10-21T12:40:00.000Z"
+          "occurredAt": "2026-03-18T12:40:00.000Z"
         }
       ],
       "expect": {
@@ -387,8 +387,8 @@
         ],
         "visit": {
           "status": "done",
-          "checkInAt": "2026-10-21T12:00:00.000Z",
-          "checkOutAt": "2026-10-21T12:40:00.000Z",
+          "checkInAt": "2026-03-18T12:00:00.000Z",
+          "checkOutAt": "2026-03-18T12:40:00.000Z",
           "note": "Gôndola ok",
           "skipReason": null
         }
@@ -398,17 +398,17 @@
       "name": "\"não fui\" com a visita em \"done\"",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "done",
-        "checkInAt": "2026-10-21T12:00:00.000Z",
-        "checkOutAt": "2026-10-21T12:40:00.000Z",
+        "checkInAt": "2026-03-18T12:00:00.000Z",
+        "checkOutAt": "2026-03-18T12:40:00.000Z",
         "note": "Gôndola ok",
         "skipReason": null
       },
       "events": [
         {
           "type": "markNotDone",
-          "occurredAt": "2026-10-21T12:40:00.000Z",
+          "occurredAt": "2026-03-18T12:40:00.000Z",
           "reason": "Sem estoque"
         }
       ],
@@ -422,8 +422,8 @@
         ],
         "visit": {
           "status": "done",
-          "checkInAt": "2026-10-21T12:00:00.000Z",
-          "checkOutAt": "2026-10-21T12:40:00.000Z",
+          "checkInAt": "2026-03-18T12:00:00.000Z",
+          "checkOutAt": "2026-03-18T12:40:00.000Z",
           "note": "Gôndola ok",
           "skipReason": null
         }
@@ -433,7 +433,7 @@
       "name": "check-in com a visita em \"not_done\"",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "not_done",
         "checkInAt": null,
         "checkOutAt": null,
@@ -443,7 +443,7 @@
       "events": [
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T12:40:00.000Z"
+          "occurredAt": "2026-03-18T12:40:00.000Z"
         }
       ],
       "expect": {
@@ -467,7 +467,7 @@
       "name": "check-out com a visita em \"not_done\"",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "not_done",
         "checkInAt": null,
         "checkOutAt": null,
@@ -477,7 +477,7 @@
       "events": [
         {
           "type": "checkOut",
-          "occurredAt": "2026-10-21T12:40:00.000Z"
+          "occurredAt": "2026-03-18T12:40:00.000Z"
         }
       ],
       "expect": {
@@ -501,7 +501,7 @@
       "name": "\"não fui\" com a visita em \"not_done\"",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "not_done",
         "checkInAt": null,
         "checkOutAt": null,
@@ -511,7 +511,7 @@
       "events": [
         {
           "type": "markNotDone",
-          "occurredAt": "2026-10-21T12:40:00.000Z",
+          "occurredAt": "2026-03-18T12:40:00.000Z",
           "reason": "Sem estoque"
         }
       ],
@@ -536,7 +536,7 @@
       "name": "check-in com a visita em \"cancelled\"",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "cancelled",
         "checkInAt": null,
         "checkOutAt": null,
@@ -546,7 +546,7 @@
       "events": [
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T12:40:00.000Z"
+          "occurredAt": "2026-03-18T12:40:00.000Z"
         }
       ],
       "expect": {
@@ -570,7 +570,7 @@
       "name": "check-out com a visita em \"cancelled\"",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "cancelled",
         "checkInAt": null,
         "checkOutAt": null,
@@ -580,7 +580,7 @@
       "events": [
         {
           "type": "checkOut",
-          "occurredAt": "2026-10-21T12:40:00.000Z"
+          "occurredAt": "2026-03-18T12:40:00.000Z"
         }
       ],
       "expect": {
@@ -604,7 +604,7 @@
       "name": "\"não fui\" com a visita em \"cancelled\"",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "cancelled",
         "checkInAt": null,
         "checkOutAt": null,
@@ -614,7 +614,7 @@
       "events": [
         {
           "type": "markNotDone",
-          "occurredAt": "2026-10-21T12:40:00.000Z",
+          "occurredAt": "2026-03-18T12:40:00.000Z",
           "reason": "Sem estoque"
         }
       ],
@@ -639,9 +639,9 @@
       "name": "check-out com observação",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "in_progress",
-        "checkInAt": "2026-10-21T12:00:00.000Z",
+        "checkInAt": "2026-03-18T12:00:00.000Z",
         "checkOutAt": null,
         "note": null,
         "skipReason": null
@@ -649,7 +649,7 @@
       "events": [
         {
           "type": "checkOut",
-          "occurredAt": "2026-10-21T12:40:00.000Z",
+          "occurredAt": "2026-03-18T12:40:00.000Z",
           "note": "Tudo certo"
         }
       ],
@@ -658,8 +658,8 @@
         "rejected": [],
         "visit": {
           "status": "done",
-          "checkInAt": "2026-10-21T12:00:00.000Z",
-          "checkOutAt": "2026-10-21T12:40:00.000Z",
+          "checkInAt": "2026-03-18T12:00:00.000Z",
+          "checkOutAt": "2026-03-18T12:40:00.000Z",
           "note": "Tudo certo",
           "skipReason": null
         }
@@ -669,9 +669,9 @@
       "name": "check-out sem observação mantém a que já existia",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "in_progress",
-        "checkInAt": "2026-10-21T12:00:00.000Z",
+        "checkInAt": "2026-03-18T12:00:00.000Z",
         "checkOutAt": null,
         "note": "antes",
         "skipReason": null
@@ -679,7 +679,7 @@
       "events": [
         {
           "type": "checkOut",
-          "occurredAt": "2026-10-21T12:40:00.000Z"
+          "occurredAt": "2026-03-18T12:40:00.000Z"
         }
       ],
       "expect": {
@@ -687,8 +687,8 @@
         "rejected": [],
         "visit": {
           "status": "done",
-          "checkInAt": "2026-10-21T12:00:00.000Z",
-          "checkOutAt": "2026-10-21T12:40:00.000Z",
+          "checkInAt": "2026-03-18T12:00:00.000Z",
+          "checkOutAt": "2026-03-18T12:40:00.000Z",
           "note": "antes",
           "skipReason": null
         }
@@ -698,9 +698,9 @@
       "name": "check-out um segundo antes do check-in",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "in_progress",
-        "checkInAt": "2026-10-21T12:00:00.000Z",
+        "checkInAt": "2026-03-18T12:00:00.000Z",
         "checkOutAt": null,
         "note": null,
         "skipReason": null
@@ -708,7 +708,7 @@
       "events": [
         {
           "type": "checkOut",
-          "occurredAt": "2026-10-21T11:59:59.000Z"
+          "occurredAt": "2026-03-18T11:59:59.000Z"
         }
       ],
       "expect": {
@@ -721,7 +721,7 @@
         ],
         "visit": {
           "status": "in_progress",
-          "checkInAt": "2026-10-21T12:00:00.000Z",
+          "checkInAt": "2026-03-18T12:00:00.000Z",
           "checkOutAt": null,
           "note": null,
           "skipReason": null
@@ -732,9 +732,9 @@
       "name": "check-out na mesma hora do check-in",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "in_progress",
-        "checkInAt": "2026-10-21T12:00:00.000Z",
+        "checkInAt": "2026-03-18T12:00:00.000Z",
         "checkOutAt": null,
         "note": null,
         "skipReason": null
@@ -742,7 +742,7 @@
       "events": [
         {
           "type": "checkOut",
-          "occurredAt": "2026-10-21T12:00:00.000Z"
+          "occurredAt": "2026-03-18T12:00:00.000Z"
         }
       ],
       "expect": {
@@ -750,8 +750,8 @@
         "rejected": [],
         "visit": {
           "status": "done",
-          "checkInAt": "2026-10-21T12:00:00.000Z",
-          "checkOutAt": "2026-10-21T12:00:00.000Z",
+          "checkInAt": "2026-03-18T12:00:00.000Z",
+          "checkOutAt": "2026-03-18T12:00:00.000Z",
           "note": null,
           "skipReason": null
         }
@@ -761,9 +761,9 @@
       "name": "check-out de uma visita aberta ontem, antes do fechamento do dia",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-20",
+        "date": "2026-03-17",
         "status": "in_progress",
-        "checkInAt": "2026-10-20T12:00:00.000Z",
+        "checkInAt": "2026-03-17T12:00:00.000Z",
         "checkOutAt": null,
         "note": null,
         "skipReason": null
@@ -771,7 +771,7 @@
       "events": [
         {
           "type": "checkOut",
-          "occurredAt": "2026-10-21T12:00:00.000Z"
+          "occurredAt": "2026-03-18T12:00:00.000Z"
         }
       ],
       "expect": {
@@ -779,8 +779,8 @@
         "rejected": [],
         "visit": {
           "status": "done",
-          "checkInAt": "2026-10-20T12:00:00.000Z",
-          "checkOutAt": "2026-10-21T12:00:00.000Z",
+          "checkInAt": "2026-03-17T12:00:00.000Z",
+          "checkOutAt": "2026-03-18T12:00:00.000Z",
           "note": null,
           "skipReason": null
         }
@@ -790,9 +790,9 @@
       "name": "o repositor só encerra as próprias visitas",
       "actor": "other",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "in_progress",
-        "checkInAt": "2026-10-21T12:00:00.000Z",
+        "checkInAt": "2026-03-18T12:00:00.000Z",
         "checkOutAt": null,
         "note": null,
         "skipReason": null
@@ -800,7 +800,7 @@
       "events": [
         {
           "type": "checkOut",
-          "occurredAt": "2026-10-21T12:40:00.000Z"
+          "occurredAt": "2026-03-18T12:40:00.000Z"
         }
       ],
       "expect": {
@@ -813,7 +813,7 @@
         ],
         "visit": {
           "status": "in_progress",
-          "checkInAt": "2026-10-21T12:00:00.000Z",
+          "checkInAt": "2026-03-18T12:00:00.000Z",
           "checkOutAt": null,
           "note": null,
           "skipReason": null
@@ -824,7 +824,7 @@
       "name": "\"não fui\" com o motivo sem espaços nas pontas",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -834,7 +834,7 @@
       "events": [
         {
           "type": "markNotDone",
-          "occurredAt": "2026-10-21T12:00:00.000Z",
+          "occurredAt": "2026-03-18T12:00:00.000Z",
           "reason": "  Mercado fechado "
         }
       ],
@@ -854,9 +854,9 @@
       "name": "\"não fui\" com a visita em andamento",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "in_progress",
-        "checkInAt": "2026-10-21T12:00:00.000Z",
+        "checkInAt": "2026-03-18T12:00:00.000Z",
         "checkOutAt": null,
         "note": null,
         "skipReason": null
@@ -864,7 +864,7 @@
       "events": [
         {
           "type": "markNotDone",
-          "occurredAt": "2026-10-21T12:40:00.000Z",
+          "occurredAt": "2026-03-18T12:40:00.000Z",
           "reason": "Sem estoque"
         }
       ],
@@ -873,7 +873,7 @@
         "rejected": [],
         "visit": {
           "status": "not_done",
-          "checkInAt": "2026-10-21T12:00:00.000Z",
+          "checkInAt": "2026-03-18T12:00:00.000Z",
           "checkOutAt": null,
           "note": null,
           "skipReason": "Sem estoque"
@@ -884,7 +884,7 @@
       "name": "\"não fui\" exige motivo",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -894,7 +894,7 @@
       "events": [
         {
           "type": "markNotDone",
-          "occurredAt": "2026-10-21T12:00:00.000Z",
+          "occurredAt": "2026-03-18T12:00:00.000Z",
           "reason": "   "
         }
       ],
@@ -919,7 +919,7 @@
       "name": "\"não fui\" em visita de amanhã",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-22",
+        "date": "2026-03-19",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -929,7 +929,7 @@
       "events": [
         {
           "type": "markNotDone",
-          "occurredAt": "2026-10-21T12:00:00.000Z",
+          "occurredAt": "2026-03-18T12:00:00.000Z",
           "reason": "Sem estoque"
         }
       ],
@@ -954,7 +954,7 @@
       "name": "\"não fui\" em visita de ontem, antes do fechamento do dia",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-20",
+        "date": "2026-03-17",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -964,7 +964,7 @@
       "events": [
         {
           "type": "markNotDone",
-          "occurredAt": "2026-10-21T12:00:00.000Z",
+          "occurredAt": "2026-03-18T12:00:00.000Z",
           "reason": "Sem estoque"
         }
       ],
@@ -984,9 +984,9 @@
       "name": "\"não fui: Sem check-out\" encerra a visita aberta de ontem (check-in em outra visita)",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-20",
+        "date": "2026-03-17",
         "status": "in_progress",
-        "checkInAt": "2026-10-20T12:00:00.000Z",
+        "checkInAt": "2026-03-17T12:00:00.000Z",
         "checkOutAt": null,
         "note": null,
         "skipReason": null
@@ -994,7 +994,7 @@
       "events": [
         {
           "type": "markNotDone",
-          "occurredAt": "2026-10-21T12:00:00.000Z",
+          "occurredAt": "2026-03-18T12:00:00.000Z",
           "reason": "Sem check-out"
         }
       ],
@@ -1003,7 +1003,7 @@
         "rejected": [],
         "visit": {
           "status": "not_done",
-          "checkInAt": "2026-10-20T12:00:00.000Z",
+          "checkInAt": "2026-03-17T12:00:00.000Z",
           "checkOutAt": null,
           "note": null,
           "skipReason": "Sem check-out"
@@ -1014,7 +1014,7 @@
       "name": "o repositor só marca \"não fui\" nas próprias visitas",
       "actor": "other",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -1024,7 +1024,7 @@
       "events": [
         {
           "type": "markNotDone",
-          "occurredAt": "2026-10-21T12:00:00.000Z",
+          "occurredAt": "2026-03-18T12:00:00.000Z",
           "reason": "Sem estoque"
         }
       ],
@@ -1049,7 +1049,7 @@
       "name": "check-in e check-out em sequência",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -1059,11 +1059,11 @@
       "events": [
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T12:00:00.000Z"
+          "occurredAt": "2026-03-18T12:00:00.000Z"
         },
         {
           "type": "checkOut",
-          "occurredAt": "2026-10-21T12:40:00.000Z",
+          "occurredAt": "2026-03-18T12:40:00.000Z",
           "note": "Tudo certo"
         }
       ],
@@ -1072,8 +1072,8 @@
         "rejected": [],
         "visit": {
           "status": "done",
-          "checkInAt": "2026-10-21T12:00:00.000Z",
-          "checkOutAt": "2026-10-21T12:40:00.000Z",
+          "checkInAt": "2026-03-18T12:00:00.000Z",
+          "checkOutAt": "2026-03-18T12:40:00.000Z",
           "note": "Tudo certo",
           "skipReason": null
         }
@@ -1083,7 +1083,7 @@
       "name": "a ordem é a do seq, não a da lista nem a da hora",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -1093,12 +1093,12 @@
       "events": [
         {
           "type": "checkOut",
-          "occurredAt": "2026-10-21T12:40:00.000Z",
+          "occurredAt": "2026-03-18T12:40:00.000Z",
           "seq": 2
         },
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T12:00:00.000Z",
+          "occurredAt": "2026-03-18T12:00:00.000Z",
           "seq": 1
         }
       ],
@@ -1107,8 +1107,8 @@
         "rejected": [],
         "visit": {
           "status": "done",
-          "checkInAt": "2026-10-21T12:00:00.000Z",
-          "checkOutAt": "2026-10-21T12:40:00.000Z",
+          "checkInAt": "2026-03-18T12:00:00.000Z",
+          "checkOutAt": "2026-03-18T12:40:00.000Z",
           "note": null,
           "skipReason": null
         }
@@ -1118,7 +1118,7 @@
       "name": "relógio corrigido no meio do dia: o seq manda, mesmo com hora anterior",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -1128,12 +1128,12 @@
       "events": [
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T11:00:00.000Z",
+          "occurredAt": "2026-03-18T11:00:00.000Z",
           "seq": 2
         },
         {
           "type": "markNotDone",
-          "occurredAt": "2026-10-21T13:00:00.000Z",
+          "occurredAt": "2026-03-18T13:00:00.000Z",
           "reason": "Mercado fechado",
           "seq": 1
         }
@@ -1159,7 +1159,7 @@
       "name": "um evento recusado não impede os seguintes",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -1169,13 +1169,13 @@
       "events": [
         {
           "type": "markNotDone",
-          "occurredAt": "2026-10-21T11:00:00.000Z",
+          "occurredAt": "2026-03-18T11:00:00.000Z",
           "reason": "  ",
           "seq": 1
         },
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T12:00:00.000Z",
+          "occurredAt": "2026-03-18T12:00:00.000Z",
           "seq": 2
         }
       ],
@@ -1189,7 +1189,7 @@
         ],
         "visit": {
           "status": "in_progress",
-          "checkInAt": "2026-10-21T12:00:00.000Z",
+          "checkInAt": "2026-03-18T12:00:00.000Z",
           "checkOutAt": null,
           "note": null,
           "skipReason": null
@@ -1200,7 +1200,7 @@
       "name": "segundo check-in do mesmo lote é recusado",
       "actor": "owner",
       "visit": {
-        "date": "2026-10-21",
+        "date": "2026-03-18",
         "status": "planned",
         "checkInAt": null,
         "checkOutAt": null,
@@ -1210,12 +1210,12 @@
       "events": [
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T12:00:00.000Z",
+          "occurredAt": "2026-03-18T12:00:00.000Z",
           "seq": 1
         },
         {
           "type": "checkIn",
-          "occurredAt": "2026-10-21T12:40:00.000Z",
+          "occurredAt": "2026-03-18T12:40:00.000Z",
           "seq": 2
         }
       ],
@@ -1229,7 +1229,7 @@
         ],
         "visit": {
           "status": "in_progress",
-          "checkInAt": "2026-10-21T12:00:00.000Z",
+          "checkInAt": "2026-03-18T12:00:00.000Z",
           "checkOutAt": null,
           "note": null,
           "skipReason": null
