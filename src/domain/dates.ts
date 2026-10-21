@@ -46,6 +46,11 @@ export function addDays(date: IsoDate, days: number): IsoDate {
   return toIsoDate(parsed)
 }
 
+/** Quantos dias de calendário vão de `from` até `to` (negativo se `to` for antes). */
+export function daysBetween(from: IsoDate, to: IsoDate): number {
+  return Math.round((parseIsoDate(to).getTime() - parseIsoDate(from).getTime()) / 86_400_000)
+}
+
 export function weekdayOf(date: IsoDate): Weekday {
   return parseIsoDate(date).getUTCDay() as Weekday
 }

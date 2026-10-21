@@ -1,0 +1,341 @@
+{
+  "description": "Casos compartilhados da reserva de estande. O domínio (booking.cases.test.ts) e o banco (70_booking_cases.test.sql, gerado por scripts/gen-booking-cases.ts) cumprem os mesmos. dayOffset é em relação a hoje; booked conta todas as reservas ativas (a do próprio fornecedor, se mine, entra nessa conta).",
+  "cases": [
+    {
+      "name": "dia livre: reserva",
+      "role": "supplier",
+      "dayOffset": 1,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 3,
+      "booked": 0,
+      "mine": false,
+      "expect": {
+        "ok": true,
+        "alreadyBooked": false
+      }
+    },
+    {
+      "name": "a última vaga ainda é reservada",
+      "role": "supplier",
+      "dayOffset": 5,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 3,
+      "booked": 2,
+      "mine": false,
+      "expect": {
+        "ok": true,
+        "alreadyBooked": false
+      }
+    },
+    {
+      "name": "dia lotado: recusa com FULL",
+      "role": "supplier",
+      "dayOffset": 5,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 3,
+      "booked": 3,
+      "mine": false,
+      "expect": {
+        "ok": false,
+        "code": "FULL"
+      }
+    },
+    {
+      "name": "limite 1 com 1 reserva: lotado",
+      "role": "supplier",
+      "dayOffset": 2,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 1,
+      "booked": 1,
+      "mine": false,
+      "expect": {
+        "ok": false,
+        "code": "FULL"
+      }
+    },
+    {
+      "name": "limite reduzido abaixo das reservas existentes: lotado",
+      "role": "supplier",
+      "dayOffset": 2,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 2,
+      "booked": 3,
+      "mine": false,
+      "expect": {
+        "ok": false,
+        "code": "FULL"
+      }
+    },
+    {
+      "name": "limite 20 com 19 reservas: ainda cabe",
+      "role": "supplier",
+      "dayOffset": 3,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 20,
+      "booked": 19,
+      "mine": false,
+      "expect": {
+        "ok": true,
+        "alreadyBooked": false
+      }
+    },
+    {
+      "name": "limite 20 com 20 reservas: lotado",
+      "role": "supplier",
+      "dayOffset": 3,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 20,
+      "booked": 20,
+      "mine": false,
+      "expect": {
+        "ok": false,
+        "code": "FULL"
+      }
+    },
+    {
+      "name": "repetir a própria reserva é sucesso, sem reservar de novo",
+      "role": "supplier",
+      "dayOffset": 4,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 3,
+      "booked": 1,
+      "mine": true,
+      "expect": {
+        "ok": true,
+        "alreadyBooked": true
+      }
+    },
+    {
+      "name": "repetir a própria reserva num dia lotado também é sucesso",
+      "role": "supplier",
+      "dayOffset": 4,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 3,
+      "booked": 3,
+      "mine": true,
+      "expect": {
+        "ok": true,
+        "alreadyBooked": true
+      }
+    },
+    {
+      "name": "dia fechado: recusa com CLOSED",
+      "role": "supplier",
+      "dayOffset": 6,
+      "marketArchived": false,
+      "closed": true,
+      "capacity": 3,
+      "booked": 0,
+      "mine": false,
+      "expect": {
+        "ok": false,
+        "code": "CLOSED"
+      }
+    },
+    {
+      "name": "dia fechado e lotado: CLOSED vem antes de FULL",
+      "role": "supplier",
+      "dayOffset": 6,
+      "marketArchived": false,
+      "closed": true,
+      "capacity": 3,
+      "booked": 3,
+      "mine": false,
+      "expect": {
+        "ok": false,
+        "code": "CLOSED"
+      }
+    },
+    {
+      "name": "a reserva própria não vale num dia que foi fechado depois",
+      "role": "supplier",
+      "dayOffset": 6,
+      "marketArchived": false,
+      "closed": true,
+      "capacity": 3,
+      "booked": 1,
+      "mine": true,
+      "expect": {
+        "ok": false,
+        "code": "CLOSED"
+      }
+    },
+    {
+      "name": "mercado arquivado: MARKET_INACTIVE",
+      "role": "supplier",
+      "dayOffset": 7,
+      "marketArchived": true,
+      "closed": false,
+      "capacity": 3,
+      "booked": 0,
+      "mine": false,
+      "expect": {
+        "ok": false,
+        "code": "MARKET_INACTIVE"
+      }
+    },
+    {
+      "name": "mercado arquivado e dia fechado: MARKET_INACTIVE vem antes",
+      "role": "supplier",
+      "dayOffset": 7,
+      "marketArchived": true,
+      "closed": true,
+      "capacity": 3,
+      "booked": 0,
+      "mine": false,
+      "expect": {
+        "ok": false,
+        "code": "MARKET_INACTIVE"
+      }
+    },
+    {
+      "name": "mercado arquivado com reserva própria: MARKET_INACTIVE",
+      "role": "supplier",
+      "dayOffset": 7,
+      "marketArchived": true,
+      "closed": false,
+      "capacity": 3,
+      "booked": 1,
+      "mine": true,
+      "expect": {
+        "ok": false,
+        "code": "MARKET_INACTIVE"
+      }
+    },
+    {
+      "name": "hoje não se reserva (só de amanhã em diante)",
+      "role": "supplier",
+      "dayOffset": 0,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 3,
+      "booked": 0,
+      "mine": false,
+      "expect": {
+        "ok": false,
+        "code": "OUT_OF_WINDOW"
+      }
+    },
+    {
+      "name": "dia que já passou: OUT_OF_WINDOW",
+      "role": "supplier",
+      "dayOffset": -1,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 3,
+      "booked": 0,
+      "mine": false,
+      "expect": {
+        "ok": false,
+        "code": "OUT_OF_WINDOW"
+      }
+    },
+    {
+      "name": "o último dia da janela (60) ainda reserva",
+      "role": "supplier",
+      "dayOffset": 60,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 3,
+      "booked": 0,
+      "mine": false,
+      "expect": {
+        "ok": true,
+        "alreadyBooked": false
+      }
+    },
+    {
+      "name": "um dia além da janela (61): OUT_OF_WINDOW",
+      "role": "supplier",
+      "dayOffset": 61,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 3,
+      "booked": 0,
+      "mine": false,
+      "expect": {
+        "ok": false,
+        "code": "OUT_OF_WINDOW"
+      }
+    },
+    {
+      "name": "fora da janela e fechado: OUT_OF_WINDOW vem antes",
+      "role": "supplier",
+      "dayOffset": 61,
+      "marketArchived": false,
+      "closed": true,
+      "capacity": 3,
+      "booked": 0,
+      "mine": false,
+      "expect": {
+        "ok": false,
+        "code": "OUT_OF_WINDOW"
+      }
+    },
+    {
+      "name": "fora da janela e lotado: OUT_OF_WINDOW vem antes",
+      "role": "supplier",
+      "dayOffset": -2,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 3,
+      "booked": 3,
+      "mine": false,
+      "expect": {
+        "ok": false,
+        "code": "OUT_OF_WINDOW"
+      }
+    },
+    {
+      "name": "fora da janela com reserva própria: OUT_OF_WINDOW",
+      "role": "supplier",
+      "dayOffset": 61,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 3,
+      "booked": 1,
+      "mine": true,
+      "expect": {
+        "ok": false,
+        "code": "OUT_OF_WINDOW"
+      }
+    },
+    {
+      "name": "o administrador não reserva estande",
+      "role": "admin",
+      "dayOffset": 5,
+      "marketArchived": false,
+      "closed": false,
+      "capacity": 3,
+      "booked": 0,
+      "mine": false,
+      "expect": {
+        "ok": false,
+        "code": "FORBIDDEN"
+      }
+    },
+    {
+      "name": "o administrador é barrado antes de qualquer outra regra",
+      "role": "admin",
+      "dayOffset": 0,
+      "marketArchived": true,
+      "closed": true,
+      "capacity": 3,
+      "booked": 3,
+      "mine": false,
+      "expect": {
+        "ok": false,
+        "code": "FORBIDDEN"
+      }
+    }
+  ]
+}

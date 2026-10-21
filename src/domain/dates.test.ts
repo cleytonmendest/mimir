@@ -3,6 +3,7 @@ import {
   addDays,
   COMPANY_TIME_ZONE,
   companyDate,
+  daysBetween,
   parseIsoDate,
   startOfWeek,
   toIsoDate,
@@ -100,6 +101,13 @@ describe('datas de calendário (independentes de fuso)', () => {
       '2026-03-07',
       '2026-03-08',
     ])
+  })
+
+  it('daysBetween conta dias de calendário, também para trás e atravessando mês e ano', () => {
+    expect(daysBetween('2026-10-21', '2026-10-21')).toBe(0)
+    expect(daysBetween('2026-10-21', '2026-12-20')).toBe(60)
+    expect(daysBetween('2026-10-21', '2026-10-20')).toBe(-1)
+    expect(daysBetween('2026-12-31', '2027-01-02')).toBe(2)
   })
 
   it('toIsoDate faz o caminho de volta', () => {

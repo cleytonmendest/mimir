@@ -37,16 +37,68 @@ export type Database = {
                   Relationships: [
                     
                   ]
-                },"markets": {
+                },"bookings": {
                   Row: {
-                    "address": string | null,"archived_at": string | null,"created_at": string,"id": string,"name": string
+                    "cancel_reason": string | null,"cancelled_at": string | null,"cancelled_by": string | null,"created_at": string,"day": string,"id": string,"market_id": string,"supplier_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "address"?: string | null,"archived_at"?: string | null,"created_at"?: string,"id"?: string,"name": string
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"created_at"?: string,"day": string,"id"?: string,"market_id": string,"supplier_id": string
                   }
                   Update: {
-                    "address"?: string | null,"archived_at"?: string | null,"created_at"?: string,"id"?: string,"name"?: string
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"created_at"?: string,"day"?: string,"id"?: string,"market_id"?: string,"supplier_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "bookings_cancelled_by_fkey"
+      columns: ["cancelled_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "bookings_market_id_fkey"
+      columns: ["market_id"]
+isOneToOne: false
+      referencedRelation: "markets"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "bookings_supplier_id_fkey"
+      columns: ["supplier_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"closed_days": {
+                  Row: {
+                    "created_at": string,"day": string,"id": string,"market_id": string,"reason": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"day": string,"id"?: string,"market_id": string,"reason"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"day"?: string,"id"?: string,"market_id"?: string,"reason"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "closed_days_market_id_fkey"
+      columns: ["market_id"]
+isOneToOne: false
+      referencedRelation: "markets"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"markets": {
+                  Row: {
+                    "address": string | null,"archived_at": string | null,"capacity": number,"created_at": string,"id": string,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "address"?: string | null,"archived_at"?: string | null,"capacity"?: number,"created_at"?: string,"id"?: string,"name": string
+                  }
+                  Update: {
+                    "address"?: string | null,"archived_at"?: string | null,"capacity"?: number,"created_at"?: string,"id"?: string,"name"?: string
                   }
                   Relationships: [
                     
@@ -71,11 +123,29 @@ export type Database = {
             [_ in never]: never
           }
           Functions: {
-            "company_date":
+            "book_slot_v1":
+{ Args: { "p_day": string,"p_market": string }; Returns: Json
+                           },
+"booking_lock_key":
+{ Args: { "p_day": string,"p_market": string }; Returns: number
+                           },
+"booking_refusal":
+{ Args: { "p_code": string }; Returns: Json
+                           },
+"booking_window_days":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"cancel_booking_v1":
+{ Args: { "p_booking": string,"p_reason"?: string }; Returns: Json
+                           },
+"company_date":
 { Args: { "instant": string }; Returns: string
                            },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"market_availability_v1":
+{ Args: { "p_from": string,"p_market": string,"p_to": string }; Returns: Json
                            }
           }
           Enums: {
