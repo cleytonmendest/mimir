@@ -24,6 +24,10 @@ export function getSupabase(): AppSupabaseClient {
     throw new ConfigError('Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY (veja .env.example)')
   }
 
-  client = createClient<Database>(url, anonKey)
+  client = createClient<Database>(url, anonKey, {
+    // X-Client-Info (e não um cabeçalho novo): o servidor já o aceita no CORS; um cabeçalho
+    // desconhecido faria o navegador recusar TODAS as requisições no preflight.
+    global: { headers: { 'X-Client-Info': `rota-repositor/${__APP_VERSION__}` } },
+  })
   return client
 }
