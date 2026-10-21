@@ -14,6 +14,7 @@ import tseslint from 'typescript-eslint'
  *   features/app   telas: usam as camadas acima
  */
 const SDK = { group: ['@supabase/*'], message: 'Só src/lib pode importar o SDK do Supabase.' }
+const IDB = { group: ['idb', 'idb/*'], message: 'Só src/lib pode usar o IndexedDB (idb).' }
 const UP_FROM_DOMAIN = [
   {
     group: ['react', 'react-dom', 'react-dom/*', 'react/*'],
@@ -25,10 +26,12 @@ const UP_FROM_DOMAIN = [
   },
   { group: ['../*'], message: 'O domínio é plano: use ./arquivo.' },
   SDK,
+  IDB,
 ]
 const UP_FROM_DESIGN_SYSTEM = [
   { group: ['@/features/*', '@/lib/*'], message: 'O design system não conhece dados nem telas.' },
   SDK,
+  IDB,
 ]
 
 const COLOR_LITERAL = [
@@ -72,7 +75,7 @@ export default defineConfig([
     extends: [reactHooks.configs.flat.recommended, reactRefresh.configs.vite],
     languageOptions: { globals: globals.browser },
     rules: {
-      'no-restricted-imports': ['error', { patterns: [SDK] }],
+      'no-restricted-imports': ['error', { patterns: [SDK, IDB] }],
       'no-restricted-syntax': ['error', ...COLOR_LITERAL],
     },
   },
