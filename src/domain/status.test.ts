@@ -37,6 +37,11 @@ describe('transições de status da visita', () => {
       expect(codeOf(() => transition(visit, { type: 'checkIn' }, ctx()))).toBe('VISIT_IN_FUTURE')
     })
 
+    it('não deixa fazer check-in em visita de dia que já passou (o líder remaneja)', () => {
+      const visit = makeVisit({ date: '2026-10-19' })
+      expect(codeOf(() => transition(visit, { type: 'checkIn' }, ctx()))).toBe('VISIT_IN_PAST')
+    })
+
     it.each(VISIT_STATUSES.filter((status) => status !== 'planned'))(
       'não existe check-in a partir de "%s"',
       (status) => {

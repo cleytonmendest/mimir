@@ -43,6 +43,8 @@ export function evaluateTransition(
     case 'checkIn': {
       if (visit.status !== 'planned') return notAllowedFrom(visit, event.type)
       if (visit.date > ctx.today) return fail('VISIT_IN_FUTURE', 'Visita ainda não é de hoje')
+      // Visita de dia que já passou não se inicia: fica para o líder remanejar (ADR 0003).
+      if (visit.date < ctx.today) return fail('VISIT_IN_PAST', 'Visita de um dia que já passou')
       return { ok: true, visit: { ...visit, status: 'in_progress', checkInAt: ctx.now } }
     }
     case 'checkOut': {
