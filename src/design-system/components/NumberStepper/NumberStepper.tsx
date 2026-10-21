@@ -21,6 +21,7 @@ export function NumberStepper({
   return (
     <div role="group" aria-label={label} className="inline-flex items-center gap-2">
       <Button
+        type="button"
         variant="outline"
         size="icon"
         aria-label={`Diminuir: ${label}`}
@@ -38,6 +39,7 @@ export function NumberStepper({
         {value}
       </output>
       <Button
+        type="button"
         variant="outline"
         size="icon"
         aria-label={`Aumentar: ${label}`}

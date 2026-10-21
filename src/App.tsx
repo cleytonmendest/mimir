@@ -1,3 +1,4 @@
+import { AdminScreen } from '@/features/admin/AdminScreen'
 import { AccountBar } from '@/features/auth/AccountBar'
 import { AuthGate } from '@/features/auth/AuthGate'
 import { AuthProvider } from '@/features/auth/AuthProvider'
@@ -25,15 +26,11 @@ export default function App({
             <>
               <AccountBar profile={profile} />
               {profile.role === 'admin' ? (
-                <section className="mt-6" aria-labelledby="markets-title">
-                  <h2 id="markets-title" className="text-xl font-semibold">
-                    Mercados
-                  </h2>
-                  <p className="mt-2 text-muted-foreground">
-                    Aqui você vai definir o limite de estandes de cada mercado, fechar datas e ver
-                    quem reservou.
-                  </p>
-                </section>
+                <AdminScreen
+                  key={profile.id}
+                  gateway={booking}
+                  {...(now === undefined ? {} : { now })}
+                />
               ) : (
                 <SupplierScreen
                   key={profile.id}

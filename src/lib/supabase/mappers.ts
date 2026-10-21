@@ -52,11 +52,7 @@ export interface ClosedDay {
   reason: string | null
 }
 
-export interface MarketInput {
-  name: string
-  address: string | null
-  capacity: number
-}
+export type { MarketInput } from '@/domain/market'
 
 type MyBookingRow = Pick<Tables<'bookings'>, 'id' | 'market_id' | 'day'> & {
   markets: { name: string } | null

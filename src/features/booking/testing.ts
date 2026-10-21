@@ -221,6 +221,7 @@ export function createFakeBookingGateway(setup: FakeBookingSetup) {
       return Promise.resolve(
         closed
           .filter((c) => c.marketId === marketId && c.day >= from && c.day <= to)
+          .sort((a, b) => a.day.localeCompare(b.day))
           .map((c) => ({ day: c.day, reason: c.reason ?? null })),
       )
     },
