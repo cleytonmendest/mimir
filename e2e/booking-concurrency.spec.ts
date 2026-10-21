@@ -19,7 +19,7 @@ test('10 fornecedores disputam as 3 vagas, em 5 dias seguidos: sempre exatamente
   const supabase = localSupabase()
   if (supabase === null) throw new Error(NO_SUPABASE_MESSAGE)
   const { db, cleanup } = await seedUsers(supabase)
-  const marketId = await createMarket(db, 3)
+  const { id: marketId } = await createMarket(db, 3)
   const suppliers = await createSuppliers(supabase, db, 10)
 
   try {
@@ -57,7 +57,7 @@ test('com limite 1, 10 fornecedores ao mesmo tempo: só um reserva', async () =>
   const supabase = localSupabase()
   if (supabase === null) throw new Error(NO_SUPABASE_MESSAGE)
   const { db, cleanup } = await seedUsers(supabase)
-  const marketId = await createMarket(db, 1)
+  const { id: marketId } = await createMarket(db, 1)
   const suppliers = await createSuppliers(supabase, db, 10)
   const day = companyDay(2)
 
@@ -87,7 +87,7 @@ test('o mesmo fornecedor clicando 10 vezes ao mesmo tempo gera uma reserva só',
   const supabase = localSupabase()
   if (supabase === null) throw new Error(NO_SUPABASE_MESSAGE)
   const { db, cleanup } = await seedUsers(supabase)
-  const marketId = await createMarket(db, 3)
+  const { id: marketId } = await createMarket(db, 3)
   const [supplier] = await createSuppliers(supabase, db, 1)
   if (supplier === undefined) throw new Error('fornecedor não foi criado')
   const day = companyDay(7)
@@ -116,7 +116,7 @@ test('cancelar e reservar ao mesmo tempo nunca passa do limite', async () => {
   const supabase = localSupabase()
   if (supabase === null) throw new Error(NO_SUPABASE_MESSAGE)
   const { db, cleanup } = await seedUsers(supabase)
-  const marketId = await createMarket(db, 2)
+  const { id: marketId } = await createMarket(db, 2)
   const suppliers = await createSuppliers(supabase, db, 6)
   const day = companyDay(4)
 

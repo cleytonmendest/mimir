@@ -1,13 +1,25 @@
 import { AccountBar } from '@/features/auth/AccountBar'
 import { AuthGate } from '@/features/auth/AuthGate'
 import { AuthProvider } from '@/features/auth/AuthProvider'
+import { SupplierScreen } from '@/features/booking/SupplierScreen'
 import type { AuthGateway } from '@/lib/supabase/auth'
+import type { BookingGateway } from '@/lib/supabase/booking-gateway'
 
-export default function App({ auth }: { auth: AuthGateway }) {
+export default function App({
+  auth,
+  booking,
+  now,
+}: {
+  auth: AuthGateway
+  booking: BookingGateway
+  now?: () => Date
+}) {
   return (
     <AuthProvider gateway={auth}>
-      <main className="mx-auto max-w-xl p-4">
-        <h1 className="text-2xl font-semibold">Agenda de Degustações</h1>
+      <main className="mx-auto w-full max-w-[1240px] p-4">
+        <h1 className="font-display text-4xl font-bold tracking-wide uppercase">
+          Agenda de Degustações
+        </h1>
         <AuthGate>
           {(profile) => (
             <>
@@ -23,14 +35,11 @@ export default function App({ auth }: { auth: AuthGateway }) {
                   </p>
                 </section>
               ) : (
-                <section className="mt-6" aria-labelledby="bookings-title">
-                  <h2 id="bookings-title" className="text-xl font-semibold">
-                    Reservas
-                  </h2>
-                  <p className="mt-2 text-muted-foreground">
-                    Aqui você vai escolher o mercado e o dia e reservar o seu estande.
-                  </p>
-                </section>
+                <SupplierScreen
+                  key={profile.id}
+                  gateway={booking}
+                  {...(now === undefined ? {} : { now })}
+                />
               )}
             </>
           )}

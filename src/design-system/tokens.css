@@ -4,37 +4,85 @@
  * e o guard (scripts/guards/design-system.ts) derruba o CI se alguém escrever uma.
  *
  * Os nomes são os do shadcn/ui (background, primary, muted...): é o que os componentes trazidos
- * por `npx shadcn add` esperam.
+ * por `npx shadcn add` esperam. Os "slot-*" são do domínio: as vagas de um dia, livres, em parte
+ * ocupadas, lotadas ou com o dia fechado. Identidade do protótipo aprovado (docs/prototipo/).
  */
 @theme {
   --color-*: initial;
 
-  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Hanken Grotesk Variable', system-ui, 'Segoe UI', Roboto, sans-serif;
+  /* Números e títulos, no estilo das etiquetas de preço do mercado. */
+  --font-display: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
 }
 
-/* Valores. Só tema claro: o app é usado em pé, dentro de mercado, muitas vezes sob luz forte. */
+/* Valores, tema claro. */
 :root {
-  --background: #ffffff;
-  --foreground: #18181b;
+  --background: #f2f5f1;
+  --foreground: #16251e;
   --card: #ffffff;
-  --card-foreground: #18181b;
+  --card-foreground: #16251e;
   --popover: #ffffff;
-  --popover-foreground: #18181b;
-  --primary: #1d4ed8;
+  --popover-foreground: #16251e;
+  --primary: #0d6b4b;
   --primary-foreground: #ffffff;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #52525b;
-  --accent: #f4f4f5;
-  --accent-foreground: #18181b;
-  --destructive: #b91c1c;
+  --secondary: #e6ede8;
+  --secondary-foreground: #16251e;
+  --muted: #e6ede8;
+  --muted-foreground: #55665c;
+  --accent: #e2f1e9;
+  --accent-foreground: #16251e;
+  --destructive: #b3261e;
   --destructive-foreground: #ffffff;
-  --border: #d4d4d8;
-  --input: #d4d4d8;
-  --ring: #1d4ed8;
+  --border: #d8e0d9;
+  --input: #aebdb2;
+  --ring: #1f5fd8;
+
+  --slot-free: #1e7a57;
+  --slot-free-bg: #eaf4ee;
+  --slot-partial: #8f5b00;
+  --slot-partial-bg: #fcf0d6;
+  --slot-full: #b3261e;
+  --slot-full-bg: #fce8e5;
+  --slot-closed-bg: #eceeec;
+  --slot-closed-stripe: #d3d9d4;
 
   --radius: 0.5rem;
+}
+
+/* Tema escuro: segue o sistema. Mesmos nomes, valores do protótipo. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f1713;
+    --foreground: #e6efe9;
+    --card: #17221c;
+    --card-foreground: #e6efe9;
+    --popover: #17221c;
+    --popover-foreground: #e6efe9;
+    --primary: #3fbf8c;
+    --primary-foreground: #0b1a13;
+    --secondary: #1d2a23;
+    --secondary-foreground: #e6efe9;
+    --muted: #1d2a23;
+    --muted-foreground: #9db1a5;
+    --accent: #183a2b;
+    --accent-foreground: #e6efe9;
+    --destructive: #ff8a80;
+    --destructive-foreground: #3a0b07;
+    --border: #2a3a31;
+    --input: #46594d;
+    --ring: #7fa8ff;
+
+    --slot-free: #5fd0a0;
+    --slot-free-bg: #16302a;
+    --slot-partial: #f0b34a;
+    --slot-partial-bg: #38290e;
+    --slot-full: #ff8a80;
+    --slot-full-bg: #3c1b18;
+    --slot-closed-bg: #1d2722;
+    --slot-closed-stripe: #2b3832;
+
+    color-scheme: dark;
+  }
 }
 
 /* Liga os valores acima às classes (bg-primary, text-muted-foreground, rounded-md...). */
@@ -58,6 +106,15 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  --color-slot-free: var(--slot-free);
+  --color-slot-free-bg: var(--slot-free-bg);
+  --color-slot-partial: var(--slot-partial);
+  --color-slot-partial-bg: var(--slot-partial-bg);
+  --color-slot-full: var(--slot-full);
+  --color-slot-full-bg: var(--slot-full-bg);
+  --color-slot-closed-bg: var(--slot-closed-bg);
+  --color-slot-closed-stripe: var(--slot-closed-stripe);
 
   --font-heading: var(--font-sans);
 
