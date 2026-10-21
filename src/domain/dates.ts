@@ -3,7 +3,30 @@ import type { IsoDate, Weekday } from './types'
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
-/** Tudo aqui trabalha em UTC de propósito: o resultado não pode depender do fuso da máquina. */
+/**
+ * O fuso da empresa. O "dia" de uma visita é sempre o deste fuso, nunca o do aparelho: um celular
+ * com o fuso trocado não pode mudar o que é "hoje". Tem de ser o mesmo de public.company_date() no
+ * banco (domain/schema-sync.test.ts confere).
+ */
+export const COMPANY_TIME_ZONE = 'America/Sao_Paulo'
+
+const COMPANY_DAY = new Intl.DateTimeFormat('en-CA', {
+  timeZone: COMPANY_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
+/** A data de calendário em que o instante cai no fuso da empresa ("AAAA-MM-DD"). */
+export function companyDate(instant: string | Date): IsoDate {
+  const date = typeof instant === 'string' ? new Date(instant) : instant
+  if (Number.isNaN(date.getTime())) {
+    throw new DomainError('INVALID_DATE', `Instante inválido: ${String(instant)}`)
+  }
+  return COMPANY_DAY.format(date)
+}
+
+/** O resto deste arquivo trabalha em UTC de propósito: o resultado não pode depender do fuso da máquina. */
 export function parseIsoDate(date: IsoDate): Date {
   const [year, month, day] = date.split('-').map(Number) as [number, number, number]
   const parsed = new Date(Date.UTC(year, month - 1, day))

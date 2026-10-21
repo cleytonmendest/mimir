@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { COMPANY_TIME_ZONE } from './dates'
 import { ROLES, VISIT_ORIGINS, VISIT_STATUSES, type StandardRouteEntry, type Visit } from './types'
 
 /**
@@ -87,5 +88,10 @@ describe('domínio ↔ banco', () => {
   it('todo campo da rota padrão tem coluna em public.standard_route', () => {
     const columns = tableColumns('standard_route')
     for (const column of Object.values(ROUTE_COLUMNS)) expect(columns).toContain(column)
+  })
+
+  it('o fuso da empresa é o mesmo no domínio e em public.company_date()', () => {
+    const body = /create function public\.company_date\([^)]*\)[\s\S]*?\$\$([\s\S]*?)\$\$/.exec(sql)
+    expect(body?.[1]).toContain(`at time zone '${COMPANY_TIME_ZONE}'`)
   })
 })
