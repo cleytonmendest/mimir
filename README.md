@@ -26,22 +26,23 @@ update public.profiles set role = 'admin' where id = '<id do usuário>';
 
 ## Comandos
 
-| Comando                              | O que faz                                                                                                                                     |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run verify`                     | O que o CI roda antes do PR: lint, tipos, guards, testes com cobertura e Storybook                                                            |
-| `npm test` / `npm run test:coverage` | Testes (Vitest). O domínio exige **100% de cobertura**                                                                                        |
-| `npm run test:tz`                    | Testes do domínio em 4 fusos horários (o CI roda a suíte inteira nesses fusos)                                                                |
-| `npm run e2e`                        | E2E no celular simulado (Playwright). Descobre o Supabase local sozinho; precisa de `npm run db:start` e de `npx playwright install chromium` |
-| `npm run db:test`                    | Testes do banco (pgTAP: RLS, auditoria, constraints)                                                                                          |
-| `npm run db:lint`                    | Lint do schema                                                                                                                                |
-| `npm run db:types`                   | Regera `src/lib/database.types.ts` (commitar a saída **crua**, sem formatar)                                                                  |
-| `npm run storybook`                  | Vitrine do design system                                                                                                                      |
+| Comando                              | O que faz                                                                                                                                            |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run verify`                     | O que o CI roda antes do PR: lint, tipos, guards, testes com cobertura e Storybook                                                                   |
+| `npm test` / `npm run test:coverage` | Testes (Vitest). O domínio exige **100% de cobertura**                                                                                               |
+| `npm run test:tz`                    | Testes do domínio em 4 fusos horários (o CI roda a suíte inteira nesses fusos)                                                                       |
+| `npm run e2e`                        | E2E no celular simulado (Playwright). Descobre o Supabase local sozinho; precisa de `npm run db:start` e de `npx playwright install chromium`        |
+| `npm run db:test`                    | Testes do banco (pgTAP: RLS, auditoria, constraints)                                                                                                 |
+| `npm run db:gen-cases`               | Regera o pgTAP das reservas (`70_booking_cases.test.sql`) a partir dos casos compartilhados com o domínio (`src/domain/fixtures/booking.cases.json`) |
+| `npm run db:lint`                    | Lint do schema                                                                                                                                       |
+| `npm run db:types`                   | Regera `src/lib/database.types.ts` (commitar a saída **crua**, sem formatar)                                                                         |
+| `npm run storybook`                  | Vitrine do design system                                                                                                                             |
 
 ## Como o código é organizado
 
 Camadas, de baixo para cima (o ESLint barra importar para cima):
 
-1. `src/domain`: regras de negócio em TypeScript puro (sem React nem Supabase), 100% testadas. Hoje: quem pode o quê e o "dia" no fuso da empresa; as regras de reserva entram no Bloco 2.
+1. `src/domain`: regras de negócio em TypeScript puro (sem React nem Supabase), 100% testadas. Quem pode o quê, o "dia" no fuso da empresa e as regras de reserva de estande (`booking.ts`), que o banco repete e os casos compartilhados provam iguais.
 2. `src/design-system`: componentes visuais (shadcn/ui + Tailwind). Veja o [README do design system](src/design-system/README.md).
 3. `src/lib`: integração com o mundo. **Único** lugar que importa o SDK do Supabase.
 4. `src/features` e `src/App.tsx`: as telas.

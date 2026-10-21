@@ -8,6 +8,7 @@ describe('marketFromRow', () => {
     name: 'Mercado A',
     address: null,
     archived_at: null,
+    capacity: 3,
     created_at: '2026-10-20T09:00:00+00:00',
   }
 
@@ -17,6 +18,7 @@ describe('marketFromRow', () => {
       name: 'Mercado A',
       address: null,
       archived: false,
+      capacity: 3,
     })
   })
 

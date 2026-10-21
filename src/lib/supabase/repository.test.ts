@@ -42,6 +42,7 @@ describe('listMarkets', () => {
           name: 'Mercado A',
           address: 'Rua 1',
           archived_at: null,
+          capacity: 3,
           created_at: '2026-10-20T09:00:00+00:00',
         },
       ],
@@ -49,7 +50,7 @@ describe('listMarkets', () => {
     })
 
     expect(await listMarkets(client)).toEqual([
-      { id: 'm-a', name: 'Mercado A', address: 'Rua 1', archived: false },
+      { id: 'm-a', name: 'Mercado A', address: 'Rua 1', archived: false, capacity: 3 },
     ])
     expect(calls).toContainEqual(['order', 'name'])
   })
