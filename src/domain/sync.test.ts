@@ -1,3 +1,4 @@
+import fc from 'fast-check'
 import { describe, expect, it, vi } from 'vitest'
 import { applyOfflineEvents, type OfflineEvent } from './sync'
 import { ana, bruno, deepFreeze, makeVisit } from './testing'
@@ -7,16 +8,16 @@ const visit = deepFreeze(makeVisit({ id: 'v1', date: TODAY }))
 
 const checkIn: OfflineEvent = {
   clientEventId: 'e1',
+  seq: 1,
   visitId: 'v1',
   occurredAt: '2026-10-20T12:00:00.000Z',
-  occurredLocalDate: TODAY,
   type: 'checkIn',
 }
 const checkOut: OfflineEvent = {
   clientEventId: 'e2',
+  seq: 2,
   visitId: 'v1',
   occurredAt: '2026-10-20T12:40:00.000Z',
-  occurredLocalDate: TODAY,
   type: 'checkOut',
   note: 'Tudo certo',
 }
@@ -31,7 +32,7 @@ function sync(events: OfflineEvent[], alreadyApplied: string[] = [], target = vi
 }
 
 describe('sincronização de eventos offline', () => {
-  it('aplica na ordem em que aconteceu, mesmo que cheguem invertidos', () => {
+  it('aplica na ordem do aparelho (seq), mesmo que cheguem invertidos', () => {
     const result = sync([checkOut, checkIn])
     expect(result.applied).toEqual(['e1', 'e2'])
     expect(result.visit).toMatchObject({
@@ -40,6 +41,30 @@ describe('sincronização de eventos offline', () => {
       checkOutAt: checkOut.occurredAt,
       note: 'Tudo certo',
     })
+  })
+
+  it('a ordem é a do seq, não a de occurredAt: relógio corrigido no meio do dia não troca a ordem', () => {
+    // O "não fui" foi registrado primeiro (seq 1), com o relógio adiantado; o check-in veio depois
+    // (seq 2), com o relógio já certo, e por isso carrega uma hora anterior.
+    const notDone: OfflineEvent = {
+      clientEventId: 'e1',
+      seq: 1,
+      visitId: 'v1',
+      occurredAt: '2026-10-20T13:00:00.000Z',
+      type: 'markNotDone',
+      reason: 'Mercado fechado',
+    }
+    const late: OfflineEvent = {
+      ...checkIn,
+      clientEventId: 'e2',
+      seq: 2,
+      occurredAt: '2026-10-20T11:00:00.000Z',
+    }
+    const result = sync([late, notDone])
+
+    expect(result.applied).toEqual(['e1'])
+    expect(result.rejected).toEqual([{ clientEventId: 'e2', code: 'INVALID_TRANSITION' }])
+    expect(result.visit).toMatchObject({ status: 'not_done', checkInAt: null })
   })
 
   it('usa a hora em que o evento aconteceu, não a hora da sincronização', () => {
@@ -79,9 +104,9 @@ describe('sincronização de eventos offline', () => {
   it('um evento recusado não impede os seguintes de serem aplicados', () => {
     const invalid: OfflineEvent = {
       clientEventId: 'e0',
+      seq: 0,
       visitId: 'v1',
       occurredAt: '2026-10-20T11:00:00.000Z',
-      occurredLocalDate: TODAY,
       type: 'markNotDone',
       reason: '  ',
     }
@@ -102,8 +127,55 @@ describe('sincronização de eventos offline', () => {
     expect(result.rejected).toEqual([{ clientEventId: 'e1', code: 'FORBIDDEN' }])
   })
 
-  it('usa a data local do aparelho para saber se a visita já era de hoje', () => {
-    const early = { ...checkIn, occurredLocalDate: '2026-10-19' }
-    expect(sync([early]).rejected).toEqual([{ clientEventId: 'e1', code: 'VISIT_IN_FUTURE' }])
+  describe('o dia do evento é o da empresa, calculado a partir do instante', () => {
+    it('23h59 de Brasília ainda é o dia anterior: a visita de "hoje" ainda é futura', () => {
+      const result = sync([{ ...checkIn, occurredAt: '2026-10-20T02:59:59.000Z' }])
+      expect(result.rejected).toEqual([{ clientEventId: 'e1', code: 'VISIT_IN_FUTURE' }])
+    })
+
+    it('00h00 de Brasília já é o dia seguinte', () => {
+      const result = sync([{ ...checkIn, occurredAt: '2026-10-20T03:00:00.000Z' }])
+      expect(result.applied).toEqual(['e1'])
+    })
+
+    it('depois da meia-noite de Brasília a visita de ontem não pode mais ser iniciada', () => {
+      const result = sync([{ ...checkIn, occurredAt: '2026-10-21T03:00:00.000Z' }])
+      expect(result.rejected).toEqual([{ clientEventId: 'e1', code: 'VISIT_IN_PAST' }])
+    })
+  })
+
+  it('instante inválido é recusado sem derrubar o lote', () => {
+    const broken = { ...checkIn, occurredAt: 'ontem à tarde' }
+    const result = sync([broken, { ...checkOut, seq: 3 }])
+
+    expect(result.rejected).toEqual([
+      { clientEventId: 'e1', code: 'INVALID_DATE' },
+      { clientEventId: 'e2', code: 'INVALID_TRANSITION' },
+    ])
+  })
+
+  describe('propriedades', () => {
+    const EVENTS = [checkIn, checkOut]
+
+    it('a ordem de chegada do lote não muda o resultado (só o seq conta)', () => {
+      fc.assert(
+        fc.property(fc.shuffledSubarray(EVENTS), (batch) => {
+          const arrival = sync(batch)
+          const bySeq = sync([...batch].sort((a, b) => a.seq - b.seq))
+          expect(arrival).toEqual(bySeq)
+        }),
+      )
+    })
+
+    it('reenviar o que já foi aplicado nunca muda a visita', () => {
+      fc.assert(
+        fc.property(fc.shuffledSubarray(EVENTS), (batch) => {
+          const first = sync(batch)
+          const replay = sync(batch, first.applied, first.visit)
+          expect(replay.visit).toEqual(first.visit)
+          expect(replay.applied).toEqual([])
+        }),
+      )
+    })
   })
 })
