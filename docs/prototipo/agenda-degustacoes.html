@@ -1,0 +1,1670 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body {
+        margin: 0;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <title>Agenda de Degustações</title>
+    <meta name="claude:viewport-fit-sides" content="cover" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Layout: cabeçalho com troca de visão; duas colunas no computador (mercados e dia à esquerda, calendário à direita), uma coluna no celular. */
+      :root {
+        --bg: #f2f5f1;
+        --surface: #ffffff;
+        --ink: #16251e;
+        --muted: #55665c;
+        --line: #d8e0d9;
+        --line-strong: #aebdb2;
+        --accent: #0d6b4b;
+        --accent-ink: #ffffff;
+        --free: #1e7a57;
+        --free-bg: #eaf4ee;
+        --part: #8f5b00;
+        --part-bg: #fcf0d6;
+        --full: #b3261e;
+        --full-bg: #fce8e5;
+        --block-bg: #eceeec;
+        --block-stripe: #d3d9d4;
+        --err-solid: #b3261e;
+        --err-ink: #ffffff;
+        --focus: #1f5fd8;
+        --display: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
+        --body: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #0f1713;
+          --surface: #17221c;
+          --ink: #e6efe9;
+          --muted: #9db1a5;
+          --line: #2a3a31;
+          --line-strong: #46594d;
+          --accent: #3fbf8c;
+          --accent-ink: #0b1a13;
+          --free: #5fd0a0;
+          --free-bg: #16302a;
+          --part: #f0b34a;
+          --part-bg: #38290e;
+          --full: #ff8a80;
+          --full-bg: #3c1b18;
+          --block-bg: #1d2722;
+          --block-stripe: #2b3832;
+          --err-solid: #ff8a80;
+          --err-ink: #3a0b07;
+          --focus: #7fa8ff;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'] {
+        --bg: #0f1713;
+        --surface: #17221c;
+        --ink: #e6efe9;
+        --muted: #9db1a5;
+        --line: #2a3a31;
+        --line-strong: #46594d;
+        --accent: #3fbf8c;
+        --accent-ink: #0b1a13;
+        --free: #5fd0a0;
+        --free-bg: #16302a;
+        --part: #f0b34a;
+        --part-bg: #38290e;
+        --full: #ff8a80;
+        --full-bg: #3c1b18;
+        --block-bg: #1d2722;
+        --block-stripe: #2b3832;
+        --err-solid: #ff8a80;
+        --err-ink: #3a0b07;
+        --focus: #7fa8ff;
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--body);
+        font-size: 15px;
+        line-height: 1.45;
+        padding-block: 20px 56px;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+      }
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+      }
+      h1,
+      h2,
+      h3,
+      p,
+      ul {
+        margin: 0;
+      }
+      ul {
+        padding: 0;
+        list-style: none;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+      }
+      :focus-visible {
+        outline: 3px solid var(--focus);
+        outline-offset: 2px;
+      }
+
+      /* Cabeçalho */
+      .top {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px 24px;
+        align-items: flex-end;
+        justify-content: space-between;
+      }
+      .top h1 {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 34px;
+        line-height: 1;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        text-wrap: balance;
+      }
+      .top .lede {
+        color: var(--muted);
+        max-width: 52ch;
+        margin-top: 8px;
+      }
+      .switch {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-start;
+      }
+      .switch .lbl {
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .seg {
+        display: inline-flex;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--surface);
+      }
+      .seg button {
+        padding: 10px 16px;
+        min-height: 44px;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .seg button + button {
+        border-left: 1px solid var(--line-strong);
+      }
+      .seg button[aria-pressed='true'] {
+        background: var(--accent);
+        color: var(--accent-ink);
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        align-items: center;
+        justify-content: space-between;
+        margin-block: 16px;
+        padding: 10px 14px;
+        border: 1px dashed var(--line-strong);
+        border-radius: 8px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .meta strong {
+        color: var(--ink);
+      }
+      .link {
+        background: none;
+        border: 0;
+        padding: 6px 4px;
+        text-decoration: underline;
+        cursor: pointer;
+        color: inherit;
+      }
+
+      /* Grade */
+      .grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .area-markets {
+        order: 1;
+      }
+      .area-cal {
+        order: 2;
+      }
+      .area-panel {
+        order: 3;
+      }
+      .area-mine {
+        order: 4;
+      }
+      .area-markets,
+      .area-cal,
+      .area-panel,
+      .area-mine {
+        min-width: 0;
+      }
+      @media (min-width: 900px) {
+        .grid {
+          grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+          grid-template-areas: 'mk cal' 'mine pn';
+          align-items: start;
+        }
+        .area-markets {
+          grid-area: mk;
+        }
+        .area-cal {
+          grid-area: cal;
+        }
+        .area-panel {
+          grid-area: pn;
+        }
+        .area-mine {
+          grid-area: mine;
+        }
+      }
+      @media (min-width: 1100px) {
+        .wrap {
+          max-width: 1240px;
+        }
+        .grid {
+          grid-template-columns: 300px minmax(0, 1fr) 320px;
+          grid-template-areas: 'mk cal pn' 'mine cal pn';
+        }
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px;
+      }
+      .card h2 {
+        font-family: var(--display);
+        font-weight: 600;
+        font-size: 24px;
+        line-height: 1.1;
+        letter-spacing: 0.01em;
+        text-wrap: balance;
+      }
+      .sub {
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+
+      /* Mercados */
+      .mkts {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .mkt {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+      .mkt.sel {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px var(--accent);
+      }
+      .mkt-pick {
+        display: block;
+        width: 100%;
+        text-align: left;
+        background: none;
+        border: 0;
+        padding: 12px 14px 4px;
+        cursor: pointer;
+        min-height: 44px;
+        border-radius: 8px;
+      }
+      .mkt-pick .nm {
+        font-family: var(--display);
+        font-weight: 600;
+        font-size: 20px;
+        line-height: 1.1;
+        display: block;
+      }
+      .mkt-pick .ar {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .mkt-foot {
+        padding: 0 14px 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 14px;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .mkt-foot b {
+        color: var(--ink);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+      .step {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .step button {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        border: 1px solid var(--line-strong);
+        background: var(--surface);
+        cursor: pointer;
+        font-size: 20px;
+        line-height: 1;
+      }
+      .step button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .step output {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 26px;
+        min-width: 1.4ch;
+        text-align: center;
+        color: var(--ink);
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* Calendário */
+      .cal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .cal-nav {
+        display: inline-flex;
+        gap: 8px;
+      }
+      .cal-nav button {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        border: 1px solid var(--line-strong);
+        background: var(--surface);
+        cursor: pointer;
+        font-size: 20px;
+      }
+      .cal-nav button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 6px;
+        margin-top: 12px;
+      }
+      .dow {
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 600;
+        text-align: center;
+        padding-bottom: 2px;
+      }
+      .day {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 4px;
+        min-height: 74px;
+        padding: 6px 7px 7px;
+        border-radius: 6px;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        cursor: pointer;
+        text-align: left;
+        min-width: 0;
+      }
+      .day .num {
+        font-family: var(--display);
+        font-weight: 600;
+        font-size: 22px;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
+      .day .lab {
+        font-size: 11px;
+        line-height: 1.1;
+        font-weight: 600;
+        color: var(--muted);
+      }
+      .day.free {
+        background: var(--free-bg);
+        border-color: color-mix(in srgb, var(--free) 35%, var(--line));
+        color: var(--free);
+      }
+      .day.part {
+        background: var(--part-bg);
+        border-color: color-mix(in srgb, var(--part) 40%, var(--line));
+        color: var(--part);
+      }
+      .day.full {
+        background: var(--full-bg);
+        border-color: color-mix(in srgb, var(--full) 40%, var(--line));
+        color: var(--full);
+      }
+      .day.free .num,
+      .day.part .num,
+      .day.full .num {
+        color: var(--ink);
+      }
+      .day.free .lab,
+      .day.part .lab,
+      .day.full .lab {
+        color: inherit;
+      }
+      .day.blocked {
+        background: repeating-linear-gradient(
+          135deg,
+          var(--block-bg) 0 6px,
+          var(--block-stripe) 6px 7px
+        );
+        color: var(--muted);
+      }
+      .day.past,
+      .day.far {
+        background: transparent;
+        border-style: dashed;
+        color: var(--muted);
+        opacity: 0.55;
+        cursor: default;
+      }
+      .day.today .num {
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      .day.mine {
+        border: 2px solid var(--accent);
+        padding: 5px 6px 6px;
+      }
+      .day.sel {
+        outline: 3px solid var(--ink);
+        outline-offset: 1px;
+      }
+      .day .tick {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 16px;
+        height: 16px;
+        color: var(--accent);
+      }
+      .pips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+      }
+      .pip {
+        display: block;
+        width: 14px;
+        height: 7px;
+        border-radius: 2px;
+        border: 1.5px solid currentColor;
+      }
+      .pip.on {
+        background: currentColor;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        margin-top: 14px;
+        font-size: 13px;
+        color: var(--muted);
+        align-items: center;
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .sw {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        border: 1px solid var(--line-strong);
+        display: inline-block;
+      }
+      .sw.free {
+        background: var(--free-bg);
+      }
+      .sw.part {
+        background: var(--part-bg);
+      }
+      .sw.full {
+        background: var(--full-bg);
+      }
+      .sw.blocked {
+        background: repeating-linear-gradient(
+          135deg,
+          var(--block-bg) 0 4px,
+          var(--block-stripe) 4px 5px
+        );
+      }
+      .sw.mine {
+        border: 2px solid var(--accent);
+        background: var(--surface);
+      }
+      .hint {
+        margin-top: 10px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      /* Painel do dia */
+      .big-pips .pips {
+        gap: 6px;
+        margin-top: 12px;
+      }
+      .big-pips .pip {
+        width: 44px;
+        height: 18px;
+        border-radius: 4px;
+        border-width: 2px;
+      }
+      .big-pips.free {
+        color: var(--free);
+      }
+      .big-pips.part {
+        color: var(--part);
+      }
+      .big-pips.full {
+        color: var(--full);
+      }
+      .avail {
+        font-family: var(--display);
+        font-weight: 600;
+        font-size: 22px;
+        margin-top: 8px;
+        font-variant-numeric: tabular-nums;
+      }
+      .state {
+        margin-top: 14px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+      .state.full {
+        background: var(--full-bg);
+        color: var(--full);
+      }
+      .state.blocked {
+        background: var(--block-bg);
+      }
+      .state.mine {
+        background: var(--free-bg);
+        color: var(--free);
+      }
+      .act {
+        margin-top: 14px;
+        display: grid;
+        gap: 10px;
+      }
+      .btn {
+        padding: 10px 16px;
+        min-height: 44px;
+        border-radius: 8px;
+        border: 1px solid var(--line-strong);
+        background: var(--surface);
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--accent-ink);
+      }
+      .btn.danger {
+        color: var(--full);
+        border-color: color-mix(in srgb, var(--full) 55%, var(--line));
+      }
+      .btn.small {
+        min-height: 40px;
+        padding: 8px 12px;
+        font-size: 14px;
+      }
+      .btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .confirm {
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+      }
+      .demo {
+        border: 1px dashed var(--line-strong);
+        border-radius: 8px;
+        padding: 10px 12px;
+        display: grid;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .demo b {
+        color: var(--ink);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 11px;
+      }
+      .names {
+        margin-top: 12px;
+        display: grid;
+        gap: 6px;
+      }
+      .names li {
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        font-weight: 500;
+      }
+      .small-note {
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+
+      /* Listas */
+      .list {
+        margin-top: 12px;
+        display: grid;
+        gap: 8px;
+      }
+      .item {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px 12px;
+        display: grid;
+        gap: 8px;
+      }
+      .item .top-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .item .when {
+        font-family: var(--display);
+        font-weight: 600;
+        font-size: 20px;
+        font-variant-numeric: tabular-nums;
+      }
+      .item .where {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .item .goto {
+        background: none;
+        border: 0;
+        padding: 0;
+        text-align: left;
+        cursor: pointer;
+        display: grid;
+        min-height: 44px;
+        align-content: center;
+      }
+      .agenda li {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 2px 12px;
+        padding: 8px 0;
+        border-top: 1px solid var(--line);
+      }
+      .agenda li:first-child {
+        border-top: 0;
+      }
+      .agenda .when {
+        font-family: var(--display);
+        font-weight: 600;
+        font-size: 18px;
+        font-variant-numeric: tabular-nums;
+        grid-row: span 2;
+        align-self: center;
+      }
+      .agenda .who {
+        font-weight: 600;
+      }
+      .agenda .where {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      /* Premissas */
+      .assume {
+        margin-top: 24px;
+      }
+      .assume ol {
+        margin: 12px 0 0;
+        padding-left: 22px;
+        display: grid;
+        gap: 6px;
+        max-width: 78ch;
+      }
+      .assume li::marker {
+        font-family: var(--display);
+        font-weight: 700;
+        color: var(--accent);
+      }
+
+      /* Aviso */
+      .toast {
+        position: fixed;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        width: min(560px, calc(100vw - 32px));
+        z-index: 20;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding: 12px 14px;
+        border-radius: 10px;
+        font-weight: 500;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+      }
+      .toast[hidden] {
+        display: none;
+      }
+      .toast.ok {
+        background: var(--accent);
+        color: var(--accent-ink);
+      }
+      .toast.info {
+        background: var(--ink);
+        color: var(--bg);
+      }
+      .toast.err {
+        background: var(--err-solid);
+        color: var(--err-ink);
+      }
+
+      @media (max-width: 560px) {
+        .top h1 {
+          font-size: 28px;
+        }
+        .cal-grid {
+          gap: 4px;
+        }
+        .day {
+          min-height: 62px;
+          padding: 5px 5px 6px;
+        }
+        .day .num {
+          font-size: 19px;
+        }
+        .day .lab {
+          display: none;
+        }
+        .pip {
+          width: 8px;
+          height: 6px;
+        }
+        .day .tick {
+          width: 13px;
+          height: 13px;
+          top: 3px;
+          right: 3px;
+        }
+        .big-pips .pip {
+          width: 36px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          scroll-behavior: auto !important;
+          transition: none !important;
+        }
+      }
+    </style>
+
+    <div class="wrap">
+      <div id="app"></div>
+    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script>
+      ;(function () {
+        'use strict'
+
+        var DAY_MS = 86400000
+        var WINDOW_DAYS = 60
+        var MAX_CAP = 6
+        var ME = 'Sabor da Serra Alimentos'
+        var OTHERS = [
+          'Laticínios Boa Terra',
+          'Biscoitos Dona Lia',
+          'Café Monte Verde',
+          'Sucos Pura Fruta',
+          'Massas Nonna',
+          'Queijos da Mantiqueira',
+          'Chocolates Aurora',
+          'Molhos Sítio Sol',
+        ]
+        var MARKETS = [
+          { id: 'central', name: 'Mercado Central', area: 'Centro' },
+          { id: 'jardim', name: 'Mercado Jardim', area: 'Zona Norte' },
+          { id: 'vilanova', name: 'Mercado Vila Nova', area: 'Zona Sul' },
+        ]
+        var MK = {}
+        MARKETS.forEach(function (m) {
+          MK[m.id] = m
+        })
+        var DOW = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+        var DOW_FULL = [
+          'domingo',
+          'segunda-feira',
+          'terça-feira',
+          'quarta-feira',
+          'quinta-feira',
+          'sexta-feira',
+          'sábado',
+        ]
+
+        var fmtLong = new Intl.DateTimeFormat('pt-BR', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        })
+        var fmtMonth = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' })
+        var fmtWd = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' })
+
+        function startOfDay(d) {
+          return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+        }
+        var today = startOfDay(new Date())
+        function pad(n) {
+          return (n < 10 ? '0' : '') + n
+        }
+        function key(d) {
+          return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+        }
+        function fromKey(k) {
+          var p = k.split('-')
+          return new Date(+p[0], +p[1] - 1, +p[2])
+        }
+        function addDays(d, n) {
+          return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
+        }
+        function diffDays(a, b) {
+          return Math.round((startOfDay(a) - startOfDay(b)) / DAY_MS)
+        }
+        function cap1(s) {
+          return s.charAt(0).toUpperCase() + s.slice(1)
+        }
+        function longDate(d) {
+          return cap1(fmtLong.format(d))
+        }
+        function shortDate(d) {
+          return (
+            fmtWd.format(d).replace('.', '') + ' ' + pad(d.getDate()) + '/' + pad(d.getMonth() + 1)
+          )
+        }
+        function plural(n, one, many) {
+          return n + ' ' + (n === 1 ? one : many)
+        }
+        function esc(s) {
+          return String(s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+          })
+        }
+
+        /* ---------- Dados de exemplo ---------- */
+        function seed() {
+          var s = {
+            role: 'supplier',
+            marketId: 'central',
+            month: { y: today.getFullYear(), m: today.getMonth() },
+            selected: null,
+            confirming: false,
+            cancelling: null,
+            markets: {},
+            bookings: [],
+            nextId: 1,
+          }
+          var blockedOffsets = { central: [11, 25], jardim: [6, 20], vilanova: [14] }
+          MARKETS.forEach(function (mk, mi) {
+            s.markets[mk.id] = { cap: 3, blocked: {} }
+            for (var off = 1; off <= WINDOW_DAYS; off++) {
+              var v = (off * 37 + mi * 23 + 5) % 11
+              var n = v < 4 ? 0 : v < 7 ? 1 : v < 9 ? 2 : 3
+              var day = key(addDays(today, off))
+              for (var i = 0; i < n; i++) {
+                s.bookings.push({
+                  id: s.nextId++,
+                  marketId: mk.id,
+                  day: day,
+                  supplier: OTHERS[(off + i * 3 + mi) % OTHERS.length],
+                })
+              }
+            }
+            blockedOffsets[mk.id].forEach(function (off) {
+              var day = key(addDays(today, off))
+              s.markets[mk.id].blocked[day] = true
+              s.bookings = s.bookings.filter(function (b) {
+                return !(b.marketId === mk.id && b.day === day)
+              })
+            })
+          })
+          function mine(marketId, off) {
+            var day = key(addDays(today, off))
+            s.bookings = s.bookings.filter(function (b) {
+              return !(b.marketId === marketId && b.day === day)
+            })
+            s.bookings.push({ id: s.nextId++, marketId: marketId, day: day, supplier: OTHERS[2] })
+            s.bookings.push({ id: s.nextId++, marketId: marketId, day: day, supplier: ME })
+          }
+          mine('central', 8)
+          mine('jardim', 16)
+          return s
+        }
+        var S = seed()
+
+        /* ---------- Regras (no sistema real, ficam no servidor) ---------- */
+        function countOn(mid, day) {
+          return S.bookings.filter(function (b) {
+            return b.marketId === mid && b.day === day
+          }).length
+        }
+        function mineOn(mid, day) {
+          return S.bookings.find(function (b) {
+            return b.marketId === mid && b.day === day && b.supplier === ME
+          })
+        }
+        function dayInfo(mid, date) {
+          var day = key(date),
+            off = diffDays(date, today),
+            m = S.markets[mid]
+          var booked = countOn(mid, day),
+            cap = m.cap,
+            status
+          if (off < 1) status = 'past'
+          else if (off > WINDOW_DAYS) status = 'far'
+          else if (m.blocked[day]) status = 'blocked'
+          else if (booked >= cap) status = 'full'
+          else status = booked > 0 ? 'part' : 'free'
+          return {
+            day: day,
+            off: off,
+            booked: booked,
+            cap: cap,
+            status: status,
+            mine: mineOn(mid, day),
+          }
+        }
+        function slots(mid, from, to) {
+          var m = S.markets[mid],
+            free = 0,
+            total = 0
+          for (var off = from; off <= to; off++) {
+            var day = key(addDays(today, off))
+            if (m.blocked[day]) continue
+            total += m.cap
+            free += Math.max(0, m.cap - countOn(mid, day))
+          }
+          return { free: free, total: total }
+        }
+
+        /* ---------- Desenho ---------- */
+        var app = document.getElementById('app')
+
+        function pipsHTML(booked, cap, cls) {
+          var n = Math.max(cap, booked),
+            h = ''
+          for (var i = 0; i < n; i++) h += '<i class="pip' + (i < booked ? ' on' : '') + '"></i>'
+          return '<span class="pips ' + cls + '" aria-hidden="true">' + h + '</span>'
+        }
+
+        function headerHTML() {
+          var owner = S.role === 'owner'
+          return (
+            '<header class="top">' +
+            '<div><h1>Agenda de Degustações</h1>' +
+            '<p class="lede">Reserve um estande de degustação no mercado e no dia que quiser. O sistema não deixa passar do limite de estandes.</p></div>' +
+            '<div class="switch"><span class="lbl" id="lbl-role">Ver como</span>' +
+            '<div class="seg" role="group" aria-labelledby="lbl-role">' +
+            '<button type="button" data-action="role" data-role="supplier" data-fk="role-supplier" aria-pressed="' +
+            !owner +
+            '">Fornecedor</button>' +
+            '<button type="button" data-action="role" data-role="owner" data-fk="role-owner" aria-pressed="' +
+            owner +
+            '">Dono dos mercados</button>' +
+            '</div></div></header>' +
+            '<div class="meta"><span>Protótipo com dados de exemplo. Nada é salvo. ' +
+            (owner
+              ? '<strong>Você está como: dono.</strong> No dia a dia ele não precisa fazer nada.'
+              : 'Você está como: <strong>' + esc(ME) + '</strong> (fornecedor).') +
+            '</span><button type="button" class="link" data-action="reset" data-fk="reset">Reiniciar exemplo</button></div>'
+          )
+        }
+
+        function marketsHTML() {
+          var owner = S.role === 'owner'
+          var h =
+            '<div class="card"><h2 id="h-mk">Mercados</h2><p class="sub">' +
+            (owner
+              ? 'Defina o limite de estandes por dia em cada mercado.'
+              : 'Escolha onde quer montar o estande.') +
+            '</p><div class="mkts">'
+          MARKETS.forEach(function (mk) {
+            var m = S.markets[mk.id],
+              sel = mk.id === S.marketId
+            var foot
+            if (owner) {
+              var s30 = slots(mk.id, 1, 30)
+              var pct = s30.total ? Math.round((100 * (s30.total - s30.free)) / s30.total) : 0
+              foot =
+                '<span class="step" role="group" aria-label="Limite de estandes por dia, ' +
+                esc(mk.name) +
+                '">' +
+                '<button type="button" data-action="capDown" data-id="' +
+                mk.id +
+                '" data-fk="cd-' +
+                mk.id +
+                '" aria-label="Diminuir o limite de ' +
+                esc(mk.name) +
+                '"' +
+                (m.cap <= 1 ? ' disabled' : '') +
+                '>−</button>' +
+                '<output aria-live="polite">' +
+                m.cap +
+                '</output>' +
+                '<button type="button" data-action="capUp" data-id="' +
+                mk.id +
+                '" data-fk="cu-' +
+                mk.id +
+                '" aria-label="Aumentar o limite de ' +
+                esc(mk.name) +
+                '"' +
+                (m.cap >= MAX_CAP ? ' disabled' : '') +
+                '>+</button>' +
+                '<span>por dia</span></span>' +
+                '<span>Próximos 30 dias: <b>' +
+                pct +
+                '%</b> ocupado</span>'
+            } else {
+              var s7 = slots(mk.id, 1, 7)
+              foot =
+                '<span><b>' +
+                m.cap +
+                '</b> estandes por dia</span>' +
+                '<span><b>' +
+                s7.free +
+                '</b> ' +
+                (s7.free === 1 ? 'vaga livre' : 'vagas livres') +
+                ' nos próximos 7 dias</span>'
+            }
+            h +=
+              '<div class="mkt' +
+              (sel ? ' sel' : '') +
+              '">' +
+              '<button type="button" class="mkt-pick" data-action="market" data-id="' +
+              mk.id +
+              '" data-fk="m-' +
+              mk.id +
+              '" aria-pressed="' +
+              sel +
+              '">' +
+              '<span class="nm">' +
+              esc(mk.name) +
+              '</span><span class="ar">' +
+              esc(mk.area) +
+              '</span></button>' +
+              '<div class="mkt-foot">' +
+              foot +
+              '</div></div>'
+          })
+          return h + '</div></div>'
+        }
+
+        function calendarHTML() {
+          var y = S.month.y,
+            mo = S.month.m
+          var first = new Date(y, mo, 1),
+            dim = new Date(y, mo + 1, 0).getDate()
+          var minIdx = today.getFullYear() * 12 + today.getMonth()
+          var lastDate = addDays(today, WINDOW_DAYS)
+          var maxIdx = lastDate.getFullYear() * 12 + lastDate.getMonth()
+          var idx = y * 12 + mo
+          var h =
+            '<div class="card"><div class="cal-head"><div><h2 id="h-cal">' +
+            cap1(fmtMonth.format(first)) +
+            '</h2>' +
+            '<p class="sub">' +
+            esc(MK[S.marketId].name) +
+            '</p></div>' +
+            '<div class="cal-nav"><button type="button" data-action="prev" data-fk="prev" aria-label="Mês anterior"' +
+            (idx <= minIdx ? ' disabled' : '') +
+            '>‹</button>' +
+            '<button type="button" data-action="next" data-fk="next" aria-label="Próximo mês"' +
+            (idx >= maxIdx ? ' disabled' : '') +
+            '>›</button></div></div>'
+          h += '<div class="cal-grid">'
+          DOW.forEach(function (d, i) {
+            h +=
+              '<div class="dow"><abbr title="' +
+              DOW_FULL[i] +
+              '" style="text-decoration:none">' +
+              d +
+              '</abbr></div>'
+          })
+          for (var p = 0; p < first.getDay(); p++) h += '<div></div>'
+          for (var d = 1; d <= dim; d++) {
+            var date = new Date(y, mo, d),
+              info = dayInfo(S.marketId, date)
+            var free = Math.max(0, info.cap - info.booked)
+            var disabled = info.status === 'past' || info.status === 'far'
+            var label, txt
+            if (info.status === 'blocked') {
+              txt = 'Fechado'
+              label = 'dia fechado para reservas'
+            } else if (info.status === 'full') {
+              txt = 'Lotado'
+              label = 'lotado, ' + info.cap + ' de ' + info.cap + ' estandes reservados'
+            } else if (info.status === 'past') {
+              label = 'indisponível, já passou'
+            } else if (info.status === 'far') {
+              label = 'ainda não abre para reservas'
+            } else {
+              txt = plural(free, 'livre', 'livres')
+              label = plural(free, 'vaga livre', 'vagas livres') + ' de ' + info.cap
+            }
+            var isMine = !!info.mine && S.role === 'supplier'
+            var cls =
+              'day ' +
+              info.status +
+              (isMine ? ' mine' : '') +
+              (S.selected === info.day ? ' sel' : '') +
+              (info.off === 0 ? ' today' : '')
+            var aria =
+              fmtLong.format(date) +
+              ': ' +
+              label +
+              (isMine ? '. Sua reserva' : '') +
+              (info.off === 0 ? '. Hoje' : '')
+            h +=
+              '<button type="button" class="' +
+              cls +
+              '" data-action="day" data-day="' +
+              info.day +
+              '" data-fk="d-' +
+              info.day +
+              '" aria-label="' +
+              esc(aria) +
+              '" aria-pressed="' +
+              (S.selected === info.day) +
+              '"' +
+              (disabled ? ' disabled' : '') +
+              '>' +
+              '<span class="num">' +
+              d +
+              '</span>' +
+              (isMine
+                ? '<svg class="tick" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                : '') +
+              (info.status === 'free' || info.status === 'part' || info.status === 'full'
+                ? pipsHTML(info.booked, info.cap, info.status)
+                : '') +
+              '<span class="lab">' +
+              (txt || '') +
+              '</span></button>'
+          }
+          h +=
+            '</div><div class="legend">' +
+            '<span><i class="sw free"></i>Livre</span><span><i class="sw part"></i>Algumas vagas</span><span><i class="sw full"></i>Lotado</span>' +
+            '<span><i class="sw blocked"></i>Fechado</span>' +
+            (S.role === 'supplier' ? '<span><i class="sw mine"></i>Sua reserva</span>' : '') +
+            '</div>' +
+            '<p class="hint">Cada traço é um estande: cheio = reservado, vazio = livre. Dá para reservar de amanhã até ' +
+            WINDOW_DAYS +
+            ' dias à frente.</p></div>'
+          return h
+        }
+
+        function cancelControl(id, where) {
+          if (S.cancelling === id && S.cancelWhere === where) {
+            return (
+              '<div class="confirm" role="group" aria-label="Confirmar cancelamento"><p>Cancelar esta reserva? A vaga volta a ficar livre para outros fornecedores.</p>' +
+              '<div class="row"><button type="button" class="btn danger" data-action="cancel" data-id="' +
+              id +
+              '" data-fk="cancel-yes-' +
+              where +
+              id +
+              '">Sim, cancelar</button>' +
+              '<button type="button" class="btn" data-action="keep" data-fk="cancel-no-' +
+              where +
+              id +
+              '">Manter</button></div></div>'
+            )
+          }
+          return (
+            '<button type="button" class="btn danger" data-action="askCancel" data-where="' +
+            where +
+            '" data-id="' +
+            id +
+            '" data-fk="cancel-' +
+            where +
+            id +
+            '">Cancelar reserva</button>'
+          )
+        }
+
+        function panelHTML() {
+          var owner = S.role === 'owner'
+          if (!S.selected) {
+            return (
+              '<div class="card"><h2 id="h-day">Dia escolhido</h2><p class="sub">' +
+              (owner
+                ? 'Escolha um dia no calendário para ver quem reservou e, se precisar, fechar a data.'
+                : 'Escolha um dia no calendário. Dias verdes e amarelos têm vaga.') +
+              '</p></div>'
+            )
+          }
+          var date = fromKey(S.selected),
+            info = dayInfo(S.marketId, date),
+            mk = MK[S.marketId]
+          var free = Math.max(0, info.cap - info.booked)
+          var meterCls = info.status === 'blocked' ? 'full' : info.status
+          var h =
+            '<div class="card"><h2 id="h-day">' +
+            longDate(date) +
+            '</h2><p class="sub">' +
+            esc(mk.name) +
+            ' · ' +
+            esc(mk.area) +
+            '</p>' +
+            '<div class="big-pips ' +
+            meterCls +
+            '">' +
+            pipsHTML(info.booked, info.cap, meterCls) +
+            '</div>' +
+            '<p class="avail">' +
+            (info.status === 'blocked'
+              ? 'Fechado'
+              : plural(free, 'vaga livre', 'vagas livres') + ' de ' + info.cap) +
+            '</p>'
+
+          if (owner) {
+            var names = S.bookings
+              .filter(function (b) {
+                return b.marketId === S.marketId && b.day === S.selected
+              })
+              .map(function (b) {
+                return b.supplier
+              })
+            h +=
+              '<h3 style="margin-top:16px;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Quem reservou</h3>'
+            h += names.length
+              ? '<ul class="names">' +
+                names
+                  .map(function (n) {
+                    return '<li>' + esc(n) + '</li>'
+                  })
+                  .join('') +
+                '</ul>'
+              : '<p class="muted" style="margin-top:8px">Nenhuma reserva neste dia.</p>'
+            h +=
+              '<div class="act"><button type="button" class="btn" data-action="block" data-fk="act-block">' +
+              (info.status === 'blocked'
+                ? 'Liberar este dia'
+                : 'Fechar este dia para novas reservas') +
+              '</button></div>' +
+              '<p class="small-note">Use para feriado ou inventário. Reservas já feitas continuam valendo.</p>'
+          } else if (info.mine) {
+            h +=
+              '<p class="state mine">Você tem uma reserva neste dia.</p><div class="act">' +
+              cancelControl(info.mine.id, 'panel') +
+              '</div>'
+          } else if (info.status === 'blocked') {
+            h += '<p class="state blocked">Este dia está fechado para reservas neste mercado.</p>'
+          } else if (info.status === 'full') {
+            h +=
+              '<p class="state full">Lotado. Os ' +
+              info.cap +
+              ' estandes deste dia já estão reservados. Escolha outro dia.</p>' +
+              '<div class="act"><button type="button" class="btn primary" disabled>Reservar este dia</button></div>'
+          } else if (!S.confirming) {
+            h +=
+              '<div class="act"><button type="button" class="btn primary" data-action="book" data-fk="act-book">Reservar este dia</button></div>'
+          } else {
+            h +=
+              '<div class="act"><div class="confirm" role="group" aria-label="Confirmar reserva"><p>Reservar um estande de <strong>' +
+              esc(ME) +
+              '</strong> em <strong>' +
+              esc(mk.name) +
+              '</strong> no dia <strong>' +
+              pad(date.getDate()) +
+              '/' +
+              pad(date.getMonth() + 1) +
+              '</strong>?</p>' +
+              '<div class="row"><button type="button" class="btn primary" data-action="confirm" data-fk="act-confirm">Confirmar reserva</button>' +
+              '<button type="button" class="btn" data-action="back" data-fk="act-back">Voltar</button></div></div>' +
+              '<div class="demo"><b>Só para a demonstração</b><span>Na vida real, outro fornecedor pode reservar enquanto você decide. Aperte o botão abaixo e depois confirme a sua reserva.</span>' +
+              '<button type="button" class="btn small" data-action="race" data-fk="act-race">Outros fornecedores ocupam as vagas restantes agora</button></div></div>'
+          }
+          return h + '</div>'
+        }
+
+        function mineHTML() {
+          var mine = S.bookings
+            .filter(function (b) {
+              return b.supplier === ME
+            })
+            .sort(function (a, b) {
+              return a.day < b.day ? -1 : a.day > b.day ? 1 : 0
+            })
+          var h = '<div class="card"><h2 id="h-mine">Minhas reservas</h2>'
+          if (!mine.length) return h + '<p class="sub">Você ainda não tem reservas.</p></div>'
+          h += '<ul class="list">'
+          mine.forEach(function (b) {
+            var d = fromKey(b.day)
+            h +=
+              '<li class="item"><div class="top-row"><button type="button" class="goto" data-action="goto" data-id="' +
+              b.id +
+              '" data-fk="goto-' +
+              b.id +
+              '" aria-label="Ver no calendário: ' +
+              esc(longDate(d)) +
+              ', ' +
+              esc(MK[b.marketId].name) +
+              '">' +
+              '<span class="when">' +
+              shortDate(d) +
+              '</span><span class="where">' +
+              esc(MK[b.marketId].name) +
+              '</span></button></div>' +
+              cancelControl(b.id, 'list') +
+              '</li>'
+          })
+          return h + '</ul></div>'
+        }
+
+        function agendaHTML() {
+          var next = S.bookings
+            .filter(function (b) {
+              return b.day > key(today)
+            })
+            .sort(function (a, b) {
+              return a.day < b.day ? -1 : a.day > b.day ? 1 : a.marketId < b.marketId ? -1 : 1
+            })
+            .slice(0, 8)
+          var h =
+            '<div class="card"><h2 id="h-mine">Próximas reservas</h2><p class="sub">Todos os mercados. Só para consulta.</p><ul class="agenda list">'
+          next.forEach(function (b) {
+            h +=
+              '<li><span class="when">' +
+              shortDate(fromKey(b.day)) +
+              '</span><span class="who">' +
+              esc(b.supplier) +
+              '</span><span class="where">' +
+              esc(MK[b.marketId].name) +
+              '</span></li>'
+          })
+          return h + '</ul></div>'
+        }
+
+        function assumeHTML() {
+          var items = [
+            'Cada mercado tem um limite de estandes por dia. O dono define (aqui, 3 em todos) e vale para todos os dias do mercado.',
+            'O estande ocupa o dia inteiro. Não há horários.',
+            'A reserva vale na hora. O dono não aprova nada.',
+            'Dá para reservar de amanhã até ' + WINDOW_DAYS + ' dias à frente.',
+            'O fornecedor cancela quando quiser e a vaga volta para os outros.',
+            'Fornecedores veem só quantas vagas restam. Só o dono vê quem reservou.',
+            'O dono fecha datas (feriado, inventário). Reservas já feitas continuam.',
+            'Em aberto: quem pode se cadastrar como fornecedor. A tela de entrada ainda não existe neste protótipo.',
+          ]
+          return (
+            '<section class="assume card" aria-labelledby="h-as"><h2 id="h-as">O que este protótipo assume</h2><p class="sub">Se algo estiver diferente do que o dono imagina, é aqui que precisa mudar.</p><ol>' +
+            items
+              .map(function (t) {
+                return '<li>' + esc(t) + '</li>'
+              })
+              .join('') +
+            '</ol></section>'
+          )
+        }
+
+        function render() {
+          var owner = S.role === 'owner'
+          var ae = document.activeElement,
+            fk = ae && ae.dataset ? ae.dataset.fk : null
+          app.innerHTML =
+            headerHTML() +
+            '<main class="grid">' +
+            '<section class="area-markets" aria-labelledby="h-mk">' +
+            marketsHTML() +
+            '</section>' +
+            '<section class="area-cal" aria-labelledby="h-cal">' +
+            calendarHTML() +
+            '</section>' +
+            '<section class="area-panel" aria-labelledby="h-day">' +
+            panelHTML() +
+            '</section>' +
+            '<section class="area-mine" aria-labelledby="h-mine">' +
+            (owner ? agendaHTML() : mineHTML()) +
+            '</section>' +
+            '</main>' +
+            assumeHTML()
+          if (fk) {
+            var el = app.querySelector('[data-fk="' + fk + '"]')
+            if (el && !el.disabled) el.focus({ preventScroll: true })
+          }
+        }
+
+        /* ---------- Aviso ---------- */
+        var toastTimer
+        var toastEl = document.getElementById('toast')
+        function hideToast() {
+          toastEl.hidden = true
+          clearTimeout(toastTimer)
+        }
+        function toast(kind, text) {
+          toastEl.className = 'toast ' + kind
+          toastEl.innerHTML =
+            '<span>' +
+            esc(text) +
+            '</span><button type="button" class="link" data-action="closeToast">Fechar</button>'
+          toastEl.hidden = false
+          clearTimeout(toastTimer)
+          if (kind !== 'err') toastTimer = setTimeout(hideToast, 7000)
+        }
+
+        /* ---------- Ações ---------- */
+        function resetFlow() {
+          S.confirming = false
+          S.cancelling = null
+        }
+
+        function confirmBooking() {
+          var mid = S.marketId,
+            day = S.selected,
+            info = dayInfo(mid, fromKey(day))
+          S.confirming = false
+          if (info.mine) toast('info', 'Você já tem reserva neste dia.')
+          else if (info.status === 'full')
+            toast(
+              'err',
+              'Não deu: a última vaga deste dia acabou de ser ocupada por outro fornecedor. Nenhuma reserva foi feita. Escolha outro dia.',
+            )
+          else if (info.status !== 'free' && info.status !== 'part')
+            toast('err', 'Este dia não aceita reservas.')
+          else {
+            S.bookings.push({ id: S.nextId++, marketId: mid, day: day, supplier: ME })
+            toast(
+              'ok',
+              'Reserva confirmada: ' +
+                MK[mid].name +
+                ', ' +
+                longDate(fromKey(day)).toLowerCase() +
+                '. Ela aparece em Minhas reservas.',
+            )
+          }
+          render()
+        }
+
+        function raceNow() {
+          var mid = S.marketId,
+            day = S.selected
+          var need = S.markets[mid].cap - countOn(mid, day)
+          var used = {}
+          S.bookings.forEach(function (b) {
+            if (b.marketId === mid && b.day === day) used[b.supplier] = true
+          })
+          var pool = OTHERS.filter(function (n) {
+            return !used[n]
+          })
+          for (var i = 0; i < need && i < pool.length; i++)
+            S.bookings.push({ id: S.nextId++, marketId: mid, day: day, supplier: pool[i] })
+          var btn = app.querySelector('[data-action="race"]')
+          if (btn) {
+            btn.disabled = true
+            btn.textContent =
+              'Feito. A tela ainda mostra a vaga livre. Agora clique em Confirmar reserva.'
+          }
+        }
+
+        function cancelBooking(id) {
+          S.bookings = S.bookings.filter(function (b) {
+            return b.id !== id
+          })
+          S.cancelling = null
+          toast('ok', 'Reserva cancelada. A vaga voltou a ficar livre.')
+          render()
+        }
+
+        function changeCap(id, delta) {
+          var m = S.markets[id],
+            next = Math.min(MAX_CAP, Math.max(1, m.cap + delta))
+          if (next === m.cap) return
+          var maxBooked = 0
+          for (var off = 1; off <= WINDOW_DAYS; off++)
+            maxBooked = Math.max(maxBooked, countOn(id, key(addDays(today, off))))
+          m.cap = next
+          var msg =
+            'Limite de ' + MK[id].name + ': ' + plural(next, 'estande', 'estandes') + ' por dia.'
+          if (next < maxBooked) msg += ' Dias que já tinham mais reservas continuam como estão.'
+          toast('info', msg)
+          render()
+        }
+
+        function toggleBlock() {
+          var m = S.markets[S.marketId],
+            day = S.selected
+          if (m.blocked[day]) {
+            delete m.blocked[day]
+            toast('ok', 'Dia liberado para reservas.')
+          } else {
+            m.blocked[day] = true
+            var n = countOn(S.marketId, day)
+            toast(
+              'ok',
+              'Dia fechado para novas reservas.' +
+                (n
+                  ? ' ' +
+                    plural(n, 'reserva já feita continua', 'reservas já feitas continuam') +
+                    '.'
+                  : ''),
+            )
+          }
+          render()
+        }
+
+        function shiftMonth(delta) {
+          var idx = S.month.y * 12 + S.month.m + delta
+          var minIdx = today.getFullYear() * 12 + today.getMonth()
+          var last = addDays(today, WINDOW_DAYS)
+          var maxIdx = last.getFullYear() * 12 + last.getMonth()
+          if (idx < minIdx || idx > maxIdx) return
+          S.month = { y: Math.floor(idx / 12), m: idx % 12 }
+          render()
+        }
+
+        function scrollToPanel() {
+          if (!window.matchMedia('(max-width: 899px)').matches) return
+          var el = app.querySelector('.area-panel')
+          var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          if (el) el.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' })
+        }
+
+        document.addEventListener('click', function (e) {
+          var t = e.target.closest('[data-action]')
+          if (!t || t.disabled) return
+          var a = t.dataset.action
+          if (a === 'role') {
+            S.role = t.dataset.role
+            resetFlow()
+            hideToast()
+            render()
+          } else if (a === 'market') {
+            S.marketId = t.dataset.id
+            resetFlow()
+            render()
+          } else if (a === 'prev') shiftMonth(-1)
+          else if (a === 'next') shiftMonth(1)
+          else if (a === 'day') {
+            S.selected = t.dataset.day
+            resetFlow()
+            render()
+            scrollToPanel()
+          } else if (a === 'book') {
+            S.confirming = true
+            render()
+          } else if (a === 'back') {
+            S.confirming = false
+            render()
+          } else if (a === 'confirm') confirmBooking()
+          else if (a === 'race') raceNow()
+          else if (a === 'askCancel') {
+            S.cancelling = +t.dataset.id
+            S.cancelWhere = t.dataset.where
+            render()
+          } else if (a === 'keep') {
+            S.cancelling = null
+            render()
+          } else if (a === 'cancel') cancelBooking(+t.dataset.id)
+          else if (a === 'goto') {
+            var b = S.bookings.find(function (x) {
+              return x.id === +t.dataset.id
+            })
+            if (b) {
+              var d = fromKey(b.day)
+              S.marketId = b.marketId
+              S.month = { y: d.getFullYear(), m: d.getMonth() }
+              S.selected = b.day
+              resetFlow()
+              render()
+              scrollToPanel()
+            }
+          } else if (a === 'capDown') changeCap(t.dataset.id, -1)
+          else if (a === 'capUp') changeCap(t.dataset.id, 1)
+          else if (a === 'block') toggleBlock()
+          else if (a === 'reset') {
+            S = seed()
+            hideToast()
+            render()
+          } else if (a === 'closeToast') hideToast()
+        })
+
+        render()
+      })()
+    </script>
+  </body>
+</html>
