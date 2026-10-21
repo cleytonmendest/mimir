@@ -145,3 +145,18 @@ export interface MarketAvailability {
   capacity: number
   days: DayAvailability[]
 }
+
+/**
+ * Vagas livres nos próximos `days` dias (de amanhã em diante), sem contar os dias fechados. É o que
+ * o fornecedor olha para escolher um mercado.
+ */
+export function freeSlotsAhead(availability: MarketAvailability, days: number): number {
+  const byDay = new Map(availability.days.map((entry) => [entry.day, entry]))
+  let free = 0
+  for (let ahead = 1; ahead <= days; ahead += 1) {
+    const entry = byDay.get(addDays(availability.today, ahead))
+    if (entry?.closed === true) continue
+    free += freeSlots(availability.capacity, entry?.booked ?? 0)
+  }
+  return free
+}

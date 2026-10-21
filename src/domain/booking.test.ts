@@ -9,6 +9,7 @@ import {
   evaluateBooking,
   evaluateCancel,
   freeSlots,
+  freeSlotsAhead,
   isBookableDay,
   type SlotState,
 } from './booking'
@@ -157,6 +158,29 @@ describe('dayStatus e vagas livres', () => {
     expect(freeSlots(3, 1)).toBe(2)
     expect(freeSlots(3, 3)).toBe(0)
     expect(freeSlots(2, 3)).toBe(0)
+  })
+})
+
+describe('freeSlotsAhead', () => {
+  const availability = {
+    today: TODAY,
+    capacity: 3,
+    days: [
+      { day: '2026-10-22', booked: 3, closed: false, mine: false },
+      { day: '2026-10-23', booked: 1, closed: false, mine: true },
+      { day: '2026-10-24', booked: 0, closed: true, mine: false },
+    ],
+  }
+
+  it('soma as vagas dos próximos dias, sem os fechados, e dia sem informação conta livre', () => {
+    // 22: 0 livres; 23: 2; 24 fechado; 25 e 26 sem informação: 3 cada.
+    expect(freeSlotsAhead(availability, 5)).toBe(0 + 2 + 3 + 3)
+  })
+
+  it('só conta de amanhã em diante, nunca hoje, e nunca fica negativo', () => {
+    expect(freeSlotsAhead(availability, 1)).toBe(0)
+    expect(freeSlotsAhead({ ...availability, capacity: 1 }, 2)).toBe(0)
+    expect(freeSlotsAhead(availability, 0)).toBe(0)
   })
 })
 
