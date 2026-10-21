@@ -41,12 +41,12 @@ select is(
   'a mudança gerou exatamente uma entrada de log'
 );
 select is(
-  (select changes from public.audit_log where action = 'update' and actor_role = 'repositor'),
+  (select changes from public.audit_log where row_id = '00000000-0000-0000-0000-0000000000f1' and action = 'update' and actor_role = 'repositor'),
   '{"position": {"from": 0, "to": 3}}'::jsonb,
   'o log guarda só o campo que mudou, com antes e depois'
 );
 select is(
-  (select actor_id from public.audit_log where action = 'update' and actor_role = 'repositor'),
+  (select actor_id from public.audit_log where row_id = '00000000-0000-0000-0000-0000000000f1' and action = 'update' and actor_role = 'repositor'),
   '00000000-0000-0000-0000-0000000000a1'::uuid,
   'o log guarda quem mudou'
 );
@@ -65,7 +65,7 @@ select lives_ok(
 reset role;
 
 select is(
-  (select changes from public.audit_log where action = 'update' and actor_role = 'leader'),
+  (select changes from public.audit_log where row_id = '00000000-0000-0000-0000-0000000000f1' and action = 'update' and actor_role = 'leader'),
   '{"note": {"from": null, "to": "x"}}'::jsonb,
   'mudança do líder também fica registrada, sem ruído de updated_at'
 );
