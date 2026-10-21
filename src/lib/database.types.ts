@@ -23,19 +23,53 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "audit_log": {
+            "app_config": {
                   Row: {
-                    "action": string,"actor_id": string | null,"actor_role": Database["public"]['Enums']["user_role"] | null,"at": string,"changes": Json | null,"id": number,"new_row": Json | null,"old_row": Json | null,"row_id": string,"table_name": string
+                    "id": boolean,"min_client_version": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "action": string,"actor_id"?: string | null,"actor_role"?: Database["public"]['Enums']["user_role"] | null,"at"?: string,"changes"?: Json | null,"id"?: never,"new_row"?: Json | null,"old_row"?: Json | null,"row_id": string,"table_name": string
+                    "id"?: boolean,"min_client_version"?: string,"updated_at"?: string
                   }
                   Update: {
-                    "action"?: string,"actor_id"?: string | null,"actor_role"?: Database["public"]['Enums']["user_role"] | null,"at"?: string,"changes"?: Json | null,"id"?: never,"new_row"?: Json | null,"old_row"?: Json | null,"row_id"?: string,"table_name"?: string
+                    "id"?: boolean,"min_client_version"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     
+                  ]
+                },"audit_log": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"actor_role": Database["public"]['Enums']["user_role"] | null,"at": string,"changes": Json | null,"id": number,"new_row": Json | null,"old_row": Json | null,"row_id": string,"source": string,"table_name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"actor_role"?: Database["public"]['Enums']["user_role"] | null,"at"?: string,"changes"?: Json | null,"id"?: never,"new_row"?: Json | null,"old_row"?: Json | null,"row_id": string,"source"?: string,"table_name": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"actor_role"?: Database["public"]['Enums']["user_role"] | null,"at"?: string,"changes"?: Json | null,"id"?: never,"new_row"?: Json | null,"old_row"?: Json | null,"row_id"?: string,"source"?: string,"table_name"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"device_status": {
+                  Row: {
+                    "client_version": string,"device_id": string,"first_seen_at": string,"last_sync_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_version": string,"device_id": string,"first_seen_at"?: string,"last_sync_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "client_version"?: string,"device_id"?: string,"first_seen_at"?: string,"last_sync_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "device_status_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"markets": {
                   Row: {
@@ -93,14 +127,14 @@ isOneToOne: false
                   ]
                 },"visit_events": {
                   Row: {
-                    "actor_id": string,"client_event_id": string,"id": string,"occurred_at": string,"occurred_local_date": string,"payload": NonNullable<Json>,"received_at": string,"type": string,"visit_id": string
+                    "actor_id": string,"client_event_id": string,"client_version": string | null,"device_id": string | null,"device_seq": number | null,"id": string,"occurred_at": string,"occurred_local_date": string,"outcome": string,"payload": NonNullable<Json>,"received_at": string,"rejection_code": string | null,"type": string,"visit_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "actor_id": string,"client_event_id": string,"id"?: string,"occurred_at": string,"occurred_local_date": string,"payload"?: NonNullable<Json>,"received_at"?: string,"type": string,"visit_id": string
+                    "actor_id": string,"client_event_id": string,"client_version"?: string | null,"device_id"?: string | null,"device_seq"?: number | null,"id"?: string,"occurred_at": string,"occurred_local_date": string,"outcome": string,"payload"?: NonNullable<Json>,"received_at"?: string,"rejection_code"?: string | null,"type": string,"visit_id": string
                   }
                   Update: {
-                    "actor_id"?: string,"client_event_id"?: string,"id"?: string,"occurred_at"?: string,"occurred_local_date"?: string,"payload"?: NonNullable<Json>,"received_at"?: string,"type"?: string,"visit_id"?: string
+                    "actor_id"?: string,"client_event_id"?: string,"client_version"?: string | null,"device_id"?: string | null,"device_seq"?: number | null,"id"?: string,"occurred_at"?: string,"occurred_local_date"?: string,"outcome"?: string,"payload"?: NonNullable<Json>,"received_at"?: string,"rejection_code"?: string | null,"type"?: string,"visit_id"?: string
                   }
                   Relationships: [
                     {
@@ -149,11 +183,32 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "company_date":
+            "apply_visit_event":
+{ Args: { "p_caller": string,"p_client_version": string,"p_device_id": string,"p_event": Json }; Returns: Json
+                           },
+"company_date":
 { Args: { "instant": string }; Returns: string
                            },
 "is_leader":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"safe_int":
+{ Args: { "p": string }; Returns: number
+                           },
+"safe_timestamptz":
+{ Args: { "p": string }; Returns: string
+                           },
+"safe_uuid":
+{ Args: { "p": string }; Returns: string
+                           },
+"sync_result":
+{ Args: { "p_code": string,"p_duplicate"?: boolean,"p_event_id": string,"p_status": string,"p_visit_id": string,"p_visit_status"?: string }; Returns: Json
+                           },
+"sync_visit_events_v1":
+{ Args: { "p_client_version": string,"p_device_id": string,"p_events": Json }; Returns: Json
+                           },
+"version_parts":
+{ Args: { "v": string }; Returns: (number)[]
                            }
           }
           Enums: {

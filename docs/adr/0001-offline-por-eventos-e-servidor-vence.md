@@ -17,6 +17,15 @@ Repositores trabalham dentro de mercados, muitas vezes sem sinal. Hoje a tela "H
 - **Sincroniza** ao abrir, ao voltar o sinal, depois de cada ação e num botão. Sem Background Sync (não existe no iOS).
 - **O app abre sem rede** com a identidade guardada no aparelho.
 
+## Contrato de `sync_visit_events_v1` (fatia 1.2)
+
+- **Entrada:** `(p_device_id uuid, p_client_version text, p_events jsonb)`. Até 50 eventos `{ client_event_id, seq, visit_id, type, occurred_at, note?, reason?, caused_by? }`, com `occurred_at` em ISO 8601 completo. A função aplica em ordem de `seq`.
+- **Saída:** `{ server_now, results[], visits[] }`. Cada resultado traz `client_event_id`, `status` (`applied` ou `rejected`), `code`, `visit_status` (o estado atual, para a tela explicar) e `duplicate` (reenvio de algo já decidido). `visits[]` são só as visitas do repositor tocadas pelo lote, para atualizar a cópia local. App abaixo de `app_config.min_client_version` recebe só `{ upgrade_required, min_client_version, server_now }`.
+- **Um vocabulário de recusa só.** Os códigos de `src/domain` (`INVALID_TRANSITION`, `REASON_REQUIRED`, `CHECKOUT_BEFORE_CHECKIN`, `VISIT_IN_FUTURE`, `VISIT_IN_PAST`, `FORBIDDEN`, `VISIT_NOT_FOUND`), mais três só do servidor: `CLOCK_INVALID` (evento mais de 10 min no futuro), `ID_CONFLICT` (o `client_event_id` já é de outra pessoa ou de outra visita) e `INVALID_DATA`. "Cancelada pelo líder" e "já registrada" são leituras da tela sobre `INVALID_TRANSITION` mais `visit_status`, sem código próprio.
+- **O que fica gravado.** O evento aplicado ou recusado entra em `visit_events` com o resultado, o aparelho, o `seq` e a versão do app. Dado ilegível, visita inexistente e visita de outro repositor só voltam recusados na resposta: não viram linha, para ninguém escrever no histórico alheio.
+- **Idempotência.** Reenviar um id já decidido devolve o resultado gravado, sem aplicar de novo. As visitas do lote são travadas em ordem de id, então envios simultâneos do mesmo aparelho esperam um pelo outro.
+- **As regras valem nos dois lados.** `src/domain/fixtures/visit-events.cases.json` é rodado pelo domínio (Vitest) e pela função (pgTAP gerado por `npm run db:gen-cases`).
+
 ## O que verificamos (spike S1, supabase-js / auth-js 2.118, contra o GoTrue local)
 
 | Situação                                   | O que acontece                                                                                         | Consequência                                                         |

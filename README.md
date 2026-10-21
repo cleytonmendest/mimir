@@ -33,6 +33,7 @@ update public.profiles set role = 'leader' where id = '<id do usuário>';
 | `npm run test:tz`                    | Testes do domínio em 4 fusos horários (o CI roda a suíte inteira nesses fusos)                                                                |
 | `npm run e2e`                        | E2E no celular simulado (Playwright). Descobre o Supabase local sozinho; precisa de `npm run db:start` e de `npx playwright install chromium` |
 | `npm run db:test`                    | Testes do banco (pgTAP: RLS, auditoria, constraints)                                                                                          |
+| `npm run db:gen-cases`               | Regera o pgTAP da sincronização a partir dos casos compartilhados com o domínio (`src/domain/fixtures/visit-events.cases.json`)               |
 | `npm run db:lint`                    | Lint do schema                                                                                                                                |
 | `npm run db:types`                   | Regera `src/lib/database.types.ts` (commitar a saída **crua**, sem formatar)                                                                  |
 | `npm run storybook`                  | Vitrine do design system                                                                                                                      |

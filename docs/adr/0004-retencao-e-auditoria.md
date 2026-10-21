@@ -10,7 +10,7 @@ Estimativa grosseira para 40 repositores com ~6 visitas por dia: ~88 mil visitas
 
 ## Proposta
 
-1. **No update, gravar só a diferença** (`changes`), sem `old_row` e `new_row` completos. Insert e delete continuam com a linha inteira. A mudança entra na migration da sincronização (fatia 1.2), onde a função de auditoria já é substituída.
+1. **No update, gravar só a diferença** (`changes`), sem `old_row` e `new_row` completos. Insert e delete continuam com a linha inteira. **Feito na migration da sincronização (fatia 1.2)**, que também registra a origem da mudança (`audit_log.source`: `app`, `sync` ou `system`).
 2. **Definir a retenção** com o jurídico: por quanto tempo o log fica consultável e o que acontece depois (arquivar fora do banco ou apagar). A tabela é só de inserção pela aplicação.
 3. **Dados pessoais:** hoje `profiles` não é auditado (a troca de papel não deixa rastro; entra na fatia 4.1). O log guarda ids de usuário, não nomes.
 

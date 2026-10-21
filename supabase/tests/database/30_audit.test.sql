@@ -1,5 +1,5 @@
 begin;
-select plan(18);
+select plan(21);
 
 create schema tests;
 
@@ -44,6 +44,18 @@ select is(
   (select changes from public.audit_log where row_id = '00000000-0000-0000-0000-0000000000f1' and action = 'update' and actor_role = 'repositor'),
   '{"position": {"from": 0, "to": 3}}'::jsonb,
   'o log guarda só o campo que mudou, com antes e depois'
+);
+select is(
+  (select old_row is null and new_row is null from public.audit_log
+    where row_id = '00000000-0000-0000-0000-0000000000f1' and action = 'update' and actor_role = 'repositor'),
+  true,
+  'no update o log guarda só a diferença, sem repetir a linha inteira'
+);
+select is(
+  (select source from public.audit_log
+    where row_id = '00000000-0000-0000-0000-0000000000f1' and action = 'update' and actor_role = 'repositor'),
+  'app',
+  'escrita direta pela API é registrada como origem "app"'
 );
 select is(
   (select actor_id from public.audit_log where row_id = '00000000-0000-0000-0000-0000000000f1' and action = 'update' and actor_role = 'repositor'),
@@ -97,6 +109,12 @@ select is(
     where table_name = 'visits' and action = 'insert' and actor_id = '00000000-0000-0000-0000-0000000000c1'),
   1,
   'criação feita pelo líder fica registrada'
+);
+select is(
+  (select new_row is not null and old_row is null from public.audit_log
+    where table_name = 'visits' and action = 'insert' and actor_id = '00000000-0000-0000-0000-0000000000c1'),
+  true,
+  'na criação o log guarda a linha inteira'
 );
 
 ------------------------------------------------------------------ quem lê e quem escreve o log
