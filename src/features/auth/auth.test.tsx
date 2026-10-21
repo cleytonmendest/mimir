@@ -115,6 +115,15 @@ describe('login', () => {
   })
 })
 
+describe('versão do app', () => {
+  it('a barra da conta mostra a versão (é o que o suporte pergunta)', async () => {
+    setup({ signedInAs: 'ana@test.dev' })
+
+    expect(await screen.findByText(`Versão ${__APP_VERSION__}`)).toBeInTheDocument()
+    expect(__APP_VERSION__).toMatch(/^\d+\.\d+\.\d+\+\w+$/)
+  })
+})
+
 describe('sair', () => {
   it('"Sair" devolve ao formulário', async () => {
     const { user } = setup({ signedInAs: 'ana@test.dev' })

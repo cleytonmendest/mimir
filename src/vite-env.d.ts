@@ -8,3 +8,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+/** Versão do app, "0.0.0+commit". Definida em vite.config.ts. */
+declare const __APP_VERSION__: string

@@ -45,6 +45,7 @@ test('repositor abre a tela Hoje, faz check-in, check-out e a visita fica "Feita
     // 1. entrar como repositor  2. ver as visitas de hoje em ordem
     await signIn(page, seed.email, seed.password)
     await expect(page.getByText(`${seed.fullName} · Repositor`)).toBeVisible()
+    await expect(page.getByText(/^Versão \d+\.\d+\.\d+\+\w+$/)).toBeVisible()
     const cards = page.getByRole('list', { name: 'Visitas de hoje' }).getByRole('listitem')
     await expect(cards).toHaveCount(2)
     await expect(cards.nth(0).getByRole('heading')).toHaveText(seed.marketNames[0])
