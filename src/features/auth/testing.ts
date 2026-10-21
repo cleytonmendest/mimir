@@ -1,3 +1,4 @@
+import type { Identity } from '@/lib/offline/store'
 import { AuthFailure, type AuthGateway } from '@/lib/supabase/auth'
 import { ConfigError } from '@/lib/supabase/errors'
 import type { UserProfile } from '@/lib/supabase/mappers'
@@ -18,9 +19,12 @@ export interface FakeSetup {
   signedInAs?: string
   /** Segura o login até esta promessa resolver (para ver o estado "entrando"). */
   holdSignIn?: Promise<void>
+  /** Segura a resposta "quem está logado?" (o SDK demora assim sem rede e com o token vencido). */
+  holdSession?: Promise<void>
 }
 
-export type FakeFault = 'config' | 'offline' | null
+/** `session`: o SDK falha ao ler a sessão (sem rede). */
+export type FakeFault = 'config' | 'offline' | 'session' | null
 
 export const ana: FakeAccount = {
   userId: 'u-ana',
@@ -51,9 +55,11 @@ export function createFakeGateway(setup: FakeSetup = {}) {
   }
 
   const gateway: AuthGateway = {
-    currentUserId() {
-      if (fault === 'config') return Promise.reject(new ConfigError('Defina VITE_SUPABASE_URL'))
-      return Promise.resolve(current)
+    async currentUserId() {
+      await setup.holdSession
+      if (fault === 'config') throw new ConfigError('Defina VITE_SUPABASE_URL')
+      if (fault === 'session') throw new Error('sem rede')
+      return current
     },
     subscribe(listener) {
       if (fault === 'config') return () => undefined
@@ -90,5 +96,35 @@ export function createFakeGateway(setup: FakeSetup = {}) {
     setFault(next: FakeFault) {
       fault = next
     },
+    /** O SDK avisa de novo do mesmo usuário (token renovado, sinal de volta). */
+    emitAgain() {
+      emit()
+    },
+    /** A sessão some por fora (token revogado): o SDK avisa que ninguém está logado. */
+    expireSession() {
+      current = null
+      emit()
+    },
+  }
+}
+
+/** O armazenamento do aparelho em memória, para os testes da tela. */
+export function createFakeIdentityStore(initial: Identity | null = null) {
+  let saved = initial
+  const calls = { saved: 0, cleared: 0 }
+  return {
+    identity: () => Promise.resolve(saved),
+    saveIdentity: (identity: Identity) => {
+      saved = identity
+      calls.saved += 1
+      return Promise.resolve()
+    },
+    clearIdentity: () => {
+      saved = null
+      calls.cleared += 1
+      return Promise.resolve()
+    },
+    current: () => saved,
+    calls,
   }
 }

@@ -5,7 +5,12 @@ import { useAuth } from './auth-context'
 import { LoginForm } from './LoginForm'
 
 /** Só deixa passar quem está logado; para os demais mostra o que fazer. */
-export function AuthGate({ children }: { children: (profile: UserProfile) => ReactNode }) {
+export function AuthGate({
+  children,
+}: {
+  /** `offline`: a identidade vem do aparelho porque o servidor não respondeu. */
+  children: (profile: UserProfile, info: { offline: boolean }) => ReactNode
+}) {
   const { state, signOut, retry } = useAuth()
 
   switch (state.status) {
@@ -37,6 +42,8 @@ export function AuthGate({ children }: { children: (profile: UserProfile) => Rea
         </div>
       )
     case 'signedIn':
-      return <>{children(state.profile)}</>
+      return <>{children(state.profile, { offline: false })}</>
+    case 'offline':
+      return <>{children(state.profile, { offline: true })}</>
   }
 }
