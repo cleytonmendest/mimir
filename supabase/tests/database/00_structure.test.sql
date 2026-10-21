@@ -1,5 +1,5 @@
 begin;
-select plan(8);
+select plan(7);
 
 -- Guard rail estrutural: uma tabela nova sem RLS derruba o CI aqui.
 select is(
@@ -37,15 +37,6 @@ select is(
   (select count(*)::int
      from information_schema.role_table_grants
     where grantee = 'authenticated' and table_schema = 'public'
-      and table_name = 'visits' and privilege_type = 'DELETE'),
-  0,
-  'ninguém logado apaga visitas (histórico não se apaga)'
-);
-
-select is(
-  (select count(*)::int
-     from information_schema.role_table_grants
-    where grantee = 'authenticated' and table_schema = 'public'
       and table_name = 'audit_log' and privilege_type in ('INSERT', 'UPDATE', 'DELETE')),
   0,
   'o log de auditoria não é gravável pela API'
@@ -55,27 +46,26 @@ select is(
   (select count(*)::int
      from information_schema.role_table_grants
     where grantee = 'authenticated' and table_schema = 'public'
-      and table_name = 'visit_events' and privilege_type in ('UPDATE', 'DELETE')),
+      and table_name = 'markets' and privilege_type = 'DELETE'),
   0,
-  'eventos de visita são imutáveis depois de gravados'
+  'ninguém logado apaga mercados (arquiva)'
+);
+
+select is_empty(
+  $$
+    select tablename from pg_tables
+     where schemaname = 'public'
+       and tablename in ('visits', 'visit_events', 'standard_route', 'device_status', 'app_config')
+  $$,
+  'as tabelas do produto antigo (visitas, rota, eventos, aparelhos) não existem mais'
 );
 
 select is(
-  (select count(*)::int
-     from information_schema.role_table_grants
-    where grantee = 'authenticated' and table_schema = 'public'
-      and table_name = 'visit_events' and privilege_type = 'INSERT'),
-  0,
-  'eventos de visita só entram pela função de sincronização, nunca direto'
-);
-
-select is(
-  (select count(*)::int
-     from information_schema.role_routine_grants
-    where grantee in ('authenticated', 'anon') and routine_schema = 'public'
-      and routine_name in ('apply_visit_event', 'safe_uuid', 'safe_int', 'safe_timestamptz', 'version_parts', 'sync_result')),
-  0,
-  'as funções internas da sincronização não são chamáveis pela API'
+  (select array_agg(e.enumlabel::text order by e.enumsortorder)
+     from pg_enum e join pg_type t on t.oid = e.enumtypid
+    where t.typname = 'user_role'),
+  array['admin', 'supplier'],
+  'os papéis são admin e supplier'
 );
 
 select * from finish();

@@ -18,7 +18,7 @@ export class AuthFailure extends Error {
 
 /**
  * O que as telas precisam saber de autenticação, sem tipo do SDK. Não existe cadastro: os
- * usuários são criados pelo líder/administrador (enable_signup = false no Supabase).
+ * contas são criadas pelo administrador (ou por uma Edge Function), nunca pelo navegador (enable_signup = false no Supabase).
  */
 export interface AuthGateway {
   /** Quem está logado neste aparelho (a sessão fica guardada nele), ou null. */

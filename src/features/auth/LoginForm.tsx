@@ -11,7 +11,7 @@ const MESSAGES: Record<AuthFailureCode, string> = {
   UNKNOWN: 'Não foi possível entrar. Tente de novo.',
 }
 
-/** Sem "criar conta" nem "esqueci a senha" de propósito: quem cria os acessos é o líder. */
+/** Sem "criar conta" nem "esqueci a senha" de propósito: quem cria os acessos é o administrador. */
 export function LoginForm() {
   const { signIn } = useAuth()
   const [email, setEmail] = useState('')

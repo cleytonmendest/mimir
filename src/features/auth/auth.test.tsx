@@ -41,7 +41,7 @@ describe('login', () => {
   it('quem já tem sessão no aparelho entra direto, sem digitar nada', async () => {
     setup({ signedInAs: 'ana@test.dev' })
 
-    expect(await screen.findByText('Ana · Repositor')).toBeInTheDocument()
+    expect(await screen.findByText('Ana · Fornecedor')).toBeInTheDocument()
     expect(screen.queryByLabelText('E-mail')).not.toBeInTheDocument()
   })
 
@@ -51,7 +51,7 @@ describe('login', () => {
 
     await fillAndSubmit(user, '  lia@test.dev ', 'segredo-da-lia')
 
-    expect(await screen.findByText('Lia · Líder')).toBeInTheDocument()
+    expect(await screen.findByText('Lia · Administrador')).toBeInTheDocument()
     expect(screen.queryByLabelText('E-mail')).not.toBeInTheDocument()
   })
 
@@ -86,7 +86,7 @@ describe('login', () => {
     await user.type(screen.getByLabelText('Senha'), 'segredo-da-ana')
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 
-    expect(await screen.findByText('Ana · Repositor')).toBeInTheDocument()
+    expect(await screen.findByText('Ana · Fornecedor')).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
@@ -103,7 +103,7 @@ describe('login', () => {
     expect(screen.getByRole('button', { name: 'Entrando…' })).toBeDisabled()
 
     release()
-    expect(await screen.findByText('Ana · Repositor')).toBeInTheDocument()
+    expect(await screen.findByText('Ana · Fornecedor')).toBeInTheDocument()
   })
 
   it('e-mail e senha são obrigatórios', async () => {
@@ -127,12 +127,12 @@ describe('versão do app', () => {
 describe('sair', () => {
   it('"Sair" devolve ao formulário', async () => {
     const { user } = setup({ signedInAs: 'ana@test.dev' })
-    await screen.findByText('Ana · Repositor')
+    await screen.findByText('Ana · Fornecedor')
 
     await user.click(screen.getByRole('button', { name: 'Sair' }))
 
     expect(await screen.findByLabelText('E-mail')).toBeInTheDocument()
-    expect(screen.queryByText('Ana · Repositor')).not.toBeInTheDocument()
+    expect(screen.queryByText('Ana · Fornecedor')).not.toBeInTheDocument()
   })
 
   it('se sair falhar, avisa em vez de fingir que saiu', async () => {
@@ -143,7 +143,7 @@ describe('sair', () => {
         <AuthGate>{(profile) => <AccountBar profile={profile} />}</AuthGate>
       </AuthProvider>,
     )
-    await screen.findByText('Ana · Repositor')
+    await screen.findByText('Ana · Fornecedor')
 
     await userEvent.setup().click(screen.getByRole('button', { name: 'Sair' }))
 
@@ -183,17 +183,17 @@ describe('falhas ao abrir o app', () => {
     gateway.setFault(null)
     await userEvent.setup().click(screen.getByRole('button', { name: 'Tentar de novo' }))
 
-    expect(await screen.findByText('Ana · Repositor')).toBeInTheDocument()
+    expect(await screen.findByText('Ana · Fornecedor')).toBeInTheDocument()
   })
 
-  it('usuário sem perfil: avisa para falar com o líder e permite sair', async () => {
+  it('usuário sem perfil: avisa para falar com o administrador e permite sair', async () => {
     const semPerfil = { userId: 'u-x', password: 'x', profile: null }
     const { user } = setup({
       accounts: { 'x@test.dev': semPerfil },
       signedInAs: 'x@test.dev',
     })
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Fale com o líder')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Fale com o administrador')
 
     await user.click(screen.getByRole('button', { name: 'Sair' }))
     expect(await screen.findByLabelText('E-mail')).toBeInTheDocument()
@@ -203,11 +203,11 @@ describe('falhas ao abrir o app', () => {
     const semNome = {
       userId: 'u-y',
       password: 'y',
-      profile: { id: 'u-y', role: 'repositor' as const, fullName: '  ' },
+      profile: { id: 'u-y', role: 'supplier' as const, fullName: '  ' },
     }
     setup({ accounts: { 'y@test.dev': semNome }, signedInAs: 'y@test.dev' })
 
-    expect(await screen.findByText('Sem nome cadastrado · Repositor')).toBeInTheDocument()
+    expect(await screen.findByText('Sem nome cadastrado · Fornecedor')).toBeInTheDocument()
   })
 })
 
@@ -220,7 +220,7 @@ describe('troca de usuário e avisos repetidos', () => {
         <AuthGate>{(profile) => <AccountBar profile={profile} />}</AuthGate>
       </AuthProvider>,
     )
-    await screen.findByText('Ana · Repositor')
+    await screen.findByText('Ana · Fornecedor')
 
     // O SDK repete o aviso a cada renovação do token: aqui, simulado por um login do mesmo usuário.
     await gateway.signIn('ana@test.dev', 'segredo-da-ana')

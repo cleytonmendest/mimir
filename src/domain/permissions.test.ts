@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { DomainError } from './errors'
 import { assertCan, can, PERMISSION_MATRIX } from './permissions'
-import { ana, bruno, leader } from './testing'
+import type { Actor } from './types'
+
+const ana: Actor = { id: 'u-ana', role: 'supplier' }
+const bruno: Actor = { id: 'u-bruno', role: 'supplier' }
+const lia: Actor = { id: 'u-lia', role: 'admin' }
 
 describe('permissões', () => {
   /**
@@ -10,54 +14,68 @@ describe('permissões', () => {
    */
   it('a matriz de permissões é a combinada', () => {
     expect(PERMISSION_MATRIX).toEqual({
-      repositor: {
-        view: 'own',
-        executeVisit: 'own',
-        editPlan: 'own',
-        editStandardRoute: 'own',
-        reopenVisit: 'none',
+      supplier: {
+        viewAvailability: 'all',
+        book: 'all',
+        cancelBooking: 'own',
+        viewBookings: 'own',
+        manageMarkets: 'none',
+        manageClosedDays: 'none',
+        manageSuppliers: 'none',
+        manageSettings: 'none',
         viewAudit: 'none',
-        manageMarkets: 'all',
       },
-      leader: {
-        view: 'all',
-        executeVisit: 'all',
-        editPlan: 'all',
-        editStandardRoute: 'all',
-        reopenVisit: 'all',
-        viewAudit: 'all',
+      admin: {
+        viewAvailability: 'all',
+        book: 'none',
+        cancelBooking: 'all',
+        viewBookings: 'all',
         manageMarkets: 'all',
+        manageClosedDays: 'all',
+        manageSuppliers: 'all',
+        manageSettings: 'all',
+        viewAudit: 'all',
       },
     })
   })
 
-  it('repositor A não enxerga nem edita o que é do repositor B', () => {
-    const bruno_visit = { repositorId: bruno.id }
-    expect(can(ana, 'view', bruno_visit)).toBe(false)
-    expect(can(ana, 'executeVisit', bruno_visit)).toBe(false)
-    expect(can(ana, 'editPlan', bruno_visit)).toBe(false)
-    expect(can(ana, 'view', { repositorId: ana.id })).toBe(true)
+  it('o fornecedor A não enxerga nem cancela a reserva do fornecedor B', () => {
+    const ofBruno = { supplierId: bruno.id }
+    expect(can(ana, 'viewBookings', ofBruno)).toBe(false)
+    expect(can(ana, 'cancelBooking', ofBruno)).toBe(false)
+    expect(can(ana, 'viewBookings', { supplierId: ana.id })).toBe(true)
+    expect(can(ana, 'cancelBooking', { supplierId: ana.id })).toBe(true)
   })
 
   it('escopo "own" sem informar de quem é o recurso é negado', () => {
-    expect(can(ana, 'view')).toBe(false)
+    expect(can(ana, 'viewBookings')).toBe(false)
   })
 
-  it('repositor nunca reabre visita nem lê o log de auditoria', () => {
-    expect(can(ana, 'reopenVisit', { repositorId: ana.id })).toBe(false)
-    expect(can(ana, 'viewAudit')).toBe(false)
+  it('o fornecedor vê a disponibilidade e reserva, mas não administra nada', () => {
+    expect(can(ana, 'viewAvailability')).toBe(true)
+    expect(can(ana, 'book')).toBe(true)
+    for (const action of [
+      'manageMarkets',
+      'manageClosedDays',
+      'manageSuppliers',
+      'manageSettings',
+      'viewAudit',
+    ] as const) {
+      expect(can(ana, action)).toBe(false)
+    }
   })
 
-  it('o líder pode tudo', () => {
+  it('o administrador administra tudo, mas não reserva estande', () => {
+    expect(can(lia, 'book')).toBe(false)
     for (const action of Object.keys(
-      PERMISSION_MATRIX.leader,
-    ) as (keyof typeof PERMISSION_MATRIX.leader)[]) {
-      expect(can(leader, action)).toBe(true)
+      PERMISSION_MATRIX.admin,
+    ) as (keyof typeof PERMISSION_MATRIX.admin)[]) {
+      if (action !== 'book') expect(can(lia, action)).toBe(true)
     }
   })
 
   it('assertCan lança FORBIDDEN quando não pode e não faz nada quando pode', () => {
-    expect(() => assertCan(leader, 'viewAudit')).not.toThrow()
+    expect(() => assertCan(lia, 'viewAudit')).not.toThrow()
     expect(() => assertCan(ana, 'viewAudit')).toThrow(DomainError)
     expect(() => assertCan(ana, 'viewAudit')).toThrow(/não pode/)
   })

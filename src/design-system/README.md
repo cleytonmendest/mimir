@@ -5,15 +5,13 @@ shadcn é **nosso**: o CLI copia para o repositório e a gente adapta.
 
 ## Onde fica cada coisa
 
-| Caminho                 | O que é                                                                       |
-| ----------------------- | ----------------------------------------------------------------------------- |
-| `tokens.css`            | **Único** lugar onde cor, raio e fonte existem. Nomes do shadcn (`primary`…)  |
-| `components/ui/`        | Componentes copiados do shadcn (`button.tsx`, ...), um `.stories.tsx` ao lado |
-| `components/<Nome>/`    | Componentes nossos, que não vêm do shadcn (ex.: `StatusBadge`)                |
-| `utils.ts`              | `cn()` para juntar classes                                                    |
-| `../../components.json` | Configuração do CLI (aliases apontam para cá)                                 |
-
-Cor de status de visita (`status-*`) é do domínio e não faz parte do vocabulário do shadcn.
+| Caminho                 | O que é                                                                          |
+| ----------------------- | -------------------------------------------------------------------------------- |
+| `tokens.css`            | **Único** lugar onde cor, raio e fonte existem. Nomes do shadcn (`primary`…)     |
+| `components/ui/`        | Componentes copiados do shadcn (`button.tsx`, ...), um `.stories.tsx` ao lado    |
+| `components/<Nome>/`    | Componentes nossos, que não vêm do shadcn (ex.: o indicador de vagas do Bloco 3) |
+| `utils.ts`              | `cn()` para juntar classes                                                       |
+| `../../components.json` | Configuração do CLI (aliases apontam para cá)                                    |
 
 ## Adicionar um componente
 

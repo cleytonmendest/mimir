@@ -1,15 +1,4 @@
-export type DomainErrorCode =
-  | 'INVALID_DATE'
-  | 'FORBIDDEN'
-  | 'INVALID_TRANSITION'
-  | 'REASON_REQUIRED'
-  | 'CHECKOUT_BEFORE_CHECKIN'
-  | 'VISIT_IN_FUTURE'
-  | 'VISIT_IN_PAST'
-  | 'VISIT_NOT_FOUND'
-  | 'VISIT_NOT_EDITABLE'
-  | 'DUPLICATE_VISIT'
-  | 'INVALID_CARRYOVER_DATE'
+export type DomainErrorCode = 'INVALID_DATE' | 'FORBIDDEN'
 
 export class DomainError extends Error {
   readonly code: DomainErrorCode

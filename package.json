@@ -21,7 +21,6 @@
     "db:start": "supabase start",
     "db:test": "supabase test db",
     "db:lint": "supabase db lint --local --level warning --fail-on error",
-    "db:gen-cases": "node scripts/gen-sync-cases.ts",
     "db:types": "supabase gen types typescript --local > src/lib/database.types.ts",
     "verify": "npm run lint && npm run typecheck && npm run guard && npm run test:coverage && npm run build-storybook",
     "prepare": "husky"
