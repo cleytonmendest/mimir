@@ -44,4 +44,18 @@ describe('NumberStepper', () => {
     render(<NumberStepper value={2} min={1} max={5} onChange={() => undefined} label="Qtd" />)
     expect(screen.queryByText('por dia')).not.toBeInTheDocument()
   })
+
+  it('dentro de um formulário, "+" e "−" não o enviam', async () => {
+    const onSubmit = vi.fn((event: React.FormEvent) => {
+      event.preventDefault()
+    })
+    render(
+      <form onSubmit={onSubmit}>
+        <NumberStepper value={3} min={1} max={5} onChange={() => undefined} label="Limite" />
+      </form>,
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Aumentar: Limite' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Diminuir: Limite' }))
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
 })

@@ -25,8 +25,8 @@ describe('App', () => {
     render(<App auth={createFakeGateway({ accounts: ACCOUNTS })} booking={booking()} now={now} />)
 
     expect(await screen.findByLabelText('E-mail')).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Reservas' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Mercados' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /^Reservas$/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Administração' })).not.toBeInTheDocument()
   })
 
   it('o fornecedor logado cai na área de reservas, com os mercados e o calendário', async () => {
@@ -53,8 +53,9 @@ describe('App', () => {
       />,
     )
 
-    expect(await screen.findByRole('heading', { name: 'Mercados' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Administração' })).toBeInTheDocument()
     expect(screen.getByText('Lia · Administrador')).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Reservas' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Mercados' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /^Reservas$/ })).not.toBeInTheDocument()
   })
 })

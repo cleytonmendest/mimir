@@ -18,3 +18,10 @@ export async function openMarket(page: Page, marketName: string) {
 export function firstFreeDay(page: Page) {
   return page.locator('button[data-status="free"]').first()
 }
+
+/** Entra como administrador e abre a agenda de um mercado pelo nome. */
+export async function openAgenda(page: Page, marketName: string) {
+  await expect(page.getByRole('heading', { name: 'Administração' })).toBeVisible()
+  await page.getByRole('button', { name: new RegExp(`^${marketName}`) }).click()
+  await expect(page.getByRole('heading', { name: /^\w+ de \d{4}$/ })).toBeVisible()
+}
