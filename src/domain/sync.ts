@@ -19,6 +19,28 @@ export type OfflineEvent = {
   causedBy?: string
 } & ExecutionEvent
 
+/**
+ * Os motivos de recusa que a função do servidor (`sync_visit_events_v1`) devolve: os códigos de
+ * transição do domínio mais três que só o servidor produz. `schema-sync.test.ts` confere que a
+ * migration tem todos eles.
+ */
+export const SYNC_REJECTION_CODES = [
+  'INVALID_TRANSITION',
+  'REASON_REQUIRED',
+  'CHECKOUT_BEFORE_CHECKIN',
+  'VISIT_IN_FUTURE',
+  'VISIT_IN_PAST',
+  'FORBIDDEN',
+  'VISIT_NOT_FOUND',
+  /** Evento mais de 10 minutos no futuro: o relógio do aparelho está adiantado. */
+  'CLOCK_INVALID',
+  /** O id do evento já pertence a outra pessoa ou a outra visita. */
+  'ID_CONFLICT',
+  'INVALID_DATA',
+] as const
+
+export type SyncRejectionCode = (typeof SYNC_REJECTION_CODES)[number]
+
 export interface SyncResult {
   visit: Visit
   applied: string[]

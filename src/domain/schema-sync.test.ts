@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { COMPANY_TIME_ZONE } from './dates'
+import { SYNC_REJECTION_CODES } from './sync'
 import { ROLES, VISIT_ORIGINS, VISIT_STATUSES, type StandardRouteEntry, type Visit } from './types'
 
 /**
@@ -88,6 +89,12 @@ describe('domínio ↔ banco', () => {
   it('todo campo da rota padrão tem coluna em public.standard_route', () => {
     const columns = tableColumns('standard_route')
     for (const column of Object.values(ROUTE_COLUMNS)) expect(columns).toContain(column)
+  })
+
+  it.each(SYNC_REJECTION_CODES)('a função de sincronização sabe devolver %s', (code) => {
+    const body = /create function public\.apply_visit_event\([^)]*\)[\s\S]*?\n\$\$;/.exec(sql)
+    const caller = /create function public\.sync_visit_events_v1\([^)]*\)[\s\S]*?\n\$\$;/.exec(sql)
+    expect(`${body?.[0]}${caller?.[0]}`).toContain(`'${code}'`)
   })
 
   it('o fuso da empresa é o mesmo no domínio e em public.company_date()', () => {
