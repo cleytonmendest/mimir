@@ -10,7 +10,7 @@ import {
 
 const OFFLINE_MESSAGE =
   'Não foi possível conectar ao servidor. Verifique a internet e tente de novo.'
-const NO_PROFILE_MESSAGE = 'Não encontramos o seu perfil. Fale com o líder da sua equipe.'
+const NO_PROFILE_MESSAGE = 'Não encontramos o seu perfil. Fale com o administrador dos mercados.'
 
 function failure(error: unknown): AuthState {
   // Falta de configuração é erro de quem implantou o app: vale mostrar o texto real.

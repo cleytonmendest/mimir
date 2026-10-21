@@ -1,57 +1,37 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { makeVisit } from '@/domain/testing'
 import App from './App'
 import { ana, createFakeGateway, lia } from './features/auth/testing'
-import { createFakeVisitsGateway, market } from './features/today/testing'
 
 const ACCOUNTS = { 'ana@test.dev': ana, 'lia@test.dev': lia }
-const clock = () => ({ now: '2026-10-21T14:00:00.000Z', today: '2026-10-21' })
-const visits = () =>
-  createFakeVisitsGateway({
-    markets: [market('market-a', 'Mercado A')],
-    visits: [
-      makeVisit({ id: 'v-a', repositorId: 'u-ana', marketId: 'market-a', date: '2026-10-21' }),
-    ],
-  }).gateway
 
 describe('App', () => {
   it('abre e mostra o título, mesmo antes de saber quem está logado', () => {
-    render(<App auth={createFakeGateway()} visits={visits()} clock={clock} />)
-    expect(screen.getByRole('heading', { name: 'Rota do repositor' })).toBeInTheDocument()
+    render(<App auth={createFakeGateway()} />)
+    expect(screen.getByRole('heading', { name: 'Agenda de Degustações' })).toBeInTheDocument()
   })
 
-  it('sem sessão pede o login e não mostra visitas', async () => {
-    render(<App auth={createFakeGateway({ accounts: ACCOUNTS })} visits={visits()} clock={clock} />)
+  it('sem sessão pede o login e não mostra nenhuma área', async () => {
+    render(<App auth={createFakeGateway({ accounts: ACCOUNTS })} />)
 
     expect(await screen.findByLabelText('E-mail')).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Hoje' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Reservas' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Mercados' })).not.toBeInTheDocument()
   })
 
-  it('repositor logado vê a tela Hoje com as visitas dele', async () => {
-    render(
-      <App
-        auth={createFakeGateway({ accounts: ACCOUNTS, signedInAs: 'ana@test.dev' })}
-        visits={visits()}
-        clock={clock}
-      />,
-    )
+  it('o fornecedor logado cai na área de reservas, não na de administração', async () => {
+    render(<App auth={createFakeGateway({ accounts: ACCOUNTS, signedInAs: 'ana@test.dev' })} />)
 
-    expect(await screen.findByRole('heading', { name: 'Hoje' })).toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: 'Mercado A' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Reservas' })).toBeInTheDocument()
+    expect(screen.getByText('Ana · Fornecedor')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Mercados' })).not.toBeInTheDocument()
   })
 
-  it('líder logado não cai na tela de visitas do repositor', async () => {
-    render(
-      <App
-        auth={createFakeGateway({ accounts: ACCOUNTS, signedInAs: 'lia@test.dev' })}
-        visits={visits()}
-        clock={clock}
-      />,
-    )
+  it('o administrador logado cai na área de mercados, não na de reservas', async () => {
+    render(<App auth={createFakeGateway({ accounts: ACCOUNTS, signedInAs: 'lia@test.dev' })} />)
 
-    expect(await screen.findByText('Lia · Líder')).toBeInTheDocument()
-    expect(screen.getByText(/A visão do líder/)).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Hoje' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Mercados' })).toBeInTheDocument()
+    expect(screen.getByText('Lia · Administrador')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Reservas' })).not.toBeInTheDocument()
   })
 })

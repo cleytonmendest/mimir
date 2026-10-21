@@ -4,8 +4,8 @@ import type { UserProfile } from '@/lib/supabase/mappers'
 import { useAuth } from './auth-context'
 
 const ROLE_LABELS: Record<Role, string> = {
-  repositor: 'Repositor',
-  leader: 'Líder',
+  admin: 'Administrador',
+  supplier: 'Fornecedor',
 }
 
 /** Quem está logado, com o papel, a versão do app e a saída. */

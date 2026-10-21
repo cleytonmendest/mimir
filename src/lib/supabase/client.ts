@@ -27,7 +27,7 @@ export function getSupabase(): AppSupabaseClient {
   client = createClient<Database>(url, anonKey, {
     // X-Client-Info (e não um cabeçalho novo): o servidor já o aceita no CORS; um cabeçalho
     // desconhecido faria o navegador recusar TODAS as requisições no preflight.
-    global: { headers: { 'X-Client-Info': `rota-repositor/${__APP_VERSION__}` } },
+    global: { headers: { 'X-Client-Info': `agenda-degustacoes/${__APP_VERSION__}` } },
   })
   return client
 }

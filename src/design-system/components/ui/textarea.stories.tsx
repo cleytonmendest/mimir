@@ -4,7 +4,7 @@ import { Textarea } from './textarea'
 const meta = {
   title: 'Design System/Textarea',
   component: Textarea,
-  args: { 'aria-label': 'Observação', placeholder: 'Alguma observação sobre a visita?' },
+  args: { 'aria-label': 'Observação', placeholder: 'Alguma observação?' },
 } satisfies Meta<typeof Textarea>
 
 export default meta

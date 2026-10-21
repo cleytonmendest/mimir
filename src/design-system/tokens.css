@@ -4,24 +4,12 @@
  * e o guard (scripts/guards/design-system.ts) derruba o CI se alguém escrever uma.
  *
  * Os nomes são os do shadcn/ui (background, primary, muted...): é o que os componentes trazidos
- * por `npx shadcn add` esperam. A cor de status de visita é do domínio e fica à parte (status-*).
+ * por `npx shadcn add` esperam.
  */
 @theme {
   --color-*: initial;
 
   --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-
-  /* Um par fundo/texto por status de visita. StatusBadge exige todos (tipo exaustivo). */
-  --color-status-planned: #e0e7ff;
-  --color-status-planned-fg: #1e3a8a;
-  --color-status-in-progress: #fef3c7;
-  --color-status-in-progress-fg: #78350f;
-  --color-status-done: #dcfce7;
-  --color-status-done-fg: #14532d;
-  --color-status-not-done: #fee2e2;
-  --color-status-not-done-fg: #7f1d1d;
-  --color-status-cancelled: #f4f4f5;
-  --color-status-cancelled-fg: #3f3f46;
 }
 
 /* Valores. Só tema claro: o app é usado em pé, dentro de mercado, muitas vezes sob luz forte. */

@@ -2,78 +2,57 @@ import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../../src/lib/database.types.ts'
 import type { LocalSupabase } from './supabase.ts'
 
-export interface SeededRepositor {
+export interface SeededUser {
   userId: string
   email: string
   password: string
   fullName: string
-  /** Na ordem da rota padrão. */
-  marketNames: [string, string]
+}
+
+export interface SeededUsers {
+  admin: SeededUser
+  supplier: SeededUser
   /** Cliente de administração, para conferir o que ficou gravado no banco. */
-  admin: ReturnType<typeof createClient<Database>>
+  db: ReturnType<typeof createClient<Database>>
   cleanup: () => Promise<void>
 }
 
 /**
- * Um repositor novo, dois mercados e uma rota padrão para `weekday`. Não cria visitas: quem as
- * gera é o app, ao abrir a tela Hoje, e é justamente isso que o teste quer cobrir.
- * Cada chamada usa nomes únicos, então testes não se atrapalham.
+ * Um administrador e um fornecedor novos. Cada chamada usa e-mails únicos, então testes não se
+ * atrapalham. Toda conta nasce fornecedora (o papel nunca vem do cadastro); o admin é promovido
+ * aqui, com a chave de serviço, como o script de primeiro acesso fará.
  */
-export async function seedRepositor(
-  supabase: LocalSupabase,
-  weekday: number,
-): Promise<SeededRepositor> {
-  const admin = createClient<Database>(supabase.apiUrl, supabase.serviceKey, {
+export async function seedUsers(supabase: LocalSupabase): Promise<SeededUsers> {
+  const db = createClient<Database>(supabase.apiUrl, supabase.serviceKey, {
     auth: { persistSession: false },
   })
   const unique = `${Date.now()}-${Math.floor(Math.random() * 10_000)}`
-  const email = `e2e-${unique}@test.dev`
-  const password = 'senha-de-teste-123'
-  const fullName = 'Marina Souza'
-  const marketNames: [string, string] = [`Mercado Central ${unique}`, `Mercado Bairro ${unique}`]
 
-  const created = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { full_name: fullName },
-  })
-  if (created.error !== null) throw created.error
-  const userId = created.data.user.id
+  async function createUser(prefix: string, fullName: string): Promise<SeededUser> {
+    const email = `${prefix}-${unique}@test.dev`
+    const password = 'senha-de-teste-123'
+    const created = await db.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: fullName },
+    })
+    if (created.error !== null) throw created.error
+    return { userId: created.data.user.id, email, password, fullName }
+  }
 
-  const markets = await admin
-    .from('markets')
-    .insert(marketNames.map((name) => ({ name })))
-    .select('id, name')
-  if (markets.error !== null) throw markets.error
-  const marketIds = marketNames.map((name) => {
-    const found = markets.data.find((market) => market.name === name)
-    if (found === undefined) throw new Error(`mercado ${name} não foi criado`)
-    return found.id
-  })
-
-  const route = await admin.from('standard_route').insert(
-    marketIds.map((marketId, position) => ({
-      repositor_id: userId,
-      weekday,
-      market_id: marketId,
-      position,
-    })),
-  )
-  if (route.error !== null) throw route.error
+  const supplier = await createUser('fornecedor', 'Sabor da Serra')
+  const admin = await createUser('admin', 'Lia Prado')
+  const promoted = await db.from('profiles').update({ role: 'admin' }).eq('id', admin.userId)
+  if (promoted.error !== null) throw promoted.error
 
   return {
-    userId,
-    email,
-    password,
-    fullName,
-    marketNames,
     admin,
+    supplier,
+    db,
     cleanup: async () => {
-      await admin.from('visits').delete().eq('repositor_id', userId)
-      await admin.from('standard_route').delete().eq('repositor_id', userId)
-      await admin.from('markets').delete().in('id', marketIds)
-      await admin.auth.admin.deleteUser(userId)
+      await db.auth.admin.deleteUser(admin.userId)
+      await db.auth.admin.deleteUser(supplier.userId)
     },
   }
 }

@@ -25,13 +25,13 @@ export type FakeFault = 'config' | 'offline' | null
 export const ana: FakeAccount = {
   userId: 'u-ana',
   password: 'segredo-da-ana',
-  profile: { id: 'u-ana', role: 'repositor', fullName: 'Ana' },
+  profile: { id: 'u-ana', role: 'supplier', fullName: 'Ana' },
 }
 
 export const lia: FakeAccount = {
   userId: 'u-lia',
   password: 'segredo-da-lia',
-  profile: { id: 'u-lia', role: 'leader', fullName: 'Lia' },
+  profile: { id: 'u-lia', role: 'admin', fullName: 'Lia' },
 }
 
 /**

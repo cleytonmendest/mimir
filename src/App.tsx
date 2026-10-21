@@ -1,34 +1,36 @@
 import { AccountBar } from '@/features/auth/AccountBar'
 import { AuthGate } from '@/features/auth/AuthGate'
 import { AuthProvider } from '@/features/auth/AuthProvider'
-import type { Clock } from '@/features/today/clock'
-import { TodayScreen } from '@/features/today/TodayScreen'
 import type { AuthGateway } from '@/lib/supabase/auth'
-import type { VisitsGateway } from '@/lib/supabase/visits-gateway'
 
-export default function App({
-  auth,
-  visits,
-  clock,
-}: {
-  auth: AuthGateway
-  visits: VisitsGateway
-  clock?: Clock
-}) {
+export default function App({ auth }: { auth: AuthGateway }) {
   return (
     <AuthProvider gateway={auth}>
       <main className="mx-auto max-w-xl p-4">
-        <h1 className="text-2xl font-semibold">Rota do repositor</h1>
+        <h1 className="text-2xl font-semibold">Agenda de Degustações</h1>
         <AuthGate>
           {(profile) => (
             <>
               <AccountBar profile={profile} />
-              {profile.role === 'repositor' ? (
-                <TodayScreen key={profile.id} profile={profile} gateway={visits} clock={clock} />
+              {profile.role === 'admin' ? (
+                <section className="mt-6" aria-labelledby="markets-title">
+                  <h2 id="markets-title" className="text-xl font-semibold">
+                    Mercados
+                  </h2>
+                  <p className="mt-2 text-muted-foreground">
+                    Aqui você vai definir o limite de estandes de cada mercado, fechar datas e ver
+                    quem reservou.
+                  </p>
+                </section>
               ) : (
-                <p className="mt-6 text-muted-foreground">
-                  A visão do líder (semana de cada repositor) entra a seguir.
-                </p>
+                <section className="mt-6" aria-labelledby="bookings-title">
+                  <h2 id="bookings-title" className="text-xl font-semibold">
+                    Reservas
+                  </h2>
+                  <p className="mt-2 text-muted-foreground">
+                    Aqui você vai escolher o mercado e o dia e reservar o seu estande.
+                  </p>
+                </section>
               )}
             </>
           )}

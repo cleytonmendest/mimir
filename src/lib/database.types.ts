@@ -23,21 +23,7 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "app_config": {
-                  Row: {
-                    "id": boolean,"min_client_version": string,"updated_at": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "id"?: boolean,"min_client_version"?: string,"updated_at"?: string
-                  }
-                  Update: {
-                    "id"?: boolean,"min_client_version"?: string,"updated_at"?: string
-                  }
-                  Relationships: [
-                    
-                  ]
-                },"audit_log": {
+            "audit_log": {
                   Row: {
                     "action": string,"actor_id": string | null,"actor_role": Database["public"]['Enums']["user_role"] | null,"at": string,"changes": Json | null,"id": number,"new_row": Json | null,"old_row": Json | null,"row_id": string,"source": string,"table_name": string
                   }
@@ -50,26 +36,6 @@ export type Database = {
                   }
                   Relationships: [
                     
-                  ]
-                },"device_status": {
-                  Row: {
-                    "client_version": string,"device_id": string,"first_seen_at": string,"last_sync_at": string,"user_id": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "client_version": string,"device_id": string,"first_seen_at"?: string,"last_sync_at"?: string,"user_id": string
-                  }
-                  Update: {
-                    "client_version"?: string,"device_id"?: string,"first_seen_at"?: string,"last_sync_at"?: string,"user_id"?: string
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "device_status_user_id_fkey"
-      columns: ["user_id"]
-isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    }
                   ]
                 },"markets": {
                   Row: {
@@ -99,120 +65,21 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
-                },"standard_route": {
-                  Row: {
-                    "created_at": string,"id": string,"market_id": string,"position": number,"repositor_id": string,"weekday": number
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "created_at"?: string,"id"?: string,"market_id": string,"position"?: number,"repositor_id": string,"weekday": number
-                  }
-                  Update: {
-                    "created_at"?: string,"id"?: string,"market_id"?: string,"position"?: number,"repositor_id"?: string,"weekday"?: number
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "standard_route_market_id_fkey"
-      columns: ["market_id"]
-isOneToOne: false
-      referencedRelation: "markets"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "standard_route_repositor_id_fkey"
-      columns: ["repositor_id"]
-isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    }
-                  ]
-                },"visit_events": {
-                  Row: {
-                    "actor_id": string,"client_event_id": string,"client_version": string | null,"device_id": string | null,"device_seq": number | null,"id": string,"occurred_at": string,"occurred_local_date": string,"outcome": string,"payload": NonNullable<Json>,"received_at": string,"rejection_code": string | null,"type": string,"visit_id": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "actor_id": string,"client_event_id": string,"client_version"?: string | null,"device_id"?: string | null,"device_seq"?: number | null,"id"?: string,"occurred_at": string,"occurred_local_date": string,"outcome": string,"payload"?: NonNullable<Json>,"received_at"?: string,"rejection_code"?: string | null,"type": string,"visit_id": string
-                  }
-                  Update: {
-                    "actor_id"?: string,"client_event_id"?: string,"client_version"?: string | null,"device_id"?: string | null,"device_seq"?: number | null,"id"?: string,"occurred_at"?: string,"occurred_local_date"?: string,"outcome"?: string,"payload"?: NonNullable<Json>,"received_at"?: string,"rejection_code"?: string | null,"type"?: string,"visit_id"?: string
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "visit_events_actor_id_fkey"
-      columns: ["actor_id"]
-isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "visit_events_visit_id_fkey"
-      columns: ["visit_id"]
-isOneToOne: false
-      referencedRelation: "visits"
-      referencedColumns: ["id"]
-    }
-                  ]
-                },"visits": {
-                  Row: {
-                    "carried_from_date": string | null,"check_in_at": string | null,"check_out_at": string | null,"created_at": string,"id": string,"market_id": string,"note": string | null,"origin": Database["public"]['Enums']["visit_origin"],"position": number,"repositor_id": string,"skip_reason": string | null,"status": Database["public"]['Enums']["visit_status"],"updated_at": string,"visit_date": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "carried_from_date"?: string | null,"check_in_at"?: string | null,"check_out_at"?: string | null,"created_at"?: string,"id"?: string,"market_id": string,"note"?: string | null,"origin"?: Database["public"]['Enums']["visit_origin"],"position"?: number,"repositor_id": string,"skip_reason"?: string | null,"status"?: Database["public"]['Enums']["visit_status"],"updated_at"?: string,"visit_date": string
-                  }
-                  Update: {
-                    "carried_from_date"?: string | null,"check_in_at"?: string | null,"check_out_at"?: string | null,"created_at"?: string,"id"?: string,"market_id"?: string,"note"?: string | null,"origin"?: Database["public"]['Enums']["visit_origin"],"position"?: number,"repositor_id"?: string,"skip_reason"?: string | null,"status"?: Database["public"]['Enums']["visit_status"],"updated_at"?: string,"visit_date"?: string
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "visits_market_id_fkey"
-      columns: ["market_id"]
-isOneToOne: false
-      referencedRelation: "markets"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "visits_repositor_id_fkey"
-      columns: ["repositor_id"]
-isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    }
-                  ]
                 }
           }
           Views: {
             [_ in never]: never
           }
           Functions: {
-            "apply_visit_event":
-{ Args: { "p_caller": string,"p_client_version": string,"p_device_id": string,"p_event": Json }; Returns: Json
-                           },
-"company_date":
+            "company_date":
 { Args: { "instant": string }; Returns: string
                            },
-"is_leader":
+"is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
-                           },
-"safe_int":
-{ Args: { "p": string }; Returns: number
-                           },
-"safe_timestamptz":
-{ Args: { "p": string }; Returns: string
-                           },
-"safe_uuid":
-{ Args: { "p": string }; Returns: string
-                           },
-"sync_result":
-{ Args: { "p_code": string,"p_duplicate"?: boolean,"p_event_id": string,"p_status": string,"p_visit_id": string,"p_visit_status"?: string }; Returns: Json
-                           },
-"sync_visit_events_v1":
-{ Args: { "p_client_version": string,"p_device_id": string,"p_events": Json }; Returns: Json
-                           },
-"version_parts":
-{ Args: { "v": string }; Returns: (number)[]
                            }
           }
           Enums: {
-            "user_role": "repositor"|"leader","visit_origin": "standard"|"exception"|"carryover","visit_status": "planned"|"in_progress"|"done"|"not_done"|"cancelled"
+            "user_role": "admin"|"supplier"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -332,7 +199,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "user_role": ["repositor", "leader"],"visit_origin": ["standard", "exception", "carryover"],"visit_status": ["planned", "in_progress", "done", "not_done", "cancelled"]
+            "user_role": ["admin", "supplier"]
           }
         }
 } as const
