@@ -21,3 +21,24 @@ export class DataError extends Error {
     this.code = code
   }
 }
+
+export type SyncFailureCode = 'NETWORK' | 'AUTH' | 'SERVER' | 'BAD_REQUEST' | 'INVALID_RESPONSE'
+
+/**
+ * O envio de eventos não chegou a um resultado. Nada se perde: a fila local guarda os eventos e o
+ * servidor é idempotente, então reenviar é sempre seguro.
+ * - NETWORK: sem sinal, ou o servidor não respondeu a tempo. Tentar de novo quando houver rede.
+ * - AUTH: a sessão não vale mais. Renovar a sessão (ou entrar de novo) antes de tentar.
+ * - SERVER: o servidor falhou ou ainda não tem a função (implantação em andamento). Esperar e repetir.
+ * - BAD_REQUEST: o servidor recusou o envio inteiro por um defeito deste app. Repetir não resolve.
+ * - INVALID_RESPONSE: o servidor respondeu algo que o app não entende (versão nova demais?).
+ */
+export class SyncFailure extends Error {
+  readonly code: SyncFailureCode
+
+  constructor(code: SyncFailureCode, message: string, options?: ErrorOptions) {
+    super(message, options)
+    this.name = 'SyncFailure'
+    this.code = code
+  }
+}
