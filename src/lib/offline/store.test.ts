@@ -124,10 +124,40 @@ describe('a cópia do servidor', () => {
       rejected: [],
       lastSyncAt: null,
       clockOffsetMs: null,
+      revision: 0,
     })
 
     await store.saveSnapshot(snapshot())
     expect((await store.read()).snapshot).toEqual(snapshot())
+  })
+
+  it('uma leitura do servidor que começou antes de um envio não desfaz a resposta dele', async () => {
+    const store = await userStore()
+    const old = makeVisit({ id: 'v-a', date: '2026-10-21' })
+    await store.saveSnapshot(snapshot([old]))
+    const { revision } = await store.read()
+    // A leitura do servidor está em andamento; enquanto isso um envio é respondido.
+    const done = { ...old, status: 'done' as const, checkInAt: NOW, checkOutAt: NOW }
+    await store.ack({
+      applied: [],
+      rejected: [],
+      visits: [done],
+      serverNow: NOW,
+      deviceNow: NOW,
+    })
+
+    const saved = await store.saveSnapshot(snapshot([old]), revision)
+
+    expect(saved).toBe(false)
+    expect((await store.read()).snapshot?.visits).toEqual([done])
+  })
+
+  it('sem nenhum envio no meio, a cópia lida do servidor é gravada', async () => {
+    const store = await userStore()
+    const { revision } = await store.read()
+
+    expect(await store.saveSnapshot(snapshot(), revision)).toBe(true)
+    expect(await store.saveSnapshot(snapshot())).toBe(true)
   })
 
   it('trocar a cópia não mexe na fila', async () => {

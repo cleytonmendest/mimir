@@ -16,6 +16,8 @@ export interface VisitCardProps {
   busy: boolean
   /** Alguma visita está sendo gravada: as ações de todas esperam. */
   locked: boolean
+  /** Há algo registrado nesta visita que ainda não chegou ao servidor. */
+  unsent?: boolean
   onCheckIn: () => void
   onCheckOut: (note: string) => void
   onNotDone: (reason: string) => void
@@ -30,6 +32,7 @@ export function VisitCard({
   market,
   busy,
   locked,
+  unsent = false,
   onCheckIn,
   onCheckOut,
   onNotDone,
@@ -79,6 +82,11 @@ export function VisitCard({
       </div>
 
       {times === null ? null : <p className="mt-2 text-muted-foreground">{times}</p>}
+      {unsent && (
+        <p className="mt-2 text-sm text-muted-foreground">
+          Registrado neste aparelho. Ainda não foi enviado.
+        </p>
+      )}
       {visit.note === null ? null : <p className="mt-2">Observação: {visit.note}</p>}
       {visit.skipReason === null ? null : <p className="mt-2">Motivo: {visit.skipReason}</p>}
 

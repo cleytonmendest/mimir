@@ -261,6 +261,11 @@ export interface StoreView {
    * está atrasado. null enquanto nunca houve resposta.
    */
   clockOffsetMs: number | null
+  /**
+   * Sobe a cada `ack`. Quem lê o servidor e depois quer guardar a cópia confere que ninguém mexeu
+   * nela no meio (ver `saveSnapshot`).
+   */
+  revision: number
 }
 
 export interface AckInput {
@@ -281,8 +286,13 @@ export interface AckInput {
 
 export interface UserStore {
   read(): Promise<StoreView>
-  /** Troca a cópia local pela que acabou de ser lida do servidor. A fila não é tocada. */
-  saveSnapshot(snapshot: Snapshot): Promise<void>
+  /**
+   * Troca a cópia local pela que acabou de ser lida do servidor. A fila não é tocada. Com
+   * `expectedRevision` (a de quando a leitura começou), só grava se nenhum `ack` aconteceu desde
+   * então: a resposta de um envio é mais nova que a leitura e não pode ser desfeita por ela.
+   * Devolve false quando não gravou por isso.
+   */
+  saveSnapshot(snapshot: Snapshot, expectedRevision?: number): Promise<boolean>
   /**
    * Põe na fila, numa transação só, a ação da pessoa (o primeiro) e o que ela provoca em outras
    * visitas (os demais, que ganham `causedBy`). Devolve os eventos prontos, com id e `seq`.
@@ -323,7 +333,7 @@ interface UserDb extends DBSchema {
     value: OutboxRow
     indexes: { byEventId: string; byState: string }
   }
-  meta: { key: 'lastSyncAt' | 'clockOffsetMs'; value: string | number }
+  meta: { key: 'lastSyncAt' | 'clockOffsetMs' | 'revision'; value: string | number }
 }
 
 const USER_MIGRATIONS: readonly Migration[] = [
@@ -367,6 +377,7 @@ export async function openUserStore(userId: string, deps: StoreDeps = {}): Promi
         const rows = await tx.objectStore('outbox').getAll()
         const lastSyncAt = await tx.objectStore('meta').get('lastSyncAt')
         const clockOffsetMs = await tx.objectStore('meta').get('clockOffsetMs')
+        const revision = await tx.objectStore('meta').get('revision')
         return {
           snapshot: (await tx.objectStore('snapshot').get('current')) ?? null,
           pending: rows.filter((row) => row.state === 'pending').map(toEvent),
@@ -377,12 +388,18 @@ export async function openUserStore(userId: string, deps: StoreDeps = {}): Promi
           ),
           lastSyncAt: typeof lastSyncAt === 'string' ? lastSyncAt : null,
           clockOffsetMs: typeof clockOffsetMs === 'number' ? clockOffsetMs : null,
+          revision: typeof revision === 'number' ? revision : 0,
         }
       }),
 
-    saveSnapshot: (snapshot) =>
-      transact(db, ['snapshot'], 'readwrite', async (tx) => {
+    saveSnapshot: (snapshot, expectedRevision) =>
+      transact(db, ['snapshot', 'meta'], 'readwrite', async (tx) => {
+        if (expectedRevision !== undefined) {
+          const revision = await tx.objectStore('meta').get('revision')
+          if ((typeof revision === 'number' ? revision : 0) !== expectedRevision) return false
+        }
         await tx.objectStore('snapshot').put(snapshot, 'current')
+        return true
       }),
 
     enqueue: (drafts) =>
@@ -418,9 +435,14 @@ export async function openUserStore(userId: string, deps: StoreDeps = {}): Promi
         const outbox = tx.objectStore('outbox')
         const byEventId = outbox.index('byEventId')
 
+        // Só conta como mudança o que de fato mudou: repetir um ack não mexe na revisão.
+        let changed = false
         for (const clientEventId of input.applied) {
           const row = await byEventId.get(clientEventId)
-          if (row?.seq !== undefined && row.state === 'pending') await outbox.delete(row.seq)
+          if (row?.seq !== undefined && row.state === 'pending') {
+            await outbox.delete(row.seq)
+            changed = true
+          }
         }
         for (const refused of input.rejected) {
           const row = await byEventId.get(refused.clientEventId)
@@ -434,6 +456,7 @@ export async function openUserStore(userId: string, deps: StoreDeps = {}): Promi
               rejectedAt: input.deviceNow,
             },
           })
+          changed = true
         }
 
         // Sem cópia ainda (nunca carregou), não há onde pôr as visitas: a tela busca ao abrir.
@@ -444,9 +467,14 @@ export async function openUserStore(userId: string, deps: StoreDeps = {}): Promi
             { ...snapshot, visits: mergeVisits(snapshot.visits, input.visits) },
             'current',
           )
+          changed = true
         }
 
         const meta = tx.objectStore('meta')
+        if (changed) {
+          const revision = await meta.get('revision')
+          await meta.put((typeof revision === 'number' ? revision : 0) + 1, 'revision')
+        }
         await meta.put(input.deviceNow, 'lastSyncAt')
         await meta.put(Date.parse(input.serverNow) - Date.parse(input.deviceNow), 'clockOffsetMs')
       }),

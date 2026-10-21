@@ -1,17 +1,13 @@
-import { render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { makeVisit } from '@/domain/testing'
+import { OfflineStoreError } from '@/lib/offline/store'
 import type { UserProfile } from '@/lib/supabase/mappers'
-import type { VisitsGateway } from '@/lib/supabase/visits-gateway'
-import type { Clock } from './clock'
 import { formatTime } from './format'
-import { createFakeVisitsGateway, market, type FakeServer } from './testing'
+import { createDevice, market, NOW, type FakeServer } from './testing'
 import { TodayScreen } from './TodayScreen'
 
-// 2026-10-21 é quarta-feira.
-const NOW = '2026-10-21T14:00:00.000Z'
-const clock: Clock = () => ({ now: NOW, today: '2026-10-21' })
 const profile: UserProfile = { id: 'repo-ana', role: 'repositor', fullName: 'Ana' }
 
 const MARKETS = [
@@ -21,15 +17,29 @@ const MARKETS = [
 const visitA = () => makeVisit({ id: 'v-a', marketId: 'market-a', date: '2026-10-21', order: 0 })
 const visitB = () => makeVisit({ id: 'v-b', marketId: 'market-b', date: '2026-10-21', order: 1 })
 
+let device: Awaited<ReturnType<typeof createDevice>> | undefined
+
+afterEach(() => {
+  device?.close()
+  device = undefined
+})
+
 /** `prepare` roda antes de renderizar, porque o render já dispara a carga das visitas. */
-function setup(
+async function setup(
   seed: Partial<FakeServer> = {},
-  prepare: (fake: ReturnType<typeof createFakeVisitsGateway>) => void = () => undefined,
+  prepare: (current: Awaited<ReturnType<typeof createDevice>>) => void = () => undefined,
 ) {
-  const fake = createFakeVisitsGateway({ markets: MARKETS, ...seed })
-  prepare(fake)
-  render(<TodayScreen profile={profile} gateway={fake.gateway} clock={clock} />)
-  return { ...fake, user: userEvent.setup() }
+  device = await createDevice({ markets: MARKETS, ...seed })
+  prepare(device)
+  render(
+    <TodayScreen
+      profile={profile}
+      gateway={device.fake.gateway}
+      session={{ ...device.session, deviceId: 'device-1' }}
+      clock={device.clock}
+    />,
+  )
+  return { ...device, user: userEvent.setup() }
 }
 
 const card = (name: string) =>
@@ -37,15 +47,15 @@ const card = (name: string) =>
 
 describe('Hoje', () => {
   it('mostra "carregando" até as visitas chegarem', async () => {
-    setup({ visits: [visitA()] })
+    await setup({ visits: [visitA()] })
 
     expect(screen.getByRole('status')).toHaveTextContent('Carregando visitas…')
     expect(await screen.findByRole('heading', { name: 'Mercado A' })).toBeInTheDocument()
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.queryByText('Carregando visitas…')).not.toBeInTheDocument()
   })
 
   it('mostra o dia e as visitas na ordem da rota, com mercado, endereço e status', async () => {
-    setup({ visits: [visitB(), visitA()] })
+    await setup({ visits: [visitB(), visitA()] })
 
     await screen.findByRole('heading', { name: 'Mercado A' })
 
@@ -63,18 +73,19 @@ describe('Hoje', () => {
   })
 
   it('sem visitas hoje, avisa em vez de mostrar uma tela vazia', async () => {
-    setup()
+    await setup()
 
     expect(await screen.findByText('Nenhuma visita para hoje.')).toBeInTheDocument()
   })
 
-  it('falha ao carregar: avisa, e "Tentar de novo" traz as visitas', async () => {
-    const { user } = setup({ visits: [visitA()] }, (fake) => {
-      fake.failNext('listVisits', new Error('sem rede'))
+  it('primeira vez sem rede: avisa, e "Tentar de novo" traz as visitas quando há sinal', async () => {
+    const { user, net } = await setup({ visits: [visitA()] }, (current) => {
+      current.net.online = false
     })
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Verifique a internet')
 
+    net.online = true
     await user.click(screen.getByRole('button', { name: 'Tentar de novo' }))
 
     expect(await screen.findByRole('heading', { name: 'Mercado A' })).toBeInTheDocument()
@@ -82,21 +93,133 @@ describe('Hoje', () => {
   })
 })
 
-describe('check-in e check-out', () => {
-  it('check-in: a visita passa a "Em andamento", mostra a hora de entrada e oferece o check-out', async () => {
-    const { user, visit } = setup({ visits: [visitA()] })
+describe('o estado do envio', () => {
+  it('sem nada a enviar: "Tudo enviado"', async () => {
+    await setup({ visits: [visitA()] })
+
+    expect(await screen.findByText('Tudo enviado')).toBeInTheDocument()
+  })
+
+  it('com sinal, o check-in aparece na hora e chega ao servidor', async () => {
+    const { user, fake } = await setup({ visits: [visitA()] })
     await screen.findByRole('heading', { name: 'Mercado A' })
 
     await user.click(screen.getByRole('button', { name: 'Fazer check-in em Mercado A' }))
 
     expect(await card('Mercado A').findByText('Em andamento')).toBeInTheDocument()
     expect(card('Mercado A').getByText(`Entrada ${formatTime(NOW)}`)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Fazer check-out em Mercado A' })).toBeInTheDocument()
-    expect(visit('v-a')).toMatchObject({ status: 'in_progress', checkInAt: NOW })
+    await waitFor(() => expect(fake.visit('v-a')).toMatchObject({ status: 'in_progress' }))
+    await waitFor(() => expect(screen.getByText('Tudo enviado')).toBeInTheDocument())
+    expect(card('Mercado A').queryByText(/Ainda não foi enviado/)).not.toBeInTheDocument()
   })
 
+  it('sem sinal, o trabalho fica guardado e a tela diz o que falta enviar', async () => {
+    const { user, fake, net } = await setup({ visits: [visitA()] })
+    await screen.findByRole('heading', { name: 'Mercado A' })
+    net.online = false
+
+    await user.click(screen.getByRole('button', { name: 'Fazer check-in em Mercado A' }))
+
+    expect(await card('Mercado A').findByText('Em andamento')).toBeInTheDocument()
+    expect(await screen.findByText('1 registro para enviar')).toBeInTheDocument()
+    expect(screen.getByText(/Sem conexão\. Tentando de novo às/)).toBeInTheDocument()
+    expect(
+      card('Mercado A').getByText('Registrado neste aparelho. Ainda não foi enviado.'),
+    ).toBeInTheDocument()
+    expect(fake.visit('v-a').status).toBe('planned')
+  })
+
+  it('quando o sinal volta, "Enviar agora" leva o que ficou e a tela volta a "Tudo enviado"', async () => {
+    const { user, fake, net } = await setup({ visits: [visitA()] })
+    await screen.findByRole('heading', { name: 'Mercado A' })
+    net.online = false
+    await user.click(screen.getByRole('button', { name: 'Fazer check-in em Mercado A' }))
+    await screen.findByText('1 registro para enviar')
+    net.online = true
+
+    await user.click(screen.getByRole('button', { name: 'Enviar agora' }))
+
+    await waitFor(() => expect(fake.visit('v-a').status).toBe('in_progress'))
+    expect(await screen.findByText('Tudo enviado')).toBeInTheDocument()
+    expect(screen.getByText(/Último envio às/)).toBeInTheDocument()
+    expect(card('Mercado A').queryByText(/Ainda não foi enviado/)).not.toBeInTheDocument()
+  })
+
+  it('abrir o app sem sinal mostra a lista guardada, avisando que ela é do aparelho', async () => {
+    const { net, open, fake, clock } = await setup({ visits: [visitA()] })
+    await screen.findByRole('heading', { name: 'Mercado A' })
+    net.online = false
+    const reopened = await open()
+    cleanup() // o app foi fechado
+
+    render(
+      <TodayScreen
+        profile={profile}
+        gateway={fake.gateway}
+        session={{ ...reopened, deviceId: 'device-1' }}
+        clock={clock}
+      />,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Mercado A' })).toBeInTheDocument()
+    expect(await screen.findByText(/Esta é a lista guardada neste aparelho/)).toBeInTheDocument()
+  })
+
+  it('avisa quando o relógio do celular está errado por mais de 5 minutos', async () => {
+    const { user, net, session } = await setup({ visits: [visitA()] })
+    await screen.findByRole('heading', { name: 'Mercado A' })
+    await session.store.ack({
+      applied: [],
+      rejected: [],
+      visits: [],
+      serverNow: '2026-10-21T14:12:00.000Z', // o servidor está 12 min à frente
+      deviceNow: NOW,
+    })
+    net.online = true
+    await user.click(screen.getByRole('button', { name: 'Fazer check-in em Mercado A' }))
+
+    expect(
+      await screen.findByText(/relógio do seu celular está 12 min atrasado/),
+    ).toBeInTheDocument()
+  })
+
+  it('"Detalhes do envio" traz o que o suporte pergunta e dá para copiar', async () => {
+    const { user } = await setup({ visits: [visitA()] })
+    await screen.findByRole('heading', { name: 'Mercado A' })
+    const clipboard = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: clipboard },
+      configurable: true,
+    })
+
+    await user.click(screen.getByText('Detalhes do envio'))
+
+    expect(screen.getByText(/Aparelho: device-1/)).toBeInTheDocument()
+    expect(screen.getByText(/Versão do app:/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Copiar' }))
+    expect(clipboard).toHaveBeenCalledWith(expect.stringContaining('Aparelho: device-1'))
+    expect(await screen.findByText('Copiado.')).toBeInTheDocument()
+  })
+
+  it('copiar sem permissão não quebra: o texto continua na tela para selecionar', async () => {
+    const { user } = await setup({ visits: [visitA()] })
+    await screen.findByRole('heading', { name: 'Mercado A' })
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: () => Promise.reject(new Error('negado')) },
+      configurable: true,
+    })
+    await user.click(screen.getByText('Detalhes do envio'))
+
+    await user.click(screen.getByRole('button', { name: 'Copiar' }))
+
+    expect(screen.queryByText('Copiado.')).not.toBeInTheDocument()
+    expect(screen.getByText(/Aparelho: device-1/)).toBeInTheDocument()
+  })
+})
+
+describe('check-in e check-out', () => {
   it('check-out com observação: a visita fica "Feita" com horários e observação, sem mais ações', async () => {
-    const { user, visit } = setup({
+    const { user, fake } = await setup({
       visits: [{ ...visitA(), status: 'in_progress', checkInAt: '2026-10-21T10:00:00.000Z' }],
     })
     await screen.findByRole('heading', { name: 'Mercado A' })
@@ -113,11 +236,13 @@ describe('check-in e check-out', () => {
       ),
     ).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Mercado A/ })).not.toBeInTheDocument()
-    expect(visit('v-a')).toMatchObject({ status: 'done', note: 'Gôndola reposta' })
+    await waitFor(() =>
+      expect(fake.visit('v-a')).toMatchObject({ status: 'done', note: 'Gôndola reposta' }),
+    )
   })
 
-  it('"Voltar" fecha o formulário sem gravar nada', async () => {
-    const { user, saved } = setup({
+  it('"Voltar" fecha o formulário sem guardar nada', async () => {
+    const { user, session } = await setup({
       visits: [{ ...visitA(), status: 'in_progress', checkInAt: '2026-10-21T10:00:00.000Z' }],
     })
     await screen.findByRole('heading', { name: 'Mercado A' })
@@ -127,13 +252,13 @@ describe('check-in e check-out', () => {
 
     expect(screen.queryByLabelText('Observação (opcional)')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Fazer check-out em Mercado A' })).toBeInTheDocument()
-    expect(saved).toEqual([])
+    expect(await session.store.pending()).toEqual([])
   })
 })
 
 describe('"não fui"', () => {
-  it('sem motivo não confirma: mostra o que falta, marca o campo e não grava', async () => {
-    const { user, saved } = setup({ visits: [visitA()] })
+  it('sem motivo não confirma: mostra o que falta, marca o campo e não guarda', async () => {
+    const { user, session } = await setup({ visits: [visitA()] })
     await screen.findByRole('heading', { name: 'Mercado A' })
 
     await user.click(screen.getByRole('button', { name: 'Não fui em Mercado A' }))
@@ -141,11 +266,11 @@ describe('"não fui"', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('Informe o motivo de não ter ido.')
     expect(screen.getByLabelText('Por que não foi?')).toBeInvalid()
-    expect(saved).toEqual([])
+    expect(await session.store.pending()).toEqual([])
   })
 
   it('com motivo, a visita fica "Não foi" e o motivo aparece', async () => {
-    const { user, visit } = setup({ visits: [visitA()] })
+    const { user, fake } = await setup({ visits: [visitA()] })
     await screen.findByRole('heading', { name: 'Mercado A' })
 
     await user.click(screen.getByRole('button', { name: 'Não fui em Mercado A' }))
@@ -154,27 +279,52 @@ describe('"não fui"', () => {
 
     expect(await card('Mercado A').findByText('Não foi')).toBeInTheDocument()
     expect(card('Mercado A').getByText('Motivo: Loja fechada')).toBeInTheDocument()
-    expect(visit('v-a')).toMatchObject({ status: 'not_done', skipReason: 'Loja fechada' })
+    await waitFor(() =>
+      expect(fake.visit('v-a')).toMatchObject({ status: 'not_done', skipReason: 'Loja fechada' }),
+    )
   })
 })
 
-describe('enquanto grava e quando dá errado', () => {
-  it('trava as ações de todas as visitas enquanto uma é gravada (sem toque duplo)', async () => {
-    const fake = createFakeVisitsGateway({ markets: MARKETS, visits: [visitA(), visitB()] })
+describe('quando o servidor discorda', () => {
+  it('o líder cancelou a visita com o celular sem sinal: a recusa é explicada e pode ser dispensada', async () => {
+    const { user, fake, net } = await setup({ visits: [visitA(), visitB()] })
+    await screen.findByRole('heading', { name: 'Mercado A' })
+    net.online = false
+    await user.click(screen.getByRole('button', { name: 'Fazer check-in em Mercado A' }))
+    await screen.findByText('1 registro para enviar')
+    fake.visit('v-a').status = 'cancelled' // o líder cancela no servidor
+    net.online = true
+
+    await user.click(screen.getByRole('button', { name: 'Enviar agora' }))
+
+    const alert = await screen.findByText(
+      'Check-in no Mercado A: a visita foi cancelada pelo líder.',
+    )
+    expect(alert).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Mercado A' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Mercado B' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Entendi' }))
+
+    expect(
+      screen.queryByText('Check-in no Mercado A: a visita foi cancelada pelo líder.'),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('enquanto guarda e quando dá errado', () => {
+  it('trava as ações de todas as visitas enquanto uma é guardada (sem toque duplo)', async () => {
+    const { user, session } = await setup({ visits: [visitA(), visitB()] })
+    await screen.findByRole('heading', { name: 'Mercado A' })
     let release: () => void = () => undefined
     const hold = new Promise<void>((resolve) => {
       release = resolve
     })
-    const slow: VisitsGateway = {
-      ...fake.gateway,
-      saveChanges: async (changes) => {
-        await hold
-        return fake.gateway.saveChanges(changes)
-      },
-    }
-    render(<TodayScreen profile={profile} gateway={slow} clock={clock} />)
-    const user = userEvent.setup()
-    await screen.findByRole('heading', { name: 'Mercado A' })
+    const original = session.store.enqueue.bind(session.store)
+    vi.spyOn(session.store, 'enqueue').mockImplementation(async (drafts) => {
+      await hold
+      return original(drafts)
+    })
 
     await user.click(screen.getByRole('button', { name: 'Fazer check-in em Mercado A' }))
 
@@ -190,23 +340,19 @@ describe('enquanto grava e quando dá errado', () => {
     expect(screen.getByRole('button', { name: 'Fazer check-in em Mercado B' })).toBeEnabled()
   })
 
-  it('se o líder cancelou a visita enquanto ela estava aberta: avisa e ela some da lista', async () => {
-    const { user, visit } = setup({ visits: [visitA()] })
+  it('sem espaço no aparelho: avisa em vez de fingir que registrou, e o aviso pode ser fechado', async () => {
+    const { user, session } = await setup({ visits: [visitA()] })
     await screen.findByRole('heading', { name: 'Mercado A' })
-    visit('v-a').status = 'cancelled' // o líder cancela no servidor
+    vi.spyOn(session.store, 'enqueue').mockRejectedValueOnce(
+      new OfflineStoreError('QUOTA', 'cheio'),
+    )
 
     await user.click(screen.getByRole('button', { name: 'Fazer check-in em Mercado A' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('mudou enquanto você a abria')
-    expect(await screen.findByText('Nenhuma visita para hoje.')).toBeInTheDocument()
-  })
-
-  it('o aviso de erro pode ser fechado', async () => {
-    const { user, failNext } = setup({ visits: [visitA()] })
-    await screen.findByRole('heading', { name: 'Mercado A' })
-    failNext('saveChanges', new Error('sem rede'))
-    await user.click(screen.getByRole('button', { name: 'Fazer check-in em Mercado A' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível salvar')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Não foi possível guardar neste aparelho',
+    )
+    expect(card('Mercado A').getByText('Planejada')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Fechar' }))
 

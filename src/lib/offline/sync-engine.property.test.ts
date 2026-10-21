@@ -7,11 +7,9 @@ import { projectVisits } from '@/domain/projection'
 import { applyOfflineEvents, type OfflineEvent } from '@/domain/sync'
 import { ana, makeVisit } from '@/domain/testing'
 import type { Visit } from '@/domain/types'
-import { SyncFailure } from '@/lib/supabase/errors'
-import type { SyncGateway } from '@/lib/supabase/sync-gateway'
-import type { EventResult, SyncResponse } from '@/lib/supabase/sync-wire'
 import { openUserStore, type UserStore } from './store'
 import { createSyncEngine } from './sync-engine'
+import { createFakeSyncGateway, type Fault } from './testing'
 
 /**
  * A garantia central do offline: com um servidor que perde o pedido, perde a resposta depois de
@@ -23,92 +21,10 @@ import { createSyncEngine } from './sync-engine'
 const DAY = '2026-03-18'
 const START = Date.parse(`${DAY}T12:00:00.000Z`)
 
-type Fault = 'ok' | 'dropBefore' | 'dropAfter' | 'duplicate'
-
 type Op =
   | { kind: 'act'; visit: number; action: 'checkIn' | 'checkOut' | 'notDone' }
   | { kind: 'sync' }
   | { kind: 'restart' }
-
-/** O servidor de verdade (`sync_visit_events_v1`) em miniatura: mesmas regras do domínio, idempotente. */
-class FakeServer implements SyncGateway {
-  readonly visits: Map<string, Visit>
-  readonly decisions = new Map<string, { status: 'applied' | 'rejected'; code: string | null }>()
-  readonly timesApplied = new Map<string, number>()
-  private readonly faults: Fault[]
-
-  constructor(visits: Visit[], faults: Fault[]) {
-    this.visits = new Map(visits.map((visit) => [visit.id, visit]))
-    this.faults = [...faults]
-  }
-
-  sync({ events }: { events: readonly OfflineEvent[] }): Promise<SyncResponse> {
-    const fault = this.faults.shift() ?? 'ok'
-    if (fault === 'dropBefore') return Promise.reject(new SyncFailure('NETWORK', 'caiu antes'))
-    const response = this.process(events)
-    if (fault === 'dropAfter') return Promise.reject(new SyncFailure('NETWORK', 'resposta perdida'))
-    // A rede entregou o mesmo pedido duas vezes; o aparelho só vê uma resposta.
-    if (fault === 'duplicate') this.process(events)
-    return Promise.resolve(response)
-  }
-
-  private process(events: readonly OfflineEvent[]): SyncResponse {
-    const results: EventResult[] = []
-    const touched = new Set<string>()
-    for (const event of [...events].sort((a, b) => a.seq - b.seq)) {
-      const visit = this.visits.get(event.visitId)
-      if (visit === undefined) throw new Error(`visita ${event.visitId} inexistente no teste`)
-      touched.add(visit.id)
-
-      const known = this.decisions.get(event.clientEventId)
-      if (known !== undefined) {
-        results.push(this.result(event, known, visit, true))
-        continue
-      }
-      const outcome = applyOfflineEvents({
-        visit,
-        events: [event],
-        alreadyApplied: new Set(),
-        actor: ana,
-      })
-      const decision =
-        outcome.applied.length === 1
-          ? { status: 'applied' as const, code: null }
-          : { status: 'rejected' as const, code: outcome.rejected[0]?.code ?? null }
-      if (decision.status === 'applied') {
-        this.visits.set(visit.id, outcome.visit)
-        this.timesApplied.set(
-          event.clientEventId,
-          (this.timesApplied.get(event.clientEventId) ?? 0) + 1,
-        )
-      }
-      this.decisions.set(event.clientEventId, decision)
-      results.push(this.result(event, decision, this.visits.get(visit.id) ?? visit, false))
-    }
-    return {
-      kind: 'synced',
-      serverNow: new Date(START).toISOString(),
-      results,
-      visits: [...touched].flatMap((id) => this.visits.get(id) ?? []),
-    }
-  }
-
-  private result(
-    event: OfflineEvent,
-    decision: { status: 'applied' | 'rejected'; code: string | null },
-    visit: Visit,
-    duplicate: boolean,
-  ): EventResult {
-    return {
-      clientEventId: event.clientEventId,
-      visitId: visit.id,
-      status: decision.status,
-      code: decision.status === 'rejected' ? 'INVALID_TRANSITION' : null,
-      visitStatus: visit.status,
-      duplicate,
-    }
-  }
-}
 
 const opArbitrary: fc.Arbitrary<Op> = fc.oneof(
   {
@@ -183,7 +99,8 @@ describe('o motor de sincronização diante de falhas (propriedade)', () => {
         const initial = Array.from({ length: scenario.visitCount }, (_, index) =>
           makeVisit({ id: `v-${index}`, marketId: `m-${index}`, date: DAY, order: index }),
         )
-        const server = new FakeServer(initial, scenario.faults)
+        const serverVisits = [...initial]
+        const server = createFakeSyncGateway(serverVisits, { actor: ana, faults: scenario.faults })
         const enqueued: OfflineEvent[] = []
 
         let counter = 0
@@ -194,7 +111,7 @@ describe('o motor de sincronização diante de falhas (propriedade)', () => {
           })
           const engine = createSyncEngine({
             store,
-            gateway: server,
+            gateway: server.gateway,
             deviceId: 'device-1',
             batchSize: scenario.batchSize,
             now: () => new Date(START).toISOString(),
@@ -263,12 +180,10 @@ describe('o motor de sincronização diante de falhas (propriedade)', () => {
           })
           if (outcome.applied.length === 1) model.set(visit.id, outcome.visit)
         }
-        expect([...server.visits.values()].sort(byId)).toEqual([...model.values()].sort(byId))
+        expect([...serverVisits].sort(byId)).toEqual([...model.values()].sort(byId))
 
         // 5. A cópia do aparelho acompanha o servidor.
-        expect([...(view.snapshot?.visits ?? [])].sort(byId)).toEqual(
-          [...server.visits.values()].sort(byId),
-        )
+        expect([...(view.snapshot?.visits ?? [])].sort(byId)).toEqual([...serverVisits].sort(byId))
 
         app.engine.stop()
         app.store.close()

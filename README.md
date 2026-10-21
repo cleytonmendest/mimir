@@ -4,7 +4,7 @@ App para **repositores** (quem repõe produtos em mercados) executarem a rota do
 
 > Nomes: o repositório é `mimir`, o pacote é `rota-repositor` e o produto é "Rota do repositor".
 
-**Estado atual:** o repositor entra, vê as visitas de hoje e faz check-in, check-out ou "não fui" (hoje **só online**). O caminho até o MVP (offline, visão do líder, cadastros, fechamento do dia, implantação) está em [`docs/mvp.md`](docs/mvp.md). As decisões de arquitetura estão em [`docs/adr/`](docs/adr).
+**Estado atual:** o repositor entra, vê as visitas de hoje e faz check-in, check-out ou "não fui" **mesmo sem sinal**: cada ação fica guardada no aparelho (IndexedDB) e é enviada ao servidor quando houver rede, uma vez só, com o servidor decidindo em caso de conflito. Ainda não há instalação como app (PWA) nem recarregar a página sem rede (próxima fatia). O caminho até o MVP (visão do líder, cadastros, fechamento do dia, implantação) está em [`docs/mvp.md`](docs/mvp.md). As decisões de arquitetura estão em [`docs/adr/`](docs/adr).
 
 ## Rodando localmente
 
@@ -44,7 +44,7 @@ Camadas, de baixo para cima (o ESLint barra importar para cima):
 
 1. `src/domain`: regras de negócio em TypeScript puro (sem React nem Supabase), 100% testadas. Quem pode o quê, o que um check-in encerra, como se gera a semana.
 2. `src/design-system`: componentes visuais (shadcn/ui + Tailwind). Veja o [README do design system](src/design-system/README.md).
-3. `src/lib`: integração com o mundo. **Único** lugar que importa o SDK do Supabase.
+3. `src/lib`: integração com o mundo. **Único** lugar que importa o SDK do Supabase e o IndexedDB (`idb`). `src/lib/offline` guarda a fila do aparelho e a envia ao servidor.
 4. `src/features` e `src/App.tsx`: as telas.
 
 O banco está em `supabase/` (migrations, testes pgTAP). O domínio e o banco falam do mesmo modelo; `src/domain/schema-sync.test.ts` quebra se um lado mudar sem o outro.

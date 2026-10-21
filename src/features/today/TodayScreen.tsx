@@ -1,28 +1,37 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
+import { SyncStatus } from '@/design-system/components/SyncStatus/SyncStatus'
 import { Button } from '@/design-system/components/ui/button'
-import type { Clock } from './clock'
-import { formatLongDate } from './format'
-import { createTodayController, todaysVisits } from './today-controller'
-import { VisitCard } from './VisitCard'
+import type { UserSession } from '@/lib/offline/runtime'
 import type { UserProfile } from '@/lib/supabase/mappers'
 import type { VisitsGateway } from '@/lib/supabase/visits-gateway'
+import type { Clock } from './clock'
+import { Diagnostics } from './Diagnostics'
+import { formatLongDate, formatTime } from './format'
+import { summarizeSync } from './sync-summary'
+import { createTodayController, todaysVisits, type TodayReady } from './today-controller'
+import { VisitCard } from './VisitCard'
+
+/** Acima disso o relógio do celular atrapalha os horários e a pessoa precisa saber. */
+const CLOCK_WARNING_MS = 5 * 60_000
 
 /** As visitas de hoje do repositor: ver em ordem, fazer check-in e check-out, ou dizer que não foi. */
 export function TodayScreen({
   profile,
   gateway,
+  session,
   clock,
 }: {
   profile: UserProfile
   gateway: VisitsGateway
+  session: Pick<UserSession, 'store' | 'engine' | 'deviceId'>
   clock?: Clock
 }) {
-  const [controller] = useState(() => createTodayController({ actor: profile, gateway, clock }))
+  const [controller] = useState(() =>
+    createTodayController({ actor: profile, gateway, session, clock }),
+  )
   const state = useSyncExternalStore(controller.subscribe, controller.getState)
 
-  useEffect(() => {
-    void controller.load()
-  }, [controller])
+  useEffect(() => controller.start(), [controller])
 
   return (
     <section aria-labelledby="today-title" className="mt-6">
@@ -57,6 +66,47 @@ export function TodayScreen({
         <>
           <p className="text-muted-foreground">{formatLongDate(state.day)}</p>
 
+          <SyncPanel
+            state={state}
+            onSyncNow={() => {
+              void controller.syncNow()
+            }}
+          />
+
+          {state.stale && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Sem conexão com o servidor. Esta é a lista guardada neste aparelho
+              {state.fetchedAt === null ? '' : ` (lida às ${formatTime(state.fetchedAt)})`}.
+            </p>
+          )}
+
+          {state.clockOffsetMs !== null && Math.abs(state.clockOffsetMs) > CLOCK_WARNING_MS && (
+            <p role="alert" className="mt-3 text-sm text-destructive">
+              O relógio do seu celular está {Math.round(Math.abs(state.clockOffsetMs) / 60_000)} min{' '}
+              {state.clockOffsetMs > 0 ? 'atrasado' : 'adiantado'}. Ajuste a hora para os horários
+              saírem certos.
+            </p>
+          )}
+
+          {state.rejections.map((rejection) => (
+            <div
+              key={rejection.id}
+              className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-destructive p-3"
+            >
+              <p role="alert" className="text-destructive">
+                {rejection.text}
+              </p>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  void controller.dismissRejection(rejection.id)
+                }}
+              >
+                Entendi
+              </Button>
+            </div>
+          ))}
+
           {state.notice !== null && (
             <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-destructive p-3">
               <p role="alert" className="text-destructive">
@@ -79,6 +129,7 @@ export function TodayScreen({
                   market={state.markets.get(visit.marketId)}
                   busy={state.busyVisitId === visit.id}
                   locked={state.busyVisitId !== null}
+                  unsent={state.unsentVisitIds.has(visit.id)}
                   onCheckIn={() => {
                     void controller.checkIn(visit.id)
                   }}
@@ -92,8 +143,36 @@ export function TodayScreen({
               ))}
             </ul>
           )}
+
+          <Diagnostics
+            version={__APP_VERSION__}
+            deviceId={session.deviceId}
+            unsent={state.unsent}
+            sync={state.sync}
+            lastSyncAt={state.lastSyncAt}
+            fetchedAt={state.fetchedAt}
+            clockOffsetMs={state.clockOffsetMs}
+          />
         </>
       )}
     </section>
+  )
+}
+
+function SyncPanel({ state, onSyncNow }: { state: TodayReady; onSyncNow: () => void }) {
+  const summary = summarizeSync({
+    state: state.sync,
+    unsent: state.unsent,
+    lastSyncAt: state.lastSyncAt,
+  })
+  return (
+    <SyncStatus
+      tone={summary.tone}
+      title={summary.title}
+      detail={summary.detail}
+      action={
+        summary.action === 'syncNow' ? { label: 'Enviar agora', onClick: onSyncNow } : undefined
+      }
+    />
   )
 }
