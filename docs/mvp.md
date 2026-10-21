@@ -6,7 +6,7 @@
 
 Um dono de vários supermercados tem fornecedores que querem montar estandes de degustação nos mercados. Cada mercado aceita um número limitado de estandes por dia (por exemplo, 3). O dono não quer organizar isso: os próprios fornecedores escolhem o mercado e o dia e, se houver vaga, reservam; se não houver, o sistema não deixa.
 
-O produto é uma aplicação web, para celular e computador, com dois papéis: o **fornecedor** reserva e cancela; o **dono** define os limites, fecha datas e consulta a agenda. Tudo fica auditado.
+O produto é uma aplicação web, para celular e computador, com dois papéis: o **fornecedor** reserva e cancela; o **dono** (papel `admin`, "Administrador" na tela) define os limites, fecha datas, cadastra fornecedores e consulta a agenda. Tudo fica auditado.
 
 **Não há mais offline.** Uma vaga só existe se o servidor confirma na hora, então reservar exige internet. Isso elimina o maior risco do plano anterior (fila no aparelho, sincronização, service worker). O risco que sobra é de regra de negócio e de acesso: o limite nunca pode ser ultrapassado, mesmo com dois fornecedores clicando na última vaga ao mesmo tempo, e o cadastro de fornecedores não pode virar porta aberta.
 
@@ -21,19 +21,19 @@ O produto é uma aplicação web, para celular e computador, com dois papéis: o
 7. **O dono fecha datas** (feriado, inventário). Reservas já feitas continuam valendo; só não entram novas.
 8. **Um fuso só:** horário de Brasília. O "dia" é calculado pelo servidor, não pelo aparelho (ADR 0002).
 9. **Login por e-mail e senha.** Nenhum usuário real antes do piloto controlado; antes dele, só homologação privada.
+10. **Cadastro de fornecedores:** o administrador cadastra sempre, pelo painel. Existe também uma página pública de cadastro, e em Configurações ele escolhe o modo: **Fechado** (padrão), **Com código de convite** ou **Livre**. Detalhes em "Acesso".
 
 ## Decisões em aberto
 
-Nenhuma bloqueia os blocos 1 a 3. Cada uma diz o que bloqueia e a recomendação.
+Nenhuma bloqueia os blocos 1 a 3. Cada uma diz o que bloqueia e a recomendação. (A D1, quem pode ser fornecedor, está decidida: ver "Acesso".)
 
-| #   | Pergunta                                                                                                                                           | Bloqueia | Recomendação                                                                                                                                                                                                                     |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D1  | **Quem pode ser fornecedor?** Cadastro aberto deixa qualquer pessoa ocupar vagas.                                                                  | Bloco 5  | **Código de convite** que o dono compartilha com os fornecedores (sem trabalho por fornecedor; se vazar, ele troca o código). Alternativas: lista importada pelo dono, ou cadastro livre com uma aprovação única por fornecedor. |
-| D2  | **Provedor de e-mail** (SMTP): "esqueci a senha" e confirmação de e-mail precisam dele. O SMTP padrão do Supabase é limitado demais para uso real. | Bloco 5  | Provedor com plano gratuito (por exemplo Resend). Precisa de uma conta e de um domínio para o remetente.                                                                                                                         |
-| D3  | **Freio do dono:** cancelar uma reserva e desativar um fornecedor. Não estava no protótipo, mas sem isso um abuso só se resolve mexendo no banco.  | Bloco 4  | Incluir, com motivo e auditoria. É pequeno.                                                                                                                                                                                      |
-| D4  | **Limite de reservas ativas por fornecedor.** Hoje um fornecedor pode reservar um estande em cada mercado, em cada dia, nos 60 dias.               | Piloto   | Sem limite no MVP, com a contagem visível ao dono. Como há uma única porta de escrita (a RPC), ligar o limite depois é mudar uma função.                                                                                         |
-| D5  | **Avisos por e-mail** (confirmação e cancelamento ao fornecedor; agenda do dia para a loja).                                                       | Pós-MVP  | Fora do MVP. A loja precisa saber quem chega? Se sim, uma "agenda do dia" por mercado vem logo depois do piloto.                                                                                                                 |
-| D6  | **Um fornecedor, um login.** Vários usuários por empresa (vários promotores) ficam fora do MVP.                                                    | Pós-MVP  | Confirmar com o dono.                                                                                                                                                                                                            |
+| #   | Pergunta                                                                                                                                                                                           | Bloqueia   | Recomendação                                                                                                                             |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| D2  | **Provedor de e-mail** (SMTP). Só o modo Livre (confirmar o e-mail) e o "esqueci a senha" feito pelo próprio fornecedor precisam dele. Antes disso, o administrador gera um novo link de ativação. | Modo Livre | Provedor com plano gratuito (por exemplo Resend), com uma conta e um domínio para o remetente.                                           |
+| D3  | **Freio do dono:** cancelar uma reserva e desativar um fornecedor. Não estava no protótipo, mas sem isso um abuso só se resolve mexendo no banco.                                                  | Bloco 4    | Incluir, com motivo e auditoria. É pequeno.                                                                                              |
+| D4  | **Limite de reservas ativas por fornecedor.** Hoje um fornecedor pode reservar um estande em cada mercado, em cada dia, nos 60 dias.                                                               | Piloto     | Sem limite no MVP, com a contagem visível ao dono. Como há uma única porta de escrita (a RPC), ligar o limite depois é mudar uma função. |
+| D5  | **Avisos por e-mail** (confirmação e cancelamento ao fornecedor; agenda do dia para a loja).                                                                                                       | Pós-MVP    | Fora do MVP. A loja precisa saber quem chega? Se sim, uma "agenda do dia" por mercado vem logo depois do piloto.                         |
+| D6  | **Um fornecedor, um login.** Vários usuários por empresa (vários promotores) ficam fora do MVP.                                                                                                    | Pós-MVP    | Confirmar com o dono.                                                                                                                    |
 
 ## O que muda no repositório
 
@@ -41,7 +41,7 @@ A fundação fica; o domínio de rota e todo o offline saem. Nada foi para produ
 
 | Fica                                                                                                                                                                                                                                                                                                                     | Adapta                                                                                                                                                                                                                                                                                                          | Sai                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| CI com `CI ok`, guards, ruleset, pgTAP, Playwright contra o Supabase local, Storybook, Vitest e `fast-check`. Fuso (`dates.ts`, `company_date()`, ADR 0002). Cliente e login do Supabase (`src/lib/supabase/client.ts`, `auth.ts`, `src/features/auth`). Auditoria (`audit_log`, triggers, `app.source`). Versão do app. | `markets` (ganha o limite). `profiles` (papéis `owner` e `supplier`, nome da empresa). `permissions.ts` e a matriz de RLS. `tokens.css` (paleta e fontes do protótipo). O padrão de casos compartilhados domínio ↔ pgTAP e o do teste de concorrência (voltam no Bloco 2 com as reservas). ADR 0004 (retenção). | `src/domain` de visitas (`carryover`, `execution`, `plan`, `projection`, `status`, `sync`, `week`, `audit`, `keys` e as fixtures). `src/features/today`. `src/lib/supabase` de visitas (`repository`, `mappers`, `visits-gateway`, `sync-gateway`, `sync-wire`). `StatusBadge`. Tabelas `visits`, `visit_events`, `standard_route`, `device_status`, a RPC `sync_visit_events_v1` e `app_config.min_client_version`. ADRs 0001 e 0003 (viram "substituído"). |
+| CI com `CI ok`, guards, ruleset, pgTAP, Playwright contra o Supabase local, Storybook, Vitest e `fast-check`. Fuso (`dates.ts`, `company_date()`, ADR 0002). Cliente e login do Supabase (`src/lib/supabase/client.ts`, `auth.ts`, `src/features/auth`). Auditoria (`audit_log`, triggers, `app.source`). Versão do app. | `markets` (ganha o limite). `profiles` (papéis `admin` e `supplier`, nome da empresa). `permissions.ts` e a matriz de RLS. `tokens.css` (paleta e fontes do protótipo). O padrão de casos compartilhados domínio ↔ pgTAP e o do teste de concorrência (voltam no Bloco 2 com as reservas). ADR 0004 (retenção). | `src/domain` de visitas (`carryover`, `execution`, `plan`, `projection`, `status`, `sync`, `week`, `audit`, `keys` e as fixtures). `src/features/today`. `src/lib/supabase` de visitas (`repository`, `mappers`, `visits-gateway`, `sync-gateway`, `sync-wire`). `StatusBadge`. Tabelas `visits`, `visit_events`, `standard_route`, `device_status`, a RPC `sync_visit_events_v1` e `app_config.min_client_version`. ADRs 0001 e 0003 (viram "substituído"). |
 
 O código do offline que não chegou à `main` (fatias 1.4 a 1.7: armazenamento local, motor de sincronização, login offline e tela Hoje offline) ficou no PR #6, fechado sem merge. Serve de referência, não entra no produto.
 
@@ -52,7 +52,7 @@ O código do offline que não chegou à `main` (fatias 1.4 a 1.7: armazenamento 
 - **`markets`** (já existe): ganha `capacity` (inteiro, 1 a 20, padrão 3). `archived_at` continua marcando o mercado inativo.
 - **`closed_days`** (nova): `market_id`, `day` (`date`), `reason` opcional. Chave primária `(market_id, day)`.
 - **`bookings`** (nova): `id`, `market_id`, `day` (`date`), `supplier_id` (→ `profiles`), `created_at`, `cancelled_at`, `cancelled_by`. Índice único parcial `(market_id, day, supplier_id) where cancelled_at is null` (um fornecedor não reserva duas vezes o mesmo dia no mesmo mercado) e índice `(market_id, day) where cancelled_at is null` para a contagem.
-- **`profiles`**: papel `owner` ou `supplier`, `company_name`, `email` (copiado de `auth.users` por trigger) e `deactivated_at`.
+- **`profiles`**: papel `admin` ou `supplier`, `company_name`, `email` (copiado de `auth.users` por trigger) e `deactivated_at`.
 - **Janela de reserva** (60 dias, a partir de amanhã): constante no domínio e valor em `app_config`, com teste que confere os dois.
 - Datas são `date`, sem hora. "Hoje" é `company_date(now())` no servidor, e a RPC de disponibilidade devolve esse dia para a tela desenhar a janela certa.
 
@@ -89,9 +89,15 @@ O dono pode reduzir o limite abaixo de dias já reservados: as reservas existent
 
 Triggers de auditoria em `bookings`, `markets`, `closed_days` e `profiles` (hoje a troca de papel não deixa rastro). No update só a diferença (`changes`), como no ADR 0004. O ator é sempre `auth.uid()`.
 
-### Acesso (depende de D1 e D2)
+### Acesso: cadastro de fornecedores
 
-O cadastro precisa ficar fechado de verdade, não só escondido na tela. Duas formas a verificar no spike S-A: um _hook_ "antes de criar usuário" do Supabase Auth que recusa quem não traz um código válido, ou uma Edge Function que valida o código e cria o usuário, com o cadastro livre desligado no Auth. A chave de serviço só existe dentro da Edge Function, nunca em `src/` (guard existente). "Esqueci a senha" e troca de senha usam o e-mail (D2); a política de senha sobe de 6 para 10 caracteres.
+**O administrador cadastra sempre.** Além disso existe a página pública `/cadastro`, e em Configurações o administrador escolhe o modo: **Fechado** (padrão: ninguém cria conta por ela), **Com código de convite** ou **Livre** (qualquer pessoa com e-mail e senha; exige confirmação de e-mail).
+
+- **Cadastro pelo administrador:** na tela Fornecedores ele informa empresa e e-mail. O sistema cria a conta e devolve um **link de ativação** (24 h, uso único) para ele copiar ou enviar pelo WhatsApp; o fornecedor define a própria senha. Nenhuma senha passa pelo administrador. Perdeu o acesso: novo link.
+- **Código de convite:** 8 caracteres legíveis (sem `0/O/1/I`), visível só ao administrador, com "Copiar link de convite" (`/cadastro?codigo=…`), "Compartilhar" e "Gerar novo código" (invalida o anterior; contas já criadas continuam). O sistema não envia e-mail nesse caminho.
+- **Implementação:** Edge Functions, as únicas com a chave de serviço (nunca em `src/`, guard existente). `admin-create-supplier` e `admin-supplier-link` (`verify_jwt`, conferem em `profiles` que quem chama é admin ativo; o link vem de `auth.admin.generateLink`, que não envia e-mail). `public-signup` e `signup-status` (sem JWT): leem a configuração, validam o código em tempo constante, limitam tentativas por IP e por e-mail e criam a conta com papel `supplier`. O Auth continua com `enable_signup = false` (já está no `config.toml`): nenhuma conta nasce pelo SDK do navegador.
+- **Configuração** em `signup_settings` (uma linha: `mode`, `invite_code`), com RLS só para admin. Não vai em `app_config`, que todo usuário logado lê. `handle_new_user` fixa o papel `supplier`: papel nunca vem do cliente. O primeiro admin nasce de `scripts/bootstrap-admin.ts`.
+- **SMTP fora do caminho crítico:** só o modo Livre e o "esqueci a senha" do próprio fornecedor dependem dele. O modo Livre também leva Cloudflare Turnstile e limite de tentativas. A política de senha sobe de 6 para 10 caracteres.
 
 ## Blocos (cada um, um PR; fatias são commits)
 
@@ -104,13 +110,13 @@ Tamanhos relativos (P/M/G), não prazos. Um bloco que passar de uns 3 mil linhas
 | 2   | Regras e banco                   | Domínio, schema, RLS, RPCs, trigger de guarda, testes de concorrência | G    | 1               |
 | 3   | Fornecedor                       | Identidade visual, reservar, minhas reservas, E2E                     | G    | 2               |
 | 4   | Dono                             | Mercados e limites, datas fechadas, agenda, freio                     | M    | 2, D3           |
-| 5   | Acesso                           | Cadastro fechado, e-mail, esqueci a senha, desativar, primeiro dono   | M    | D1, D2, S-A     |
+| 5   | Acesso                           | Fornecedores e link de ativação, cadastro por código, modo Livre      | M    | S-A             |
 | 6   | Produção, endurecimento e piloto | Produção, segurança, LGPD, acessibilidade, runbooks, piloto           | M    | todos           |
 
 ### Bloco 1: Limpeza e reposicionamento
 
-- **1.1 Remover o domínio e as telas de rota** (lista acima) e seus testes. `types.ts`, `errors.ts`, `index.ts` e `permissions.ts` passam a falar de `owner` e `supplier`.
-- **1.2 Migration de reposicionamento:** derruba `visits`, `visit_events`, `standard_route`, `device_status`, as funções de sincronização e os tipos de visita; troca `user_role` para `owner` e `supplier`; remove `min_client_version`. Migrations continuam imutáveis (é uma migration nova). Reescreve `00_structure`, `20_profiles_and_anon` e `30_audit`; apaga os pgTAP de visitas e de sincronização, o gerador de casos de sincronização (com o teste dele) e `e2e/sync-concurrency.spec.ts`; os dois padrões voltam no Bloco 2.
+- **1.1 Remover o domínio e as telas de rota** (lista acima) e seus testes. `types.ts`, `errors.ts`, `index.ts` e `permissions.ts` passam a falar de `admin` e `supplier`.
+- **1.2 Migration de reposicionamento:** derruba `visits`, `visit_events`, `standard_route`, `device_status`, as funções de sincronização e os tipos de visita; troca `user_role` para `admin` e `supplier`; remove `min_client_version`. Migrations continuam imutáveis (é uma migration nova). Reescreve `00_structure`, `20_profiles_and_anon` e `30_audit`; apaga os pgTAP de visitas e de sincronização, o gerador de casos de sincronização (com o teste dele) e `e2e/sync-concurrency.spec.ts`; os dois padrões voltam no Bloco 2.
 - **1.3 App por papel:** `App.tsx` mostra um espaço para o dono e outro para o fornecedor (vazios por enquanto); `package.json`, `index.html`, README e `AccountBar` com o nome do produto. Seed: 1 dono, 2 fornecedores, 3 mercados. E2E de login nos dois papéis.
 - **1.4 ADRs:** 0001 e 0003 marcados como substituídos; novo **ADR 0005** "Reserva com limite garantido no banco" (trava, trigger, RPC, leitura por contagens, sem offline).
 - _Pronto quando:_ `npm run verify`, pgTAP, E2E e CI verdes, e nenhuma menção a visita ou offline fora dos ADRs antigos.
@@ -146,11 +152,13 @@ Precisa das contas do dono do projeto: Supabase em `sa-east-1` e hospedagem (Clo
 
 ### Bloco 5: Acesso
 
-- **5.1 Migration:** `profiles.company_name`, `email`, `deactivated_at`; policies que checam usuário ativo; triggers "sempre resta um dono ativo" e "ninguém muda o próprio papel"; auditoria de `profiles`.
-- **5.2 Cadastro fechado** conforme D1 e o spike S-A, com limite de tentativas.
-- **5.3 E-mail (D2):** confirmação, "esqueci a senha" e troca de senha; política de 10 caracteres.
-- **5.4 Primeiro dono:** `scripts/bootstrap-owner.ts` e o runbook.
-- **5.5 E2E:** código válido, cadastro, primeiro login e reserva; código inválido é recusado; fornecedor desativado não entra.
+- **5.1 Migration:** `profiles.company_name`, `email`, `deactivated_at`; policies que checam usuário ativo; triggers "sempre resta um admin ativo" e "ninguém muda o próprio papel"; `signup_settings` (RLS só admin) e `signup_attempts`; auditoria de `profiles`.
+- **5.2 Spike S-A e Edge Functions de admin** (`admin-create-supplier`, `admin-supplier-link`), com testes Deno (sem token 401; fornecedor 403; admin desativado 403). O `edge-runtime` volta ao job de E2E, hoje excluído do `supabase start` em `.github/workflows/ci.yml`.
+- **5.3 Telas:** Fornecedores (listar, cadastrar, link de ativação, desativar e reativar) e a tela "defina sua senha" do primeiro acesso.
+- **5.4 Configurações do cadastro e `/cadastro`:** modos Fechado e Com código (`public-signup`, `signup-status`, limite de tentativas).
+- **5.5 Primeiro admin:** `scripts/bootstrap-admin.ts` e o runbook.
+- **5.6 Modo Livre:** confirmação de e-mail (D2), Turnstile, "esqueci a senha" pelo próprio fornecedor, senha de 10 caracteres.
+- **5.7 E2E:** o admin cadastra, o fornecedor ativa pelo link e reserva; código válido e inválido; modo Fechado recusa; fornecedor desativado não entra.
 
 ### Bloco 6: Produção, endurecimento e piloto
 
@@ -164,10 +172,10 @@ Precisa das contas do dono do projeto: Supabase em `sa-east-1` e hospedagem (Clo
 
 ## Spikes (curtos, antes de comprometer o desenho)
 
-| Spike                        | Pergunta                                                                                                                                                                     | Decide                                               |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| S-A Cadastro fechado (1 dia) | O hook "antes de criar usuário" funciona no Supabase local e no hospedado? Se não, a Edge Function com o cadastro livre desligado resolve? Limites de e-mail do SMTP padrão? | Como o código de convite é validado; se D2 vem antes |
-| S-B Hospedagem (½ dia)       | Cloudflare Pages ou Vercel: SPA fallback, cabeçalhos (CSP), previews                                                                                                         | Onde a homologação roda                              |
+| Spike                        | Pergunta                                                                                                                                                                                         | Decide                                      |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| S-A Cadastro e links (1 dia) | `generateLink` funciona sem SMTP no Supabase local e no hospedado? Como a sessão chega ao app pelo link (fragmento ou PKCE) e qual tela de senha ele exige? O `edge-runtime` cabe no job de E2E? | O fluxo do link de ativação; o custo do E2E |
+| S-B Hospedagem (½ dia)       | Cloudflare Pages ou Vercel: SPA fallback, cabeçalhos (CSP), previews                                                                                                                             | Onde a homologação roda                     |
 
 Os spikes do plano anterior (sessão offline, celular real, `pg_cron`, E2E com service worker) deixam de ser necessários: não há offline nem job diário.
 
@@ -180,7 +188,7 @@ Os spikes do plano anterior (sessão offline, celular real, `pg_cron`, E2E com s
 
 ## Como começar
 
-O **Bloco 1** começa já, sem depender de ninguém. Em paralelo, pedir ao dono do projeto as contas de homologação (Supabase `sa-east-1` e hospedagem), para o Bloco H andar junto. D1 e D3 precisam de resposta antes dos blocos 4 e 5; D2 antes do 5.
+O **Bloco 1** começa já, sem depender de ninguém. Em paralelo, pedir ao dono do projeto as contas de homologação (Supabase `sa-east-1` e hospedagem), para o Bloco H andar junto. D3 precisa de resposta antes do Bloco 4; o spike S-A abre o Bloco 5; o provedor de e-mail (D2) só entra com o modo Livre.
 
 ## Arquivos críticos
 
