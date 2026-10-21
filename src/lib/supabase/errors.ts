@@ -6,9 +6,12 @@ export class ConfigError extends Error {
   }
 }
 
-export type DataErrorCode = 'QUERY_FAILED' | 'INVALID_ROW'
+export type DataErrorCode = 'QUERY_FAILED' | 'INVALID_ROW' | 'CONFLICT'
 
-/** O servidor recusou a consulta ou devolveu uma linha que o domínio não entende. */
+/**
+ * O servidor recusou a consulta, devolveu uma linha que o domínio não entende, ou (CONFLICT) a
+ * visita mudou no servidor depois que a tela a carregou: quem manda é o servidor, a tela recarrega.
+ */
 export class DataError extends Error {
   readonly code: DataErrorCode
 

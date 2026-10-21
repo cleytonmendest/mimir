@@ -1,9 +1,9 @@
 import type { Actor, StandardRouteEntry, Visit, Weekday } from '@/domain/types'
-import type { Tables } from '@/lib/database.types'
+import type { Tables, TablesInsert, TablesUpdate } from '@/lib/database.types'
 import { DataError } from './errors'
 
 /**
- * Linha do banco -> tipo do domínio. As atribuições de enum (status, origem, papel) só compilam
+ * Linha do banco <-> tipo do domínio. As atribuições de enum (status, origem, papel) só compilam
  * enquanto banco e domínio tiverem os mesmos valores: o tipo gerado é a segunda trava, depois de
  * domain/schema-sync.test.ts.
  */
@@ -75,4 +75,32 @@ export function marketFromRow(row: Tables<'markets'>): Market {
 
 export function profileFromRow(row: Tables<'profiles'>): UserProfile {
   return { id: row.id, role: row.role, fullName: row.full_name }
+}
+
+export function visitToInsertRow(visit: Visit): TablesInsert<'visits'> {
+  return {
+    id: visit.id,
+    repositor_id: visit.repositorId,
+    market_id: visit.marketId,
+    visit_date: visit.date,
+    position: visit.order,
+    status: visit.status,
+    origin: visit.origin,
+    carried_from_date: visit.carriedFromDate,
+    check_in_at: visit.checkInAt,
+    check_out_at: visit.checkOutAt,
+    note: visit.note,
+    skip_reason: visit.skipReason,
+  }
+}
+
+/** Só o que a execução (check-in, check-out, "não fui") muda numa visita já existente. */
+export function executionPatch(visit: Visit): TablesUpdate<'visits'> {
+  return {
+    status: visit.status,
+    check_in_at: visit.checkInAt,
+    check_out_at: visit.checkOutAt,
+    note: visit.note,
+    skip_reason: visit.skipReason,
+  }
 }

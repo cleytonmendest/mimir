@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest'
 import type { Tables } from '@/lib/database.types'
 import type { AppSupabaseClient } from './client'
 import { DataError } from './errors'
-import { getProfile, listMarkets, listStandardRoute, listVisits } from './repository'
+import { visitFromRow } from './mappers'
+import {
+  createVisits,
+  getProfile,
+  listMarkets,
+  listStandardRoute,
+  listVisits,
+  saveVisitChange,
+} from './repository'
 
 type Result = { data: unknown; error: { message: string } | null }
 type Call = [method: string, ...args: unknown[]]
@@ -173,5 +181,73 @@ describe('getProfile', () => {
   it('erro do servidor vira DataError', async () => {
     const { client } = fakeClient({ data: null, error: { message: 'boom' } })
     await expect(getProfile(client, 'u-ana')).rejects.toBeInstanceOf(DataError)
+  })
+})
+
+describe('createVisits', () => {
+  const planned = visitFromRow(visitRow)
+
+  it('não chama o servidor quando não há o que criar', async () => {
+    const { client, calls } = fakeClient({ data: null, error: null })
+
+    await createVisits(client, [])
+
+    expect(calls).toEqual([])
+  })
+
+  it('insere ignorando duplicatas da chave (repositor, mercado, dia): o que já existe não é sobrescrito', async () => {
+    const { client, calls } = fakeClient({ data: null, error: null })
+
+    await createVisits(client, [planned])
+
+    expect(calls[0]).toEqual(['from', 'visits'])
+    const [method, rows, options] = calls[1] ?? []
+    expect(method).toBe('upsert')
+    expect(rows).toEqual([expect.objectContaining({ id: 'v-1', status: 'planned' })])
+    expect(options).toEqual({
+      onConflict: 'repositor_id,market_id,visit_date',
+      ignoreDuplicates: true,
+    })
+  })
+
+  it('erro do servidor vira DataError', async () => {
+    const { client } = fakeClient({ data: null, error: { message: 'boom' } })
+    await expect(createVisits(client, [planned])).rejects.toBeInstanceOf(DataError)
+  })
+})
+
+describe('saveVisitChange', () => {
+  const before = visitFromRow(visitRow)
+  const after = { ...before, status: 'done' as const, note: 'ok' }
+
+  it('atualiza a visita pelo id, só se ela ainda estiver no status em que a tela a viu', async () => {
+    const { client, calls } = fakeClient({ data: [{ id: 'v-1' }], error: null })
+
+    await saveVisitChange(client, { before: { ...before, status: 'in_progress' }, after })
+
+    expect(calls).toEqual([
+      ['from', 'visits'],
+      ['update', expect.objectContaining({ status: 'done', note: 'ok' })],
+      ['eq', 'id', 'v-1'],
+      ['eq', 'status', 'in_progress'],
+      ['select', 'id'],
+    ])
+  })
+
+  it('nenhuma linha atualizada = a visita mudou no servidor: CONFLICT, nada é sobrescrito', async () => {
+    const { client } = fakeClient({ data: [], error: null })
+
+    const failure = await saveVisitChange(client, { before, after }).catch((e: unknown) => e)
+
+    expect(failure).toBeInstanceOf(DataError)
+    expect(failure).toMatchObject({ code: 'CONFLICT' })
+  })
+
+  it('erro do servidor vira DataError e guarda a causa', async () => {
+    const { client } = fakeClient({ data: null, error: { message: 'permission denied' } })
+
+    const failure = await saveVisitChange(client, { before, after }).catch((e: unknown) => e)
+
+    expect(failure).toMatchObject({ code: 'QUERY_FAILED', cause: { message: 'permission denied' } })
   })
 })

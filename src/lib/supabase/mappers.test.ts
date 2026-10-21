@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import type { Tables } from '@/lib/database.types'
 import { DataError } from './errors'
-import { marketFromRow, profileFromRow, routeEntryFromRow, visitFromRow } from './mappers'
+import {
+  executionPatch,
+  marketFromRow,
+  profileFromRow,
+  routeEntryFromRow,
+  visitFromRow,
+  visitToInsertRow,
+} from './mappers'
 
 const visitRow: Tables<'visits'> = {
   id: 'v-1',
@@ -117,5 +124,40 @@ describe('profileFromRow', () => {
       created_at: '2026-10-20T09:00:00+00:00',
     })
     expect(profile).toEqual({ id: 'u-leader', role: 'leader', fullName: 'Lia' })
+  })
+})
+
+describe('visitToInsertRow', () => {
+  it('é o caminho de volta de visitFromRow: ida e volta devolve a mesma linha (sem as datas de controle)', () => {
+    const visit = visitFromRow(visitRow)
+
+    expect(visitToInsertRow(visit)).toEqual({
+      id: 'v-1',
+      repositor_id: 'u-ana',
+      market_id: 'm-a',
+      visit_date: '2026-10-21',
+      position: 2,
+      status: 'done',
+      origin: 'carryover',
+      carried_from_date: '2026-10-20',
+      check_in_at: '2026-10-21T12:30:00.123Z',
+      check_out_at: '2026-10-21T13:10:00.000Z',
+      note: 'Gôndola reposta',
+      skip_reason: null,
+    })
+  })
+})
+
+describe('executionPatch', () => {
+  it('leva só o que a execução muda: nunca repositor, mercado, dia, ordem ou origem', () => {
+    const visit = visitFromRow({ ...visitRow, status: 'not_done', skip_reason: 'Loja fechada' })
+
+    expect(executionPatch(visit)).toEqual({
+      status: 'not_done',
+      check_in_at: '2026-10-21T12:30:00.123Z',
+      check_out_at: '2026-10-21T13:10:00.000Z',
+      note: 'Gôndola reposta',
+      skip_reason: 'Loja fechada',
+    })
   })
 })
