@@ -1,174 +1,187 @@
-# Plano do MVP: Rota do repositor
+# Plano do MVP: Agenda de Degustações
 
-> Aprovado em 21/10/2026. Este é o plano de referência; as decisões de arquitetura estão em [`docs/adr/`](adr). Atualize-o quando uma decisão mudar.
+> Reescrito em 21/10/2026, depois de o dono dos mercados aprovar o protótipo ([`docs/prototipo/agenda-degustacoes.html`](prototipo/agenda-degustacoes.html), abre direto no navegador). Substitui o plano da "rota do repositor", que partia de um problema que não era o do cliente (ele continua no histórico do git, no commit `cbfe944`). As decisões de arquitetura estão em [`docs/adr/`](adr). Atualize este plano quando uma decisão mudar.
 
 ## Contexto
 
-O produto é um PWA para repositores (quem repõe produtos em mercados) executarem a rota diária no celular, muitas vezes sem sinal, e para o líder planejar a semana e acompanhar o dia, com tudo auditado.
+Um dono de vários supermercados tem fornecedores que querem montar estandes de degustação nos mercados. Cada mercado aceita um número limitado de estandes por dia (por exemplo, 3). O dono não quer organizar isso: os próprios fornecedores escolhem o mercado e o dia e, se houver vaga, reservam; se não houver, o sistema não deixa.
 
-Já existe na `main` (817737e, CI verde): regras de negócio completas e 100% testadas em `src/domain`; banco com RLS, auditoria e trigger de guarda; login por e-mail e senha; tela "Hoje" do repositor (**online**); E2E real desse fluxo; CI com pgTAP, tipos gerados e E2E contra Supabase local.
+O produto é uma aplicação web, para celular e computador, com dois papéis: o **fornecedor** reserva e cancela; o **dono** define os limites, fecha datas e consulta a agenda. Tudo fica auditado.
 
-Falta transformar isso em produto operável: offline, visão do líder, cadastros, fechamento do dia e implantação. Este plano leva até o MVP, na ordem de risco, em fatias do tamanho de um PR.
+**Não há mais offline.** Uma vaga só existe se o servidor confirma na hora, então reservar exige internet. Isso elimina o maior risco do plano anterior (fila no aparelho, sincronização, service worker). O risco que sobra é de regra de negócio e de acesso: o limite nunca pode ser ultrapassado, mesmo com dois fornecedores clicando na última vaga ao mesmo tempo, e o cadastro de fornecedores não pode virar porta aberta.
 
-## Decisões fixas (dono do produto)
+## O que o dono aprovou (decisões fixas)
 
-1. **Líder:** acompanhar o dia, planejar a semana **e cadastrar** (mercados, rota padrão, usuários) pela interface. Usa **computador e celular** (tela responsiva).
-2. **Sem comprovação** no check-in (sem GPS, sem foto).
-3. **Fim do dia:** job automático que **só marca "não foi"**; não passa sobras sozinho, o líder remaneja.
-4. **Nenhum usuário real até o MVP completo.** Há homologação privada com HTTPS desde o começo (service worker exige HTTPS; offline se testa em celular real). A saída do MVP é um piloto controlado.
-5. **Líder é online-only.** Offline é só do repositor.
-6. **Login por e-mail** (todos têm). O líder cria o usuário e o servidor gera uma **senha temporária** (trocada no primeiro acesso), sem depender de envio de e-mail no MVP.
-7. **Qualquer líder vê e edita tudo** (sem equipes; o RLS atual já é assim).
-8. **Um fuso só:** horário de Brasília. O "dia" é calculado pelo servidor nesse fuso, não pelo aparelho.
+1. **Limite de estandes por dia, por mercado**, definido pelo dono. Vale para todos os dias do mercado.
+2. **O estande ocupa o dia inteiro.** Não há horários.
+3. **A reserva vale na hora.** O dono não aprova nada.
+4. **Dá para reservar de amanhã até 60 dias à frente.**
+5. **O fornecedor cancela quando quiser** (até o dia do estande) e a vaga volta para os outros.
+6. **O fornecedor vê só quantas vagas restam.** Só o dono vê quem reservou.
+7. **O dono fecha datas** (feriado, inventário). Reservas já feitas continuam valendo; só não entram novas.
+8. **Um fuso só:** horário de Brasília. O "dia" é calculado pelo servidor, não pelo aparelho (ADR 0002).
+9. **Login por e-mail e senha.** Nenhum usuário real antes do piloto controlado; antes dele, só homologação privada.
 
-## O que a revisão independente mudou (e que adoto)
+## Decisões em aberto
 
-1. **Via única de escrita do repositor:** online ou offline, tudo vira evento e passa pela mesma RPC; o `UPDATE` direto do repositor em `visits` é revogado. Garante "tudo é auditado" e elimina duas regras divergentes.
-2. **Visitas criadas pelo servidor** (job noturno): hoje o aparelho as gera ao abrir o app, então o líder vê dia vazio se o repositor não abre, e o fechamento do dia não tem o que fechar.
-3. **Fuso da empresa em todo lugar:** hoje `src/features/today/clock.ts` usa o fuso do aparelho.
-4. **Ordem pelo `seq` do aparelho**, não por `occurredAt` (relógio corrigido no meio do dia quebraria a ordem), e **fila única por aparelho**.
-5. **Fechar o dia D às 03:00 de D+1.** Evento que chega depois volta recusado e cai numa **caixa do líder** com "aplicar" (individual ou em lote). Abandono "evento tardio vence o fechamento": custo alto, e o líder não conseguiria remanejar visita `planned` de ontem. Reavaliar com os dados do teste de campo ("2 dias sem rede").
-6. **O app precisa abrir sem rede:** hoje não abre, nem com service worker (`AuthProvider` busca o perfil toda vez). Guardar a identidade no aparelho.
-7. **Marco 0 de fundação** e **job diário antes das telas do líder**.
-8. **Usuários com senha temporária gerada no servidor**, por Edge Function.
+Nenhuma bloqueia os blocos 1 a 3. Cada uma diz o que bloqueia e a recomendação.
 
-## Marcos
+| #   | Pergunta                                                                                                                                           | Bloqueia | Recomendação                                                                                                                                                                                                                     |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | **Quem pode ser fornecedor?** Cadastro aberto deixa qualquer pessoa ocupar vagas.                                                                  | Bloco 5  | **Código de convite** que o dono compartilha com os fornecedores (sem trabalho por fornecedor; se vazar, ele troca o código). Alternativas: lista importada pelo dono, ou cadastro livre com uma aprovação única por fornecedor. |
+| D2  | **Provedor de e-mail** (SMTP): "esqueci a senha" e confirmação de e-mail precisam dele. O SMTP padrão do Supabase é limitado demais para uso real. | Bloco 5  | Provedor com plano gratuito (por exemplo Resend). Precisa de uma conta e de um domínio para o remetente.                                                                                                                         |
+| D3  | **Freio do dono:** cancelar uma reserva e desativar um fornecedor. Não estava no protótipo, mas sem isso um abuso só se resolve mexendo no banco.  | Bloco 4  | Incluir, com motivo e auditoria. É pequeno.                                                                                                                                                                                      |
+| D4  | **Limite de reservas ativas por fornecedor.** Hoje um fornecedor pode reservar um estande em cada mercado, em cada dia, nos 60 dias.               | Piloto   | Sem limite no MVP, com a contagem visível ao dono. Como há uma única porta de escrita (a RPC), ligar o limite depois é mudar uma função.                                                                                         |
+| D5  | **Avisos por e-mail** (confirmação e cancelamento ao fornecedor; agenda do dia para a loja).                                                       | Pós-MVP  | Fora do MVP. A loja precisa saber quem chega? Se sim, uma "agenda do dia" por mercado vem logo depois do piloto.                                                                                                                 |
+| D6  | **Um fornecedor, um login.** Vários usuários por empresa (vários promotores) ficam fora do MVP.                                                    | Pós-MVP  | Confirmar com o dono.                                                                                                                                                                                                            |
 
-| #   | Marco                        | Entrega                                                             | Tam. |
-| --- | ---------------------------- | ------------------------------------------------------------------- | ---- |
-| 0   | Fundação de campo            | README/ADRs, fuso, versão do app, homologação HTTPS, Sentry, spikes | M    |
-| 1   | Offline do repositor         | PWA, fila local, sincronização idempotente, auth offline, via única | G    |
-| 2   | Job diário                   | Fecha o passado e cria as visitas futuras (pg_cron)                 | P/M  |
-| 3   | Líder: acompanhar e planejar | Dia, Semana, remanejar, recusados, histórico, ausências             | G    |
-| 4   | Cadastros e acesso           | Mercados, rota padrão, usuários (Edge Function), primeiro acesso    | M    |
-| 5   | Produção e endurecimento     | Produção, performance, segurança, LGPD, runbooks, piloto            | M    |
+## O que muda no repositório
 
-Tamanhos relativos (P/M/G), não prazos. Dependências críticas: 0.2 → 1.1/1.2; 0.4 → spike S2 → 1.8/1.11; 1.2 → 1.3 → 1.5 → 1.7 → 1.9; 2.2 → 3.3; 4.1 → 4.4 → 4.5/4.6.
+A fundação fica; o domínio de rota e todo o offline saem. Nada foi para produção, então não há dado a migrar.
 
-## Desenho do offline (contrato revisado)
+| Fica                                                                                                                                                                                                                                                                                                                     | Adapta                                                                                                                                                                                                                                                                                                          | Sai                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| CI com `CI ok`, guards, ruleset, pgTAP, Playwright contra o Supabase local, Storybook, Vitest e `fast-check`. Fuso (`dates.ts`, `company_date()`, ADR 0002). Cliente e login do Supabase (`src/lib/supabase/client.ts`, `auth.ts`, `src/features/auth`). Auditoria (`audit_log`, triggers, `app.source`). Versão do app. | `markets` (ganha o limite). `profiles` (papéis `owner` e `supplier`, nome da empresa). `permissions.ts` e a matriz de RLS. `tokens.css` (paleta e fontes do protótipo). O padrão de casos compartilhados domínio ↔ pgTAP e o do teste de concorrência (voltam no Bloco 2 com as reservas). ADR 0004 (retenção). | `src/domain` de visitas (`carryover`, `execution`, `plan`, `projection`, `status`, `sync`, `week`, `audit`, `keys` e as fixtures). `src/features/today`. `src/lib/supabase` de visitas (`repository`, `mappers`, `visits-gateway`, `sync-gateway`, `sync-wire`). `StatusBadge`. Tabelas `visits`, `visit_events`, `standard_route`, `device_status`, a RPC `sync_visit_events_v1` e `app_config.min_client_version`. ADRs 0001 e 0003 (viram "substituído"). |
 
-**Aparelho** (IndexedDB via `idb`; testes com `fake-indexeddb`)
+O código do offline que não chegou à `main` (fatias 1.4 a 1.7: armazenamento local, motor de sincronização, login offline e tela Hoje offline) ficou no PR #6, fechado sem merge. Serve de referência, não entra no produto.
 
-- Banco `rota-device`: `deviceId` e última identidade. Um banco **por usuário** (`rota-<userId>`): `snapshot` (visitas, mercados, rota, `fetchedAt`, diferença de relógio), `outbox` (`seq` autoIncrement, `clientEventId`, `visitId`, `type`, `payload`, `occurredAt`, `offsetMs`, `causedBy`, estado), `meta`.
-- A tela mostra `projectVisits(snapshot, pendentes)`, função pura no domínio.
-- Quando o domínio encerra uma visita aberta (`execution.checkIn`), o aparelho grava **na mesma transação** o evento do usuário e os eventos **derivados** explícitos (check-out automático com a mesma regra de horário de `execution.ts`, ou "não fui: Sem check-out" se for de dia passado). O servidor não tem regra entre visitas.
-- Sincroniza ao abrir, em `visibilitychange`, em `online`, depois de cada ação, por timer enquanto houver pendência e no botão "enviar". Sem Background Sync (não existe no iOS). `navigator.storage.persist()`.
-- O service worker **não guarda** resposta do Supabase (NetworkOnly); o dado offline mora só no IndexedDB.
+## Desenho
 
-**Servidor** (`sync_visit_events_v1(device_id, client_version, events jsonb)`, `SECURITY DEFINER`, `search_path = ''`)
+### Dados
 
-- Trava a visita (`FOR UPDATE`), procura o `client_event_id` (se existe e é do mesmo ator, devolve o resultado gravado; se é de outro, `ID_CONFLICT`), avalia, atualiza a visita, **insere o evento com o resultado** (a tabela é imutável).
-- Tabela de transição: `checkIn` (espera `planned`, e `visit_date = company_date(occurred_at)`) → `in_progress`; `checkOut` (espera `in_progress`, `occurred_at >= check_in_at`) → `done`; `markNotDone` (espera `planned|in_progress`, `visit_date <= company_date`, motivo não vazio) → `not_done`.
-- Recusa com código: `VISIT_CANCELLED`, `ALREADY_DONE`, `INVALID_TRANSITION` (com status e motivo atuais), `CLOCK_INVALID` (`occurred_at > now() + 10 min`), `VISIT_NOT_FOUND`, `ID_CONFLICT`, `INVALID_DATA`, `upgrade_required`.
-- O servidor calcula o dia no fuso da empresa; a data do aparelho fica só para diagnóstico. Devolve `{server_now, results[], visits[]}`.
-- Mantém o trigger `guard_visit_update` (usa `auth.uid()` do JWT, vale também em função `DEFINER`) e checa explicitamente `repositor_id = auth.uid()`, papel e usuário ativo. Nome com versão (`_v1`): a assinatura nunca muda; a v2 convive.
+- **`markets`** (já existe): ganha `capacity` (inteiro, 1 a 20, padrão 3). `archived_at` continua marcando o mercado inativo.
+- **`closed_days`** (nova): `market_id`, `day` (`date`), `reason` opcional. Chave primária `(market_id, day)`.
+- **`bookings`** (nova): `id`, `market_id`, `day` (`date`), `supplier_id` (→ `profiles`), `created_at`, `cancelled_at`, `cancelled_by`. Índice único parcial `(market_id, day, supplier_id) where cancelled_at is null` (um fornecedor não reserva duas vezes o mesmo dia no mesmo mercado) e índice `(market_id, day) where cancelled_at is null` para a contagem.
+- **`profiles`**: papel `owner` ou `supplier`, `company_name`, `email` (copiado de `auth.users` por trigger) e `deactivated_at`.
+- **Janela de reserva** (60 dias, a partir de amanhã): constante no domínio e valor em `app_config`, com teste que confere os dois.
+- Datas são `date`, sem hora. "Hoje" é `company_date(now())` no servidor, e a RPC de disponibilidade devolve esse dia para a tela desenhar a janela certa.
 
-**Modos de falha tratados**: sincronização parcial (lote até 50, subtransação por evento, atualizar cópia e tirar da fila numa transação só, espera crescente 2 s–5 min com variação); relógio errado (diferença guardada, aviso acima de 5 min); 2 aparelhos (`device_id` + `device_seq`, trava na visita, `ALREADY_DONE` não aparece como erro); token expirado offline (identidade guardada, envia só com a sessão do dono); troca de usuário (banco por usuário, RPC confere o dono, sair com pendências pede confirmação); iOS apaga dados (exigir app instalado, contador de pendências, `persist()`); evento depois de cancelamento/remanejo (resposta explica; recusados ficam na caixa do líder); app antigo × schema novo (RPC versionada, `min_client_version`, mappers validam enums, só acrescentar schema).
+### Reservar (o servidor decide)
 
-## Fatias por marco (cada uma, um PR)
+`book_slot_v1(p_market, p_day)`, `SECURITY DEFINER`, `search_path = ''`:
 
-### Marco 0: Fundação de campo
+1. Confere que quem chama é um fornecedor ativo.
+2. **Trava o par mercado e dia** (`pg_advisory_xact_lock`), então duas reservas do mesmo dia se enfileiram.
+3. Reavalia tudo: mercado ativo, dia dentro da janela, dia não fechado, fornecedor ainda sem reserva ali, vagas restantes.
+4. Insere e devolve `{ok, booking_id}` ou `{ok: false, code}`, com a contagem atual.
 
-- **0.1 README e ADRs** (como rodar, variáveis, testes, deploy; ADRs de offline, fuso, conflitos, retenção). _Teste:_ seguir o README do zero.
-- **0.2 Fuso da empresa:** `COMPANY_TIME_ZONE` e `companyDate()` em `src/domain/dates.ts`; `clock.ts` passa a usá-los; migration com `company_date()`. _Teste:_ matriz de 4 fusos existente + pgTAP em 23:59 e 00:01 de Brasília.
-- **0.3 Versão do app:** `define` no `vite.config.ts`, visível no `AccountBar`, enviada em header.
-- **0.4 Homologação HTTPS:** projeto Supabase `sa-east-1` (plano que não pausa), Cloudflare Pages (SPA fallback e `_headers`), `deploy-homolog.yml` (`supabase db push` → build → varredura do `dist/` com os padrões de `scripts/guards/no-service-role.ts` → deploy), `site_url` e redirects, `scripts/seed-homolog.ts` fora de `src`. _Pronto:_ login num celular real pela URL.
-- **0.5 Observabilidade mínima:** Sentry com `release`, sem dado pessoal, ErrorBoundary.
-- **0.6 Spikes** S1, S2, S3, S5, S6, S7 (tabela abaixo), resultados nos ADRs.
+Vocabulário único de recusa, igual no TypeScript e no SQL: `FULL`, `CLOSED`, `OUT_OF_WINDOW`, `MARKET_INACTIVE`, `FORBIDDEN`. Reservar de novo o que já é seu (clique duplo, repetição de rede) devolve sucesso com a mesma reserva, então repetir é seguro. O app lê um código desconhecido como `UNRECOGNIZED`, sem quebrar.
 
-### Marco 1: Offline do repositor
+`cancel_booking_v1(p_booking)`: do próprio fornecedor (ou do dono), só de hoje em diante, idempotente.
 
-- **1.1 Domínio (puro, 100% de cobertura):** `seq` em `OfflineEvent` e ordenação por ele em `sync.ts`; `checkInEvents()` em `execution.ts` (eventos derivados, com teste de propriedade de equivalência com `checkIn`, via `fast-check`); `projectVisits()`; check-in só no mesmo dia (hoje `status.ts` só barra o futuro); casos de teste compartilhados em `src/domain/fixtures/visit-events.cases.json`.
-- **1.2 Migration da sincronização:** colunas `outcome`, `rejection_code`, `device_id`, `device_seq`, `client_version` em `visit_events`; `audit_log.source` e `audit_row_change` gravando só a diferença no update (o log completo estouraria o plano gratuito em ~1 ano); `app_config` (`min_client_version`) e `device_status`; `sync_visit_events_v1`; **revogar o INSERT direto em `visit_events`**; índices `visits(repositor_id, visit_date)` e `visit_events(visit_id)`. Um gerador escreve o pgTAP a partir do JSON de 1.1, com teste Vitest que confere se está atualizado (padrão de `schema-sync.test.ts`). Atualizar `30_audit` e `40_visit_events`; regerar `database.types.ts`.
-- **1.3 Transporte:** `src/lib/supabase/sync-gateway.ts` (distingue rede, servidor e "atualize o app"). _Teste:_ unidade + API do Playwright com 10 chamadas simultâneas do mesmo `client_event_id` resultando em 1 linha.
-- **1.4 Armazenamento local:** `src/lib/offline/store.ts` com `idb` (banco por usuário, `enqueue`/`ack` atômicos, migração de versão, versão em memória para testes). ESLint: `idb` só em `src/lib`.
-- **1.5 Motor de sincronização:** `src/lib/offline/sync-engine.ts`. _Teste:_ de propriedade, com transporte falso que perde resposta depois de gravar, falha antes, duplica e atrasa; invariantes: nada se perde, nada se aplica duas vezes, a fila esvazia, estado final igual ao de um modelo sequencial.
-- **1.6 Autenticação offline:** identidade guardada em `auth.ts`; estado `offline` no `AuthProvider`; sair com pendências pede confirmação. _Teste:_ E2E com `page.clock` +2 h sem rede e recarregando.
-- **1.7 Hoje offline:** `today-controller.ts` troca `gateway.saveChanges` por enfileirar + enviar; abre com a cópia local; `pendingCount`, "atualizado às", recusados explicados; componente `SyncStatus` (com story); tela de **Diagnóstico** (versão, `deviceId`, pendências, último envio, "enviar agora", "copiar").
-- **1.8 PWA:** `vite-plugin-pwa` (2.0.0, suporta Vite 8), manifest, ícones (`theme_color` conferido contra o token), `UpdateBanner`, tela de versão mínima que **não apaga a fila**, instruções de instalação no iOS. _Teste:_ novo projeto Playwright contra `vite preview` (o dev server tem outro service worker); recarregar sem rede mostra a tela Hoje.
-- **1.9 Via única:** migration limitando `visits_update` ao líder; o repositor deixa de usar `saveVisitChange`. _Teste:_ pgTAP (UPDATE direto do repositor é negado).
-- **1.10 E2E offline:** (a) check-in/out sem rede → volta a rede → banco confere; (b) recarregar sem rede mantém pendências; (c) admin cancela com o aparelho offline → explicação; (d) resposta abortada depois de gravar → sem duplicata.
-- **1.11 Protocolo de campo** (`docs/homologacao/offline.md`): modo avião, app encerrado à força, reinício, 2 dias sem rede, relógio errado, em 1 Android e 1 iPhone.
+`market_availability_v1(p_market, p_from, p_to)`: devolve `today` e, por dia, `capacity`, `booked`, `closed` e `mine`. **Só contagens**, nunca nomes.
 
-### Marco 2: Job diário
+### O limite nunca é ultrapassado: três camadas
 
-- **2.1 `close_past_days(p_today)`:** `SECURITY DEFINER`, sem permissão para clientes; pega todos os dias passados (recupera sozinho se uma noite falhar); `app.source = 'system'`; mesmos textos de `NO_RECORD_REASON`/`NO_CHECKOUT_REASON` (teste confere). Casos compartilhados com `closeDay`.
-- **2.2 `materialize_visits(p_from, p_days)`:** `INSERT … SELECT` da rota padrão, ignorando mercado arquivado, `ON CONFLICT DO NOTHING`; `generateWeek` ganha o mesmo filtro.
-- **2.3 Agendamento:** pg_cron às 06:00 UTC (03:00 de Brasília): fecha e depois cria 14 dias; view de saúde do job, legível pelo líder.
-- **2.4** O aparelho para de gerar a semana (remove `generateWeek`/`createVisits` do controller); `e2e/support/seed.ts` passa a chamar `materialize_visits`.
+1. **A RPC** com a trava e a reavaliação acima.
+2. **Um trigger de guarda** em `bookings` (mesmo padrão do antigo `guard_visit_update`): antes de inserir, pega a mesma trava e recusa se a contagem já chegou ao limite. Assim um erro futuro em uma função, ou um insert feito por um script, não consegue passar do limite.
+3. **Testes**: concorrência real (N chamadas simultâneas para a última vaga resultam em exatamente `capacity` reservas) e teste de modelo com `fast-check` (qualquer sequência de reservar, cancelar, mudar o limite e fechar dias nunca faz uma _nova_ reserva passar do limite).
 
-### Marco 3: Líder
+O dono pode reduzir o limite abaixo de dias já reservados: as reservas existentes ficam como estão e só as novas respeitam o limite novo. A tela avisa.
 
-- **3.0 Permissões finais:** mercados, rota padrão e INSERT de visitas só para o líder (`src/domain/permissions.ts` com snapshot atualizado). _Proposta; confirmar._
-- **3.1 Navegação por papel**, responsiva (grade no computador, lista no celular).
-- **3.2 `apply_plan_changes_v1(jsonb)`:** `SECURITY INVOKER`, tudo ou nada, compare-and-set em `updated_at`. Necessária porque `moveVisitToDate` gera 2 mudanças atômicas e o PostgREST não tem transação.
-- **3.3 Tela Dia:** por repositor, status, horários, último contato do aparelho, pendências e recusados; atualiza a cada 60 s.
-- **3.4 Tela Semana:** `addVisit`, `reorderVisit`, `cancelVisit`, `moveVisitToDate` de `src/domain/plan.ts`, gravando por 3.2.
-- **3.5 Remanejar sobras:** `not_done` de dias passados → `carryOver` ou `addVisit`; `reopenVisit` com a oferta de cancelar a cópia (`postponedCopy`).
-- **3.6 Caixa de recusados:** `leader_apply_rejected_event_v1(event_id)` grava evento do líder que aponta o original; "aplicar", "aplicar todos do repositor/dia" e "descartar".
-- **3.7 Histórico da visita:** linha do tempo com eventos e `audit_log`.
-- **3.8 Ausências:** cancelar as visitas de um repositor entre duas datas (férias, feriado), para o job não gerar "não foi" em massa.
-- **3.9 E2E do líder:** o segundo `test.fixme` de `e2e/critical-flows.spec.ts` vira teste real; entra "aplicar recusado".
+### Leitura e privacidade
 
-### Marco 4: Cadastros e acesso
+- RLS: o fornecedor lê só as próprias reservas; o dono lê todas, com os nomes. `markets` e `closed_days` são legíveis por quem está logado. Clientes **não escrevem** em `bookings`: só pelas RPCs. `markets` e `closed_days` só o dono altera.
+- A tela pode estar desatualizada: se o servidor recusa com `FULL`, a tela consulta de novo e explica ("acabou de lotar"). Atualiza ao abrir, ao voltar para a aba e depois de cada ação. Sem tempo real no MVP.
+- O fornecedor nunca recebe nome de outro fornecedor, nem pela RPC, nem por RLS. O pgTAP prova os dois caminhos.
 
-- **4.1 Migration:** `profiles.deactivated_at`, `profiles.email` (trigger a partir de `auth.users`), **auditoria em `profiles`** (hoje a troca de papel não é auditada), triggers "sempre resta um líder ativo" e "ninguém muda o próprio papel", checagem de usuário ativo nas policies.
-- **4.2 Mercados:** listar, criar, editar, arquivar (oferece cancelar as visitas futuras).
-- **4.3 Rota padrão:** editor repositor × dia; ao salvar, oferece aplicar às visitas já criadas (função pura nova no domínio: acrescenta o que falta e cancela as `planned` de origem `standard` que saíram da rota, de amanhã em diante).
-- **4.4 Edge Functions** `users-admin` e `set-own-password` (seção abaixo); testes Deno; na CI o job de E2E deixa de excluir o `edge-runtime`.
-- **4.5 Tela de usuários:** listar, criar (mostra a senha temporária uma vez), trocar papel, desativar/reativar, redefinir senha.
-- **4.6 Primeiro acesso:** `must_change_password` força a troca; depois `refreshSession`. _Teste:_ E2E líder cria → usuário troca a senha → chega ao Hoje.
+### Auditoria
 
-### Marco 5: Produção e endurecimento
+Triggers de auditoria em `bookings`, `markets`, `closed_days` e `profiles` (hoje a troca de papel não deixa rastro). No update só a diferença (`changes`), como no ADR 0004. O ator é sempre `auth.uid()`.
 
-- **5.1** Produção (Supabase Pro `sa-east-1`, config versionada, aprovação manual no deploy). **5.2** Release (tags, notas, como subir `min_client_version`, "só acrescentar agora, remover depois").
-- **5.3 Performance:** 2 anos de dados sintéticos para 50 repositores; `EXPLAIN ANALYZE` de Hoje, Dia, Semana e audit como repositor e como líder (meta: < 50 ms).
-- **5.4 Segurança:** matriz de RLS exaustiva em pgTAP (papel × tabela × operação), CSP e HSTS, Dependabot.
-- **5.5 LGPD e jurídico:** aviso de privacidade com aceite, retenção do audit, exportação por titular, contratos com fornecedores, Sentry sem dado pessoal. **Validar com o jurídico que o app não é ponto eletrônico** (check-in/out com horário pode ser lido assim).
-- **5.6 Acessibilidade** (axe em todo E2E; fonte grande e luz forte). **5.7 Runbooks** (job que não rodou, aparelho que perdeu pendências, restore, troca de chaves, desligamento de funcionário).
-- **5.8 Piloto controlado:** 2–3 repositores por 1–2 semanas, com critério de seguir ou parar.
+### Acesso (depende de D1 e D2)
 
-## Segurança da gestão de usuários (Edge Function)
+O cadastro precisa ficar fechado de verdade, não só escondido na tela. Duas formas a verificar no spike S-A: um _hook_ "antes de criar usuário" do Supabase Auth que recusa quem não traz um código válido, ou uma Edge Function que valida o código e cria o usuário, com o cadastro livre desligado no Auth. A chave de serviço só existe dentro da Edge Function, nunca em `src/` (guard existente). "Esqueci a senha" e troca de senha usam o e-mail (D2); a política de senha sobe de 6 para 10 caracteres.
 
-- `verify_jwt = true`. Dentro, cliente com o `Authorization` recebido + `auth.getUser()`; **papel vem só de `profiles`**, nunca de `user_metadata`. O cliente admin (service role, injetada no ambiente hospedado) só é criado **depois** da autorização. Entrada validada com zod; CORS restrito.
-- As regras ficam também no banco (4.1), não só na função.
-- **Criar:** `createUser` com senha temporária gerada no servidor (12+ caracteres, alfabeto legível), `email_confirm: true`, `app_metadata.must_change_password`; mostrada uma vez ao líder. **Papel:** `UPDATE profiles` pelo cliente do líder (audita o ator certo). **Desativar:** `ban_duration` + `deactivated_at` (as policies checam usuário ativo, fechando a janela do token válido). **Redefinir:** nova senha temporária + flag; se não derrubar sessões, `revoke_user_sessions(uid)` só para a service role. **Trocar a própria senha:** `set-own-password`. **Primeiro líder:** `scripts/bootstrap-leader.ts` (runbook).
-- Ações em `auth.users` são registradas por `log_admin_action(...)` (`SECURITY DEFINER`, só service role). Política de senha: mínimo 10 caracteres (hoje 6 em `config.toml`).
-- **Testes Deno** com matriz de autorização: sem token 401; repositor 403; líder desativado 403; último líder recusado.
+## Blocos (cada um, um PR; fatias são commits)
+
+Tamanhos relativos (P/M/G), não prazos. Um bloco que passar de uns 3 mil linhas vira dois PRs.
+
+| #   | Bloco                            | Entrega                                                               | Tam. | Depende de      |
+| --- | -------------------------------- | --------------------------------------------------------------------- | ---- | --------------- |
+| 1   | Limpeza e reposicionamento       | `main` sem visitas e sem offline; login por papel; nome do produto    | M    | nada            |
+| H   | Homologação                      | Ambiente HTTPS privado e Sentry (em paralelo aos blocos 2 a 5)        | M    | contas externas |
+| 2   | Regras e banco                   | Domínio, schema, RLS, RPCs, trigger de guarda, testes de concorrência | G    | 1               |
+| 3   | Fornecedor                       | Identidade visual, reservar, minhas reservas, E2E                     | G    | 2               |
+| 4   | Dono                             | Mercados e limites, datas fechadas, agenda, freio                     | M    | 2, D3           |
+| 5   | Acesso                           | Cadastro fechado, e-mail, esqueci a senha, desativar, primeiro dono   | M    | D1, D2, S-A     |
+| 6   | Produção, endurecimento e piloto | Produção, segurança, LGPD, acessibilidade, runbooks, piloto           | M    | todos           |
+
+### Bloco 1: Limpeza e reposicionamento
+
+- **1.1 Remover o domínio e as telas de rota** (lista acima) e seus testes. `types.ts`, `errors.ts`, `index.ts` e `permissions.ts` passam a falar de `owner` e `supplier`.
+- **1.2 Migration de reposicionamento:** derruba `visits`, `visit_events`, `standard_route`, `device_status`, as funções de sincronização e os tipos de visita; troca `user_role` para `owner` e `supplier`; remove `min_client_version`. Migrations continuam imutáveis (é uma migration nova). Reescreve `00_structure`, `20_profiles_and_anon` e `30_audit`; apaga os pgTAP de visitas e de sincronização, o gerador de casos de sincronização (com o teste dele) e `e2e/sync-concurrency.spec.ts`; os dois padrões voltam no Bloco 2.
+- **1.3 App por papel:** `App.tsx` mostra um espaço para o dono e outro para o fornecedor (vazios por enquanto); `package.json`, `index.html`, README e `AccountBar` com o nome do produto. Seed: 1 dono, 2 fornecedores, 3 mercados. E2E de login nos dois papéis.
+- **1.4 ADRs:** 0001 e 0003 marcados como substituídos; novo **ADR 0005** "Reserva com limite garantido no banco" (trava, trigger, RPC, leitura por contagens, sem offline).
+- _Pronto quando:_ `npm run verify`, pgTAP, E2E e CI verdes, e nenhuma menção a visita ou offline fora dos ADRs antigos.
+
+### Bloco H: Homologação (em paralelo)
+
+Precisa das contas do dono do projeto: Supabase em `sa-east-1` e hospedagem (Cloudflare Pages ou Vercel, spike S-B). Sem service worker, é uma implantação comum.
+
+- **H.1 Homologação HTTPS:** `deploy-homolog.yml` (`supabase db push`, build, varredura do `dist/` com os padrões do guard de service role, deploy), `site_url` e redirects, seed de homologação fora de `src`. _Pronto:_ o dono abre o link no celular dele.
+- **H.2 Sentry:** com `release`, sem dado pessoal, e um ErrorBoundary.
+
+### Bloco 2: Regras e banco
+
+- **2.1 Domínio (puro, 100% de cobertura):** `booking.ts` com a avaliação de reserva, a disponibilidade por dia e a regra de cancelamento; os códigos de recusa; casos compartilhados em `src/domain/fixtures/booking.cases.json`; teste de modelo com `fast-check`. _Teste:_ matriz de 4 fusos para a virada do dia.
+- **2.2 Migration do schema:** `capacity`, `closed_days`, `bookings`, `profiles`, RLS, auditoria, índices e revogações. _Teste:_ pgTAP de estrutura, RLS (fornecedor não lê reserva alheia, não escreve direto, anônimo não vê nada) e auditoria.
+- **2.3 RPCs e trigger de guarda:** `book_slot_v1`, `cancel_booking_v1`, `market_availability_v1`. Um gerador (no mesmo padrão do que existia para a sincronização) escreve o pgTAP a partir do JSON de 2.1, com teste do Vitest que confere se está atualizado.
+- **2.4 Camada de dados:** `src/lib/supabase/booking-gateway.ts`, que valida o que vem do banco e distingue rede, servidor e recusa. _Teste:_ unidade, e API do Playwright com dez chamadas simultâneas para a última vaga (uma vence) e para um limite de 3 (exatamente 3).
+
+### Bloco 3: Fornecedor
+
+- **3.1 Identidade visual no design system:** `tokens.css` com a paleta e as fontes do protótipo (claro e escuro); componentes com story: `SlotMeter` (os traços), `AvailabilityCalendar`, `MarketCard`, `Toast`.
+- **3.2 Tela Reservar:** mercado, calendário do mês, painel do dia, confirmação. Mensagens de recusa em português; reconsulta automática depois de uma recusa. Controlador puro com o gateway injetado (o padrão que já usamos).
+- **3.3 Minhas reservas:** lista, "ver no calendário" e cancelar com confirmação.
+- **3.4 E2E:** reservar e cancelar; **dois navegadores disputando a última vaga** (um ganha, o outro vê "lotado" e nenhuma reserva a mais aparece); dia fechado; o fornecedor não vê nomes.
+
+### Bloco 4: Dono
+
+- **4.1 Mercados:** listar, criar, editar, arquivar e definir o limite (1 a 20), com aviso ao reduzir abaixo de dias já reservados.
+- **4.2 Datas fechadas:** fechar e liberar um dia por mercado.
+- **4.3 Agenda:** calendário com os nomes das empresas e as próximas reservas de todos os mercados, filtrável por mercado e por fornecedor.
+- **4.4 Freio (D3):** cancelar uma reserva com motivo e desativar um fornecedor, tudo auditado.
+- **4.5 E2E:** o dono muda o limite e o fornecedor vê o novo; fecha um dia; vê quem reservou.
+
+### Bloco 5: Acesso
+
+- **5.1 Migration:** `profiles.company_name`, `email`, `deactivated_at`; policies que checam usuário ativo; triggers "sempre resta um dono ativo" e "ninguém muda o próprio papel"; auditoria de `profiles`.
+- **5.2 Cadastro fechado** conforme D1 e o spike S-A, com limite de tentativas.
+- **5.3 E-mail (D2):** confirmação, "esqueci a senha" e troca de senha; política de 10 caracteres.
+- **5.4 Primeiro dono:** `scripts/bootstrap-owner.ts` e o runbook.
+- **5.5 E2E:** código válido, cadastro, primeiro login e reserva; código inválido é recusado; fornecedor desativado não entra.
+
+### Bloco 6: Produção, endurecimento e piloto
+
+- **6.1 Produção:** Supabase Pro em `sa-east-1`, configuração versionada, aprovação manual no deploy; tags e notas de release.
+- **6.2 Segurança:** matriz de RLS exaustiva em pgTAP (papel × tabela × operação), CSP e HSTS, Dependabot, revisão do cadastro contra abuso.
+- **6.3 LGPD e jurídico:** aviso de privacidade com aceite (guardamos e-mail e nome da empresa), retenção do log (ADR 0004, a decidir antes da produção), exportação e exclusão por titular, contratos com Supabase, hospedagem, Sentry e e-mail.
+- **6.4 Performance:** carga sintética (50 mercados, 60 dias, 500 fornecedores) com `EXPLAIN ANALYZE` da disponibilidade e da agenda (meta: menos de 50 ms).
+- **6.5 Acessibilidade:** axe no E2E, calendário navegável por teclado, contraste nos dois temas.
+- **6.6 Runbooks:** fornecedor que não consegue entrar, reserva indevida, restore, troca de chaves, mercado fechado de última hora.
+- **6.7 Piloto controlado:** 1 ou 2 mercados e 3 a 5 fornecedores por 2 semanas. _Seguir se:_ nenhuma reserva acima do limite, os fornecedores reservam sem ajuda e o dono não precisou intervir além de limites e datas fechadas.
 
 ## Spikes (curtos, antes de comprometer o desenho)
 
-| Spike                                      | Pergunta                                                                                                                                                                 | Decide                                                          |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| S1 Sessão offline (½–1 dia)                | Com o token vencido e sem rede, o que `getSession()` faz? A renovação ao voltar funciona? E se for revogada? Duas abas?                                                  | Identidade guardada; storage próprio da sessão                  |
-| S2 Celular real (1–2 dias, depende de 0.4) | Service worker e IndexedDB sobrevivem a app encerrado, reinício e 3 dias? `persist()`? `online` é confiável no iOS? Safari e app instalado têm armazenamentos separados? | Instalação obrigatória no iOS; versão mínima; gatilhos de envio |
-| S3 pg_cron (½ dia)                         | Funciona com migrations do zero, no `db lint` e no Supabase hospedado?                                                                                                   | pg_cron ou alternativa (Edge Function agendada / Actions)       |
-| S5 Usuários (1 dia)                        | Redefinir senha pelo admin derruba sessões? Convite por e-mail exigiria SMTP?                                                                                            | Como derrubar sessões; se SMTP entra no MVP                     |
-| S6 E2E com service worker (½ dia)          | `setOffline` afeta as requisições do service worker? `page.clock` adianta a expiração do token?                                                                          | Arquitetura do E2E do marco 1                                   |
-| S7 Hospedagem (½ dia)                      | SPA fallback, `_headers` (`sw.js` sem cache, CSP), previews                                                                                                              | Cloudflare Pages ou Vercel                                      |
+| Spike                        | Pergunta                                                                                                                                                                     | Decide                                               |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| S-A Cadastro fechado (1 dia) | O hook "antes de criar usuário" funciona no Supabase local e no hospedado? Se não, a Edge Function com o cadastro livre desligado resolve? Limites de e-mail do SMTP padrão? | Como o código de convite é validado; se D2 vem antes |
+| S-B Hospedagem (½ dia)       | Cloudflare Pages ou Vercel: SPA fallback, cabeçalhos (CSP), previews                                                                                                         | Onde a homologação roda                              |
 
-A RPC (1.2) vai direto como PR: o risco é de código e o pgTAP o cobre. O `pg_cron` não foi verificado nesta sessão (Docker parado).
+Os spikes do plano anterior (sessão offline, celular real, `pg_cron`, E2E com service worker) deixam de ser necessários: não há offline nem job diário.
 
-## Pendências (não bloqueiam o início)
+## Verificação
 
-- **3.0:** confirmar que só o líder edita mercados e rota (a matriz atual deixa o repositor).
-- **Fechamento D+1 03:00:** reavaliar a tolerância com os dados do protocolo de campo.
-- **4.3:** aplicar mudança de rota às visitas já criadas, ligado por padrão ou não.
-- **Relatório/exportação (CSV)** para o líder: fora do MVP, confirmar.
-- Corrigir `index.html` (`lang="pt-BR"`, título de produto) junto de 0.3.
+- **Por PR:** `npm run verify`, build, pgTAP, `db:lint`, diff de tipos e E2E, como no CI. Código de data passa na matriz de 4 fusos.
+- **Limite:** teste de concorrência no banco, teste de modelo no domínio e E2E com dois navegadores.
+- **Privacidade:** pgTAP prova que o fornecedor não lê reserva alheia, por tabela e por RPC.
+- **Aceite do MVP:** (1) o fornecedor reserva e cancela pelo celular; (2) com vários fornecedores disputando a última vaga, o limite é respeitado em todos os casos; (3) o dono define limites, fecha datas e vê a agenda sem ajuda de quem desenvolveu; (4) nenhum fornecedor vê dado de outro; (5) tudo fica no log; (6) produção no ar com backup, monitoramento, runbooks e piloto aprovado.
 
-## Como começar (após aprovação)
+## Como começar
 
-Primeiros PRs, nesta ordem: **0.1** (README e ADRs), **0.2** (fuso), **0.3** (versão), em paralelo aos spikes **S1** e **S3** (não dependem de HTTPS). Depois **0.4** (homologação) e **S2**, que destravam o marco 1. O marco 1 começa por **1.1** (domínio) e **1.2** (migration), a base de tudo.
-
-## Verificação end-to-end
-
-- **Por PR:** `npm run verify`, build, pgTAP, `db:lint`, diff de tipos, E2E (como o CI); matriz de 4 fusos para código de data.
-- **Offline:** teste de propriedade do motor de sincronização, pgTAP com casos compartilhados com o domínio, E2E com `setOffline`, e o **protocolo de campo (1.11) em Android e iPhone reais** na homologação.
-- **Líder e cadastros:** E2E dos dois fluxos críticos; testes Deno da matriz de autorização.
-- **Job diário:** pgTAP (idempotência, recuperação de noites perdidas) e a view de saúde na homologação.
-- **Aceite do MVP:** (1) um repositor completa um dia inteiro sem sinal e ao reconectar tudo chega **uma vez só**, com conflitos explicados; (2) o líder planeja a semana, acompanha o dia e remaneja o que não foi feito, tudo no log; (3) o líder cadastra mercado, rota e usuário sem tocar no banco; (4) nenhuma visita fica "aberta" para sempre; (5) produção no ar com backup, monitoramento, runbooks e piloto aprovado.
+O **Bloco 1** começa já, sem depender de ninguém. Em paralelo, pedir ao dono do projeto as contas de homologação (Supabase `sa-east-1` e hospedagem), para o Bloco H andar junto. D1 e D3 precisam de resposta antes dos blocos 4 e 5; D2 antes do 5.
 
 ## Arquivos críticos
 
-`src/features/today/today-controller.ts`, `src/domain/sync.ts`, `src/domain/execution.ts`, `src/domain/status.ts`, `src/domain/plan.ts`, `src/domain/permissions.ts`, `src/features/auth/AuthProvider.tsx`, `src/lib/supabase/auth.ts`, `src/lib/supabase/repository.ts`, `src/features/today/clock.ts`, `supabase/migrations/20261020000000_init.sql` (referência: mudanças vão em migrations novas), `e2e/critical-flows.spec.ts`, `.github/workflows/ci.yml`.
+`supabase/migrations/` (mudanças vão em migrations novas), `src/domain/booking.ts`, `src/domain/permissions.ts`, `src/lib/supabase/booking-gateway.ts`, `src/features/booking/`, `src/design-system/tokens.css`, `e2e/`, `.github/workflows/ci.yml`.
