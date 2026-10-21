@@ -1,29 +1,35 @@
-import { StatusBadge } from '@/design-system/components/StatusBadge/StatusBadge'
-import { VISIT_STATUSES } from '@/domain/types'
 import { AccountBar } from '@/features/auth/AccountBar'
 import { AuthGate } from '@/features/auth/AuthGate'
 import { AuthProvider } from '@/features/auth/AuthProvider'
+import type { Clock } from '@/features/today/clock'
+import { TodayScreen } from '@/features/today/TodayScreen'
 import type { AuthGateway } from '@/lib/supabase/auth'
+import type { VisitsGateway } from '@/lib/supabase/visits-gateway'
 
-export default function App({ gateway }: { gateway: AuthGateway }) {
+export default function App({
+  auth,
+  visits,
+  clock,
+}: {
+  auth: AuthGateway
+  visits: VisitsGateway
+  clock?: Clock
+}) {
   return (
-    <AuthProvider gateway={gateway}>
+    <AuthProvider gateway={auth}>
       <main className="mx-auto max-w-xl p-4">
         <h1 className="text-2xl font-semibold">Rota do repositor</h1>
         <AuthGate>
           {(profile) => (
             <>
               <AccountBar profile={profile} />
-              <p className="mt-2 text-muted-foreground">
-                Estrutura pronta. As telas entram a partir daqui.
-              </p>
-              <ul className="mt-4 flex flex-wrap gap-2" aria-label="Status de uma visita">
-                {VISIT_STATUSES.map((status) => (
-                  <li key={status}>
-                    <StatusBadge status={status} />
-                  </li>
-                ))}
-              </ul>
+              {profile.role === 'repositor' ? (
+                <TodayScreen key={profile.id} profile={profile} gateway={visits} clock={clock} />
+              ) : (
+                <p className="mt-6 text-muted-foreground">
+                  A visão do líder (semana de cada repositor) entra a seguir.
+                </p>
+              )}
             </>
           )}
         </AuthGate>
