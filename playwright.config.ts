@@ -1,4 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
+import { localSupabase } from './e2e/support/supabase.ts'
+
+// Sem Supabase local o app abre e avisa que falta configuração; só os testes que usam banco falham.
+const supabase = localSupabase()
 
 export default defineConfig({
   testDir: './e2e',
@@ -12,6 +16,11 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev -- --port 5173 --strictPort',
     url: 'http://localhost:5173',
+    // Atenção: um "npm run dev" já aberto sem as variáveis do Supabase seria reaproveitado e o login falharia.
     reuseExistingServer: !process.env['CI'],
+    env:
+      supabase === null
+        ? {}
+        : { VITE_SUPABASE_URL: supabase.apiUrl, VITE_SUPABASE_ANON_KEY: supabase.anonKey },
   },
 })
