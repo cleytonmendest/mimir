@@ -131,7 +131,7 @@ describe('SupplierScreen: reservar', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Você tem uma reserva neste dia.')).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Ver no calendário: Mercado A, sáb 24/10' }),
+      screen.getByRole('button', { name: 'sáb 24/10 Mercado A: ver no calendário' }),
     ).toBeInTheDocument()
   })
 
@@ -251,7 +251,7 @@ describe('SupplierScreen: cancelar', () => {
       bookings: [{ id: 'b-b', marketId: 'm-b', day: '2026-11-03', supplierId: 'u-ana' }],
     })
     await user.click(
-      await screen.findByRole('button', { name: 'Ver no calendário: Mercado B, ter 03/11' }),
+      await screen.findByRole('button', { name: 'ter 03/11 Mercado B: ver no calendário' }),
     )
     expect(await screen.findByRole('heading', { name: 'Novembro de 2026' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^Mercado B/ })).toHaveAttribute(

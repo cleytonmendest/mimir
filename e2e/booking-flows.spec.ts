@@ -31,7 +31,7 @@ test('o fornecedor reserva um dia com vaga e cancela a reserva', async ({ page }
     const mine = page
       .getByRole('region', { name: 'Minhas reservas' })
       .or(page.locator('section', { has: page.getByRole('heading', { name: 'Minhas reservas' }) }))
-    await expect(mine.getByRole('button', { name: /Ver no calendário/ })).toBeVisible()
+    await expect(mine.getByRole('button', { name: /ver no calendário/ })).toBeVisible()
 
     // No banco: uma reserva ativa, do fornecedor, e a auditoria diz quem reservou.
     const stored = await seed.db
@@ -55,7 +55,7 @@ test('o fornecedor reserva um dia com vaga e cancela a reserva', async ({ page }
     // Sobrevive a recarregar a página: veio do servidor, não só da tela.
     await page.reload()
     await openMarket(page, market.name)
-    await expect(mine.getByRole('button', { name: /Ver no calendário/ })).toBeVisible()
+    await expect(mine.getByRole('button', { name: /ver no calendário/ })).toBeVisible()
 
     // Cancela pela lista, com a confirmação, e a vaga volta.
     await mine.getByRole('button', { name: 'Cancelar reserva' }).click()

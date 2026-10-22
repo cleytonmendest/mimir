@@ -25,7 +25,6 @@ export function MyBookings({
             <li key={booking.id} className="grid gap-2 rounded-lg border border-border p-3">
               <button
                 type="button"
-                aria-label={`Ver no calendário: ${booking.marketName}, ${shortDate(booking.day)}`}
                 onClick={() => {
                   void controller.goToBooking(booking.id)
                 }}
@@ -33,8 +32,10 @@ export function MyBookings({
               >
                 <span className="font-display text-xl font-semibold tabular-nums">
                   {shortDate(booking.day)}
-                </span>
+                </span>{' '}
                 <span className="text-sm text-muted-foreground">{booking.marketName}</span>
+                {/* O nome do botão é o que se vê (WCAG 2.5.3), mais o que ele faz, só para leitor de tela. */}
+                <span className="sr-only">: ver no calendário</span>
               </button>
               <CancelControl
                 bookingId={booking.id}
