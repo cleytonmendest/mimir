@@ -1,4 +1,5 @@
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react'
+import type { KeyboardEvent } from 'react'
 import {
   BOOKING_WINDOW_DAYS,
   dayStatus,
@@ -11,13 +12,23 @@ import {
   bookableMonths,
   compareMonths,
   monthGrid,
+  monthOf,
   type YearMonth,
 } from '@/domain/calendar'
+import { addDays } from '@/domain/dates'
 import { longDate, monthTitle, plural, weekdayLabels } from '@/domain/format'
 import type { IsoDate } from '@/domain/types'
 import { cn } from '../../utils'
 import { SlotMeter } from '../SlotMeter/SlotMeter'
 import { Button } from '../ui/button'
+
+/** Setas: ←→ um dia, ↑↓ uma semana. */
+const ARROW_STEPS: Record<string, number> = {
+  ArrowLeft: -1,
+  ArrowRight: 1,
+  ArrowUp: -7,
+  ArrowDown: 7,
+}
 
 const CELL: Record<DayStatus, string> = {
   free: 'border-slot-free/35 bg-slot-free-bg text-slot-free',
@@ -102,6 +113,31 @@ export function AvailabilityCalendar({
   const { first, last } = bookableMonths(today, windowDays)
   const labels = weekdayLabels()
 
+  /**
+   * Teclado: as setas levam o foco ao dia vizinho que se pode escolher, pulando os que não estão
+   * disponíveis. Ficam no mês mostrado; para outro mês, os botões de mês.
+   */
+  function moveFocus(event: KeyboardEvent<HTMLButtonElement>, from: IsoDate) {
+    const step = ARROW_STEPS[event.key]
+    if (step === undefined) return
+    event.preventDefault()
+    const grid = event.currentTarget.parentElement
+    if (grid === null) return
+    for (
+      let target = addDays(from, step);
+      compareMonths(monthOf(target), month) === 0;
+      target = addDays(target, step)
+    ) {
+      const next = grid.querySelector<HTMLButtonElement>(
+        `button[data-date="${target}"]:not(:disabled)`,
+      )
+      if (next !== null) {
+        next.focus()
+        return
+      }
+    }
+  }
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -175,6 +211,10 @@ export function AvailabilityCalendar({
               aria-label={description}
               aria-pressed={selected === date}
               data-status={status}
+              data-date={date}
+              onKeyDown={(event) => {
+                moveFocus(event, date)
+              }}
               onClick={() => {
                 onSelect(date)
               }}

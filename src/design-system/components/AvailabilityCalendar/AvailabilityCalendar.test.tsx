@@ -99,4 +99,49 @@ describe('AvailabilityCalendar', () => {
     expect(within(legend).getByText('Sua reserva')).toBeInTheDocument()
     expect(screen.getByText(/Cada traço é um estande/)).toHaveTextContent('60 dias à frente')
   })
+
+  describe('teclado', () => {
+    it('as setas levam o foco ao dia vizinho; para cima e para baixo, uma semana', async () => {
+      setup()
+      const user = userEvent.setup()
+      day(/^Terça-feira, 27 de outubro/).focus()
+
+      await user.keyboard('{ArrowRight}')
+      expect(day(/^Quarta-feira, 28 de outubro/)).toHaveFocus()
+      await user.keyboard('{ArrowLeft}{ArrowLeft}')
+      expect(day(/^Segunda-feira, 26 de outubro/)).toHaveFocus()
+      day(/^Sexta-feira, 23 de outubro/).focus()
+      await user.keyboard('{ArrowDown}')
+      expect(day(/^Sexta-feira, 30 de outubro/)).toHaveFocus()
+      await user.keyboard('{ArrowUp}')
+      expect(day(/^Sexta-feira, 23 de outubro/)).toHaveFocus()
+    })
+
+    it('não vai para dias que não dá para escolher (os que já passaram ficam desligados)', async () => {
+      setup()
+      const user = userEvent.setup()
+      // Quinta 22 é o primeiro dia reservável (amanhã); antes dele só há dias desligados.
+      day(/^Quinta-feira, 22 de outubro/).focus()
+      await user.keyboard('{ArrowLeft}{ArrowUp}')
+      expect(day(/^Quinta-feira, 22 de outubro/)).toHaveFocus()
+    })
+
+    it('não sai do mês mostrado', async () => {
+      setup()
+      const user = userEvent.setup()
+      day(/^Sábado, 31 de outubro/).focus()
+      await user.keyboard('{ArrowRight}{ArrowDown}')
+      expect(day(/^Sábado, 31 de outubro/)).toHaveFocus()
+    })
+
+    it('Enter escolhe o dia com o foco, e as outras teclas seguem o caminho normal', async () => {
+      const { onSelect } = setup()
+      const user = userEvent.setup()
+      day(/^Sexta-feira, 23 de outubro/).focus()
+      await user.keyboard('x')
+      expect(onSelect).not.toHaveBeenCalled()
+      await user.keyboard('{Enter}')
+      expect(onSelect).toHaveBeenCalledWith('2026-10-23')
+    })
+  })
 })
