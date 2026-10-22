@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../src/domain/access.ts'
-import { explainFailure, refuseNonLocal, SEED_PLAN } from './seed-dev.ts'
+import { explainFailure, refuseNonLocal, SEED_PLAN, syncEnvFile } from './seed-dev.ts'
 
 // Espelha BOOKING_WINDOW_DAYS (src/domain/booking.ts). Não dá para importar de lá: os imports
 // internos do domínio não têm extensão, e os scripts rodam direto no Node. Se mudar, só o realismo
@@ -62,6 +62,108 @@ describe('explainFailure', () => {
     expect(explainFailure('criar admin@admin.com: Database error')).toBe(
       'criar admin@admin.com: Database error',
     )
+  })
+})
+
+describe('syncEnvFile', () => {
+  const url = 'http://127.0.0.1:54321'
+  const key = 'chave-anon-local'
+  const wanted = `VITE_SUPABASE_URL=${url}\nVITE_SUPABASE_ANON_KEY=${key}\n`
+
+  it('cria o arquivo quando ele não existe', () => {
+    expect(syncEnvFile(null, url, key)).toEqual({
+      content: wanted,
+      change: 'created',
+      previousUrl: null,
+    })
+  })
+
+  it('conserta a cópia do .env.example, que fica com a chave vazia e deixa o app pedindo as variáveis', () => {
+    const example = [
+      '# Local: "npm run db:start"',
+      '# Copie este arquivo para .env.local; ele não é versionado.',
+      `VITE_SUPABASE_URL=${url}`,
+      '# Chave pública. NUNCA colocar a service_role aqui.',
+      'VITE_SUPABASE_ANON_KEY=',
+      '',
+    ].join('\n')
+
+    const result = syncEnvFile(example, url, key)
+
+    expect(result.change).toBe('fixed')
+    expect(result.previousUrl).toBeNull()
+    expect(result.content).toBe(
+      [
+        '# Local: "npm run db:start"',
+        '# Copie este arquivo para .env.local; ele não é versionado.',
+        wanted.trimEnd(),
+        '',
+      ].join('\n'),
+    )
+  })
+
+  it('traz de volta ao local um arquivo que apontava para outro projeto, avisando para onde apontava', () => {
+    const elsewhere = 'VITE_SUPABASE_URL=https://abcd.supabase.co\nVITE_SUPABASE_ANON_KEY=outra\n'
+    const result = syncEnvFile(elsewhere, url, key)
+    expect(result).toEqual({
+      content: wanted,
+      change: 'fixed',
+      previousUrl: 'https://abcd.supabase.co',
+    })
+  })
+
+  it('não mexe no que já está certo, mesmo com aspas, export ou outras variáveis no arquivo', () => {
+    for (const existing of [
+      wanted,
+      `VITE_SUPABASE_URL="${url}"\nVITE_SUPABASE_ANON_KEY='${key}'\n`,
+      `export VITE_SUPABASE_URL=${url}\nexport VITE_SUPABASE_ANON_KEY=${key}\nOUTRA=1\n`,
+      `VITE_SUPABASE_URL=${url}\r\nVITE_SUPABASE_ANON_KEY=${key}\r\n`,
+    ]) {
+      expect(syncEnvFile(existing, url, key)).toEqual({
+        content: existing,
+        change: 'unchanged',
+        previousUrl: null,
+      })
+    }
+  })
+
+  it('guarda as outras variáveis, tira a repetição e usa a última linha como o Vite', () => {
+    const messy = [
+      'OUTRA=1',
+      'VITE_SUPABASE_URL=https://velha.supabase.co',
+      `VITE_SUPABASE_URL=${url}`,
+      `VITE_SUPABASE_ANON_KEY=${key}`,
+      'VITE_SUPABASE_ANON_KEY=',
+      'TERCEIRA=3',
+    ].join('\n')
+
+    const result = syncEnvFile(messy, url, key)
+
+    expect(result.change).toBe('fixed')
+    expect(result.content).toBe(`OUTRA=1\nTERCEIRA=3\n${wanted}`)
+  })
+
+  it('tira do .env.local o comentário do .env.example antigo, que faz o guard e o pre-commit barrarem', () => {
+    const oldCopy = [
+      '# Copie este arquivo para .env.local; ele não é versionado.',
+      `VITE_SUPABASE_URL=${url}`,
+      '# Chave pública (anon/publishable). NUNCA colocar a service_role aqui.',
+      `VITE_SUPABASE_ANON_KEY=${key}`,
+      '',
+    ].join('\n')
+
+    const result = syncEnvFile(oldCopy, url, key)
+
+    expect(result.change).toBe('fixed')
+    expect(result.content).toBe(
+      `# Copie este arquivo para .env.local; ele não é versionado.\n${wanted}`,
+    )
+    expect(result.content).not.toMatch(/service_role/i)
+  })
+
+  it('funciona com um arquivo vazio ou sem a última quebra de linha', () => {
+    expect(syncEnvFile('', url, key).content).toBe(wanted)
+    expect(syncEnvFile('OUTRA=1', url, key).content).toBe(`OUTRA=1\n${wanted}`)
   })
 })
 
