@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test'
+import { expect, type Browser, type Page } from '@playwright/test'
 
 export async function signIn(page: Page, email: string, password: string) {
   await page.goto('/')
@@ -24,4 +24,19 @@ export async function openAgenda(page: Page, marketName: string) {
   await expect(page.getByRole('heading', { name: 'Administração' })).toBeVisible()
   await page.getByRole('button', { name: new RegExp(`^${marketName}`) }).click()
   await expect(page.getByRole('heading', { name: /^\w+ de \d{4}$/ })).toBeVisible()
+}
+
+/** Um celular novo, sem sessão nenhuma: outra pessoa abrindo o app (ou um link que recebeu). */
+export async function newPhone(
+  browser: Browser,
+  devices: Record<string, object>,
+  baseURL: string | undefined,
+): Promise<Page> {
+  const context = await browser.newContext({
+    ...devices['Pixel 7'],
+    ...(baseURL === undefined ? {} : { baseURL }),
+    timezoneId: 'America/Sao_Paulo',
+    locale: 'pt-BR',
+  })
+  return context.newPage()
 }

@@ -18,9 +18,16 @@ export interface FakeSetup {
   signedInAs?: string
   /** Segura o login até esta promessa resolver (para ver o estado "entrando"). */
   holdSignIn?: Promise<void>
+  /** Links de ativação válidos: token -> e-mail da conta. */
+  activationTokens?: Record<string, string>
 }
 
 export type FakeFault = 'config' | 'offline' | null
+
+/** Links de ativação do fake: token -> e-mail da conta. Cada token vale uma vez só. */
+export interface FakeActivation {
+  tokens: Record<string, string>
+}
 
 export const ana: FakeAccount = {
   userId: 'u-ana',
@@ -44,6 +51,7 @@ export function createFakeGateway(setup: FakeSetup = {}) {
   let current: string | null =
     setup.signedInAs === undefined ? null : (accounts[setup.signedInAs]?.userId ?? null)
   let fault: FakeFault = null
+  const activationTokens = { ...setup.activationTokens }
 
   function emit() {
     const userId = current
@@ -82,6 +90,26 @@ export function createFakeGateway(setup: FakeSetup = {}) {
       if (fault === 'offline') return Promise.reject(new Error('sem rede'))
       const account = Object.values(accounts).find((candidate) => candidate.userId === userId)
       return Promise.resolve(account?.profile ?? null)
+    },
+    redeemActivationToken(tokenHash) {
+      if (fault === 'offline') return Promise.reject(new AuthFailure('NETWORK', 'Sem conexão'))
+      const email = activationTokens[tokenHash]
+      const account = email === undefined ? undefined : accounts[email]
+      if (account === undefined) return Promise.resolve('INVALID_LINK')
+      delete activationTokens[tokenHash]
+      current = account.userId
+      emit()
+      return Promise.resolve('OK')
+    },
+    setPassword(password) {
+      if (fault === 'offline') return Promise.reject(new AuthFailure('NETWORK', 'Sem conexão'))
+      const account = Object.values(accounts).find((candidate) => candidate.userId === current)
+      if (account === undefined) return Promise.reject(new AuthFailure('UNKNOWN', 'Sem sessão'))
+      if (password.length < 10) {
+        return Promise.reject(new AuthFailure('WEAK_PASSWORD', 'Essa senha não serve'))
+      }
+      account.password = password
+      return Promise.resolve()
     },
   }
 

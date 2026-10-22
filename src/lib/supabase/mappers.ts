@@ -1,3 +1,4 @@
+import type { SignupMode } from '@/domain/access'
 import type { Actor, IsoDate } from '@/domain/types'
 import type { Tables } from '@/lib/database.types'
 
@@ -83,4 +84,36 @@ export function adminBookingFromRow(
     supplierId: row.supplier_id,
     supplierName: row.profiles?.full_name ?? '',
   }
+}
+
+/** Um fornecedor, como o administrador o vê na lista. */
+export interface Supplier {
+  id: string
+  fullName: string
+  email: string
+  /** false = conta desativada: não entra, não reserva; o histórico fica. */
+  active: boolean
+}
+
+export function supplierFromRow(
+  row: Pick<Tables<'profiles'>, 'id' | 'full_name' | 'email' | 'deactivated_at'>,
+): Supplier {
+  return {
+    id: row.id,
+    fullName: row.full_name,
+    email: row.email ?? '',
+    active: row.deactivated_at === null,
+  }
+}
+
+/** Como a página pública /cadastro está configurada. O código só o administrador enxerga. */
+export interface SignupSettings {
+  mode: SignupMode
+  inviteCode: string | null
+}
+
+export function signupSettingsFromRow(
+  row: Pick<Tables<'signup_settings'>, 'mode' | 'invite_code'>,
+): SignupSettings {
+  return { mode: row.mode, inviteCode: row.invite_code }
 }
