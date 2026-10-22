@@ -13,12 +13,27 @@ Precisa de **Node 22.18+** (`.nvmrc`) e **Docker** (o Supabase local roda em con
 ```sh
 npm ci
 npm run db:start                      # sobe o Supabase local e aplica as migrations (leva alguns minutos na 1ª vez)
-npx supabase status -o env            # mostra API_URL e ANON_KEY
-cp .env.example .env.local            # e preencha VITE_SUPABASE_URL (API_URL) e VITE_SUPABASE_ANON_KEY (ANON_KEY)
+npm run db:seed-dev                   # dados de mentira e o .env.local (veja abaixo)
 npm run dev                           # http://localhost:5173
 ```
 
-Não existe cadastro pelo navegador (`enable_signup = false`): as contas nascem nas Edge Functions. Para o primeiro administrador do seu ambiente local:
+### Banco de teste local, com dados de mentira
+
+O Supabase do `npm run db:start` é um banco só seu, dentro do Docker: mexer nele não toca em nenhum banco de verdade. `npm run db:seed-dev` o enche de dados fictícios:
+
+| Quem                  | E-mail                                                | Senha        |
+| --------------------- | ----------------------------------------------------- | ------------ |
+| Administrador         | `admin@admin.com`                                     | `admin12345` |
+| Fornecedores          | `fornecedor1@example.com` a `fornecedor8@example.com` | `senha12345` |
+| Fornecedor desativado | `fornecedor9@example.com`                             | `senha12345` |
+
+Vêm junto 4 mercados (limites de 2 a 5 estandes), datas fechadas e reservas a partir de hoje, com dia lotado, dia com vaga, reserva cancelada e a conta desativada, para ver cada situação das telas. O script também cria o `.env.local` (o app abre pedindo `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` sem ele; se o `npm run dev` já estava rodando, reinicie). Rodar de novo é seguro: reaproveita as contas e refaz as reservas e as datas fechadas desses 4 mercados. `npx supabase db reset` apaga tudo; rode o seed outra vez depois.
+
+Essas senhas são públicas (estão no código), então o seed **só roda contra o Supabase local**: ele recusa qualquer outro endereço e qualquer chave de serviço que não seja a do Supabase local, antes de escrever qualquer coisa.
+
+### Sem o seed
+
+Não existe cadastro pelo navegador (`enable_signup = false`): as contas nascem nas Edge Functions. Copie `.env.example` para `.env.local` e preencha `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` com `API_URL` e `ANON_KEY` de `npx supabase status -o env`. Para o primeiro administrador:
 
 ```sh
 eval "$(npx supabase status -o env | sed 's/^/export /')"
@@ -26,7 +41,7 @@ SUPABASE_URL=$API_URL SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY \
   node scripts/bootstrap-admin.ts --email voce@teste.dev --nome "Você" --app-url http://localhost:5173
 ```
 
-O script imprime um link: abra, escolha a senha e você já entra como administrador. Dali em diante, cadastre fornecedores pela aba Fornecedores. Em produção, veja o [runbook de acesso](docs/runbooks/acesso.md).
+O script imprime um link: abra, escolha a senha e você já entra como administrador. Dali em diante, cadastre fornecedores pela aba Fornecedores. Em produção, é este o caminho (nunca o seed): veja o [runbook de acesso](docs/runbooks/acesso.md).
 
 ## Comandos
 
@@ -38,6 +53,7 @@ O script imprime um link: abra, escolha a senha e você já entra como administr
 | `npm run e2e`                        | E2E no celular simulado (Playwright). Descobre o Supabase local sozinho; precisa de `npm run db:start` e de `npx playwright install chromium`        |
 | `npm run db:test`                    | Testes do banco (pgTAP: RLS, auditoria, constraints, funções de reserva e de acesso)                                                                 |
 | `npm run db:gen-cases`               | Regera o pgTAP das reservas (`70_booking_cases.test.sql`) a partir dos casos compartilhados com o domínio (`src/domain/fixtures/booking.cases.json`) |
+| `npm run db:seed-dev`                | Dados de mentira no Supabase local (`admin@admin.com`, fornecedores, mercados, reservas). Recusa qualquer banco que não seja o local                 |
 | `npm run db:lint`                    | Lint do schema                                                                                                                                       |
 | `npm run db:types`                   | Regera `src/lib/database.types.ts` (commitar a saída **crua**, sem formatar)                                                                         |
 | `npm run storybook`                  | Vitrine do design system                                                                                                                             |
