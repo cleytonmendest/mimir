@@ -10,6 +10,12 @@ updates:
       time: '06:00'
       timezone: America/Sao_Paulo
     open-pull-requests-limit: 5
+    ignore:
+      # Os tipos acompanham a versão do Node do projeto (.nvmrc, hoje 22), não a mais nova: tipos de
+      # um Node maior fazem o TypeScript aceitar APIs que o runtime não tem. Quem sobe o Node sobe os
+      # tipos junto, de propósito.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       desenvolvimento:
         dependency-type: development
