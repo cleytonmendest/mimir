@@ -173,6 +173,30 @@ export async function getProfile(deps: Deps, id: string): Promise<ProfileRow | n
   return row === undefined ? null : (row as ProfileRow)
 }
 
+/** Só para o script do primeiro administrador: acha o perfil pelo e-mail do login. */
+export async function getProfileByEmail(deps: Deps, email: string): Promise<ProfileRow | null> {
+  const path = `/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=id,role,email,full_name,deactivated_at`
+  const reply = await request(deps, path, { headers: serviceHeaders(deps) })
+  if (reply.status !== 200 || !Array.isArray(reply.body)) throw unexpected(path, reply)
+  const row: unknown = reply.body[0]
+  return row === undefined ? null : (row as ProfileRow)
+}
+
+/** Só para o script do primeiro administrador: o papel nunca muda por outro caminho a partir do app. */
+export async function setProfileRole(
+  deps: Deps,
+  id: string,
+  role: 'admin' | 'supplier',
+): Promise<void> {
+  const path = `/rest/v1/profiles?id=eq.${id}`
+  const reply = await request(deps, path, {
+    method: 'PATCH',
+    headers: { ...serviceHeaders(deps), Prefer: 'return=minimal' },
+    body: JSON.stringify({ role }),
+  })
+  if (reply.status !== 204) throw unexpected(path, reply)
+}
+
 export interface SignupSettings {
   mode: 'closed' | 'invite' | 'open'
   inviteCode: string | null
