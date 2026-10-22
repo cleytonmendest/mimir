@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:local": "npm run db:start && npm run db:migrate && npm run db:seed-dev && npm run dev",
+    "dev:local": "npm run db:start && npm run db:migrate && npm run db:seed-dev && npm run dev -- --strictPort",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",

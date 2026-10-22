@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../src/lib/database.types.ts'
@@ -328,12 +328,74 @@ export function explainFailure(message: string): string {
   )
 }
 
-/** Cria o .env.local que o app precisa, se ainda não existir (sem ele o app abre pedindo isso). */
+const ENV_FILE = '.env.local'
+const URL_KEY = 'VITE_SUPABASE_URL'
+const ANON_KEY = 'VITE_SUPABASE_ANON_KEY'
+
+export interface EnvSync {
+  content: string
+  /** criado; corrigido (variável vazia, faltando ou apontando para outro lugar); ou já estava certo. */
+  change: 'created' | 'fixed' | 'unchanged'
+  /** A URL que o arquivo tinha quando era outra que não a local, para avisar de onde ele apontava. */
+  previousUrl: string | null
+}
+
+/** O valor que o Vite usaria: o da última linha "CHAVE=valor" do arquivo (sem aspas), ou ''. */
+function envValue(lines: readonly string[], key: string): string {
+  const pattern = new RegExp(`^\\s*(?:export\\s+)?${key}\\s*=\\s*(.*?)\\s*$`)
+  let value = ''
+  for (const line of lines) {
+    const found = pattern.exec(line)
+    if (found?.[1] !== undefined) value = found[1].replace(/^(["'])(.*)\1$/, '$2')
+  }
+  return value
+}
+
+/**
+ * O .env.local tem de apontar para o Supabase local: é com ele que o app abre. Só existir não basta,
+ * a cópia do .env.example fica com a chave vazia e o app pede as variáveis do mesmo jeito. Troca as
+ * duas variáveis e deixa o resto do arquivo como está, menos os comentários que citam a chave de
+ * servidor (os do .env.example antigo): o guard no-service-role barra o arquivo por causa deles, e o
+ * hook de pre-commit roda esse guard.
+ */
+export function syncEnvFile(existing: string | null, apiUrl: string, anonKey: string): EnvSync {
+  const wanted = `${URL_KEY}=${apiUrl}\n${ANON_KEY}=${anonKey}\n`
+  if (existing === null) return { content: wanted, change: 'created', previousUrl: null }
+
+  const lines = existing.split(/\r?\n/)
+  const currentUrl = envValue(lines, URL_KEY)
+  const trips = (line: string) => /^\s*#.*service_role/i.test(line)
+  if (
+    currentUrl === apiUrl &&
+    envValue(lines, ANON_KEY) === anonKey &&
+    !lines.some((line) => trips(line))
+  ) {
+    return { content: existing, change: 'unchanged', previousUrl: null }
+  }
+
+  const isOurs = (line: string) =>
+    new RegExp(`^\\s*(?:export\\s+)?(?:${URL_KEY}|${ANON_KEY})\\s*=`).test(line)
+  const rest = lines.filter((line) => !isOurs(line) && !trips(line))
+  while (rest.at(-1)?.trim() === '') rest.pop()
+  const kept = rest.length === 0 ? '' : `${rest.join('\n')}\n`
+  return {
+    content: `${kept}${wanted}`,
+    change: 'fixed',
+    previousUrl: currentUrl !== '' && currentUrl !== apiUrl ? currentUrl : null,
+  }
+}
+
+/** Deixa o .env.local apontando para o Supabase local (sem ele, ou com ele errado, o app pede as variáveis). */
 function ensureEnvFile(apiUrl: string, anonKey: string): string {
-  const file = '.env.local'
-  if (existsSync(file)) return `${file} já existe, não mexi.`
-  writeFileSync(file, `VITE_SUPABASE_URL=${apiUrl}\nVITE_SUPABASE_ANON_KEY=${anonKey}\n`)
-  return `${file} criado (se o "npm run dev" já estava rodando, pare e suba de novo).`
+  const existing = existsSync(ENV_FILE) ? readFileSync(ENV_FILE, 'utf8') : null
+  const sync = syncEnvFile(existing, apiUrl, anonKey)
+  if (sync.change === 'unchanged') return `${ENV_FILE} já aponta para o Supabase local.`
+
+  writeFileSync(ENV_FILE, sync.content)
+  const restart = 'Se o "npm run dev" já estava rodando, pare e suba de novo.'
+  if (sync.change === 'created') return `${ENV_FILE} criado. ${restart}`
+  const before = sync.previousUrl === null ? '' : ` (antes apontava para ${sync.previousUrl})`
+  return `${ENV_FILE} corrigido: agora aponta para o Supabase local${before}. ${restart}`
 }
 
 async function main(): Promise<void> {

@@ -15,7 +15,7 @@ npm ci
 npm run dev:local        # sobe o banco, cria os dados de teste e abre o app em http://localhost:5173
 ```
 
-Na primeira vez o Docker baixa as imagens e leva alguns minutos. O `dev:local` faz quatro coisas, que também dá para rodar separadas: `npm run db:start` (sobe o Supabase local: banco, login, API e Edge Functions), `npm run db:migrate` (aplica as migrations que o seu banco ainda não tem, sem apagar nada), `npm run db:seed-dev` (os dados de teste, abaixo, e o `.env.local` que o app precisa) e `npm run dev`.
+Na primeira vez o Docker baixa as imagens e leva alguns minutos. O `dev:local` faz quatro coisas, que também dá para rodar separadas: `npm run db:start` (sobe o Supabase local: banco, login, API e Edge Functions), `npm run db:migrate` (aplica as migrations que o seu banco ainda não tem, sem apagar nada), `npm run db:seed-dev` (os dados de teste, abaixo, e o `.env.local` que o app precisa) e `npm run dev` (o Vite).
 
 Depois de um `git pull` é só rodar o `npm run dev:local` de novo: o `db:start` não atualiza um banco que já estava rodando, e é o `db:migrate` que traz as migrations novas. Se o seed reclamar que uma coluna ou tabela "não existe", é o banco atrás das migrations: rode `npm run db:migrate`, e se não resolver, `npx supabase db reset` recria o banco do zero (ele só tem dados de teste). Se o `supabase/config.toml` mudou, pare o banco (`npx supabase stop`) antes de subir.
 
@@ -31,7 +31,9 @@ O Supabase do `db:start` é um banco só seu, dentro do Docker: mexer nele não 
 
 Vêm junto 4 mercados (limites de 2 a 5 estandes), datas fechadas e reservas a partir de hoje, com dia lotado, dia com vaga, reserva cancelada e a conta desativada, para ver cada situação das telas. Rodar de novo é seguro: reaproveita as contas e refaz as reservas e as datas fechadas desses 4 mercados (útil quando os dias do seed ficam para trás). `npx supabase db reset` apaga tudo; rode o seed outra vez depois.
 
-Essas senhas são públicas (estão no código), então o seed **só roda contra o Supabase local**: ele recusa qualquer outro endereço e qualquer chave de serviço que não seja a do Supabase local, antes de escrever qualquer coisa. Se o app abrir pedindo `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`, falta o `.env.local`: rode `npm run db:seed-dev` e reinicie o `npm run dev`.
+Essas senhas são públicas (estão no código), então o seed **só roda contra o Supabase local**: ele recusa qualquer outro endereço e qualquer chave de serviço que não seja a do Supabase local, antes de escrever qualquer coisa.
+
+O seed também deixa o `.env.local` apontando para o Supabase local: cria o arquivo se faltar e corrige se as variáveis estiverem vazias (é o que acontece com uma cópia do `.env.example`) ou apontando para outro lugar, avisando para onde apontava. Se o app abrir pedindo `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`, rode `npm run dev:local` de novo. O Vite só lê o `.env.local` quando inicia, então um dev server que já estava rodando não pega a correção: o `dev:local` usa a porta 5173 e para com "Port 5173 is already in use" se ela estiver ocupada por um servidor antigo. Feche esse (Ctrl+C no terminal dele) e rode de novo.
 
 Em produção o primeiro administrador nasce de outro caminho (nunca o seed): veja o [runbook de acesso](docs/runbooks/acesso.md).
 
