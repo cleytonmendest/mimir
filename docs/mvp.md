@@ -150,15 +150,14 @@ Precisa das contas do dono do projeto: Supabase em `sa-east-1` e hospedagem (Clo
 - **4.4 Freio (D3):** cancelar uma reserva com motivo e desativar um fornecedor, tudo auditado.
 - **4.5 E2E:** o dono muda o limite e o fornecedor vê o novo; fecha um dia; vê quem reservou.
 
-### Bloco 5: Acesso
+### Bloco 5: Acesso (entregue)
 
-- **5.1 Migration:** `profiles.company_name`, `email`, `deactivated_at`; policies que checam usuário ativo; triggers "sempre resta um admin ativo" e "ninguém muda o próprio papel"; `signup_settings` (RLS só admin) e `signup_attempts`; auditoria de `profiles`.
-- **5.2 Spike S-A e Edge Functions de admin** (`admin-create-supplier`, `admin-supplier-link`), com testes Deno (sem token 401; fornecedor 403; admin desativado 403). O `edge-runtime` volta ao job de E2E, hoje excluído do `supabase start` em `.github/workflows/ci.yml`.
-- **5.3 Telas:** Fornecedores (listar, cadastrar, link de ativação, desativar e reativar) e a tela "defina sua senha" do primeiro acesso.
-- **5.4 Configurações do cadastro e `/cadastro`:** modos Fechado e Com código (`public-signup`, `signup-status`, limite de tentativas).
-- **5.5 Primeiro admin:** `scripts/bootstrap-admin.ts` e o runbook.
-- **5.6 Modo Livre:** confirmação de e-mail (D2), Turnstile, "esqueci a senha" pelo próprio fornecedor, senha de 10 caracteres.
-- **5.7 E2E:** o admin cadastra, o fornecedor ativa pelo link e reserva; código válido e inválido; modo Fechado recusa; fornecedor desativado não entra.
+- **5.1 Banco** (`20261023000000_acesso.sql`): `profiles.email` e `deactivated_at`; conta desativada não lê mercados, datas fechadas nem reservas e não reserva (RLS e funções de reserva); `set_supplier_active_v1` (desativa e cancela as reservas de hoje em diante); trigger "ninguém muda o próprio papel nem a própria desativação" (o "sempre resta um admin ativo" é redundante: quem altera outro perfil é, pela policy, um administrador ativo e diferente do alvo); `signup_settings` (RLS só admin, escrita só por `set_signup_mode_v1` e `regenerate_invite_code_v1`), `signup_attempts` (só chave de serviço) e auditoria de `profiles`. O nome do fornecedor é um campo só (`full_name`, "nome ou empresa"), sem `company_name`.
+- **5.2 Edge Functions** sem dependências (só `fetch`): `admin-create-supplier`, `admin-supplier-link`, `signup-status`, `public-signup`. A lógica fica em `supabase/functions/_shared` e é testada no Vitest com um Supabase falso (em vez de testes Deno, que o CI não tem); o comportamento real (401 sem login, 403 para fornecedor e administrador desativado, link, três modos, limite de tentativas) é provado em `e2e/access-api.spec.ts` contra o Supabase local. O `edge-runtime` voltou ao job de E2E.
+- **5.3 Telas:** Fornecedores (listar, cadastrar, link de ativação com copiar/WhatsApp/compartilhar, novo link, desativar e reativar), Configurações (modo do cadastro, código de convite, novo código), `/definir-senha` (o link só é gasto no toque em Continuar), `/cadastro` e o aviso de conta desativada.
+- **5.4 Primeiro admin e runbook:** `scripts/bootstrap-admin.ts` e `docs/runbooks/acesso.md`. Senha mínima de 10 caracteres e link de 24 h no `config.toml`.
+- **5.5 E2E:** `e2e/access-flows.spec.ts` (o administrador cadastra, o fornecedor ativa pelo link e reserva; o link só vale uma vez; desativar corta o acesso e libera a vaga; convite com código e código antigo revogado; modo Livre).
+- **Fora desta entrega (precisa de contas externas):** SMTP e "esqueci a senha" pelo próprio fornecedor, confirmação de e-mail do modo Livre em ambiente real e Cloudflare Turnstile. O modo Livre cria a conta sem confirmar e pede o e-mail de confirmação; sem SMTP a pessoa não consegue confirmar. Ver ADR 0006.
 
 ### Bloco 6: Produção, endurecimento e piloto
 
@@ -172,10 +171,10 @@ Precisa das contas do dono do projeto: Supabase em `sa-east-1` e hospedagem (Clo
 
 ## Spikes (curtos, antes de comprometer o desenho)
 
-| Spike                        | Pergunta                                                                                                                                                                                         | Decide                                      |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
-| S-A Cadastro e links (1 dia) | `generateLink` funciona sem SMTP no Supabase local e no hospedado? Como a sessão chega ao app pelo link (fragmento ou PKCE) e qual tela de senha ele exige? O `edge-runtime` cabe no job de E2E? | O fluxo do link de ativação; o custo do E2E |
-| S-B Hospedagem (½ dia)       | Cloudflare Pages ou Vercel: SPA fallback, cabeçalhos (CSP), previews                                                                                                                             | Onde a homologação roda                     |
+| Spike                        | Pergunta                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Decide                                 |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| S-A Cadastro e links (feito) | **Resolvido no Supabase local.** `generateLink` (recovery) funciona sem SMTP e devolve `hashed_token`; o app o troca por sessão com `verifyOtp({token_hash, type: 'recovery'})`, sem redirecionamento, fragmento nem PKCE. O token vale uma vez (a segunda dá `otp_expired`) e pelo `otp_expiry` (24 h no `config.toml`). Link para o app, e só gasto no toque em Continuar. O `edge-runtime` cabe no job de E2E. **Pendente:** repetir no projeto hospedado, na homologação. | O fluxo do link de ativação (ADR 0006) |
+| S-B Hospedagem (½ dia)       | Cloudflare Pages ou Vercel: SPA fallback, cabeçalhos (CSP), previews                                                                                                                                                                                                                                                                                                                                                                                                          | Onde a homologação roda                |
 
 Os spikes do plano anterior (sessão offline, celular real, `pg_cron`, E2E com service worker) deixam de ser necessários: não há offline nem job diário.
 
@@ -188,7 +187,7 @@ Os spikes do plano anterior (sessão offline, celular real, `pg_cron`, E2E com s
 
 ## Como começar
 
-O **Bloco 1** começa já, sem depender de ninguém. Em paralelo, pedir ao dono do projeto as contas de homologação (Supabase `sa-east-1` e hospedagem), para o Bloco H andar junto. D3 precisa de resposta antes do Bloco 4; o spike S-A abre o Bloco 5; o provedor de e-mail (D2) só entra com o modo Livre.
+Os blocos 1 a 5 estão feitos. O que falta depende de contas externas: o Bloco H (homologação em HTTPS e Sentry: Supabase `sa-east-1` e hospedagem), o SMTP (D2: modo Livre e "esqueci a senha") e o Turnstile. O Bloco 6 junta o que dá para fazer sem elas (matriz de RLS, performance, runbooks, LGPD) com a produção e o piloto, que dependem delas.
 
 ## Arquivos críticos
 

@@ -152,8 +152,21 @@ export function createFakeSupabase() {
 
     if (route === 'GET /rest/v1/profiles') {
       const id = (url.searchParams.get('id') ?? '').replace(/^eq\./, '')
-      const row = profiles.get(id)
+      const email = (url.searchParams.get('email') ?? '').replace(/^eq\./, '')
+      const row =
+        id === ''
+          ? [...profiles.values()].find((profile) => profile.email === email)
+          : profiles.get(id)
       return Promise.resolve(reply(200, row === undefined ? [] : [row]))
+    }
+
+    if (route === 'PATCH /rest/v1/profiles') {
+      const id = (url.searchParams.get('id') ?? '').replace(/^eq\./, '')
+      const row = profiles.get(id)
+      if (row !== undefined && (body['role'] === 'admin' || body['role'] === 'supplier')) {
+        row.role = body['role']
+      }
+      return Promise.resolve(reply(204, null))
     }
 
     if (route === 'GET /rest/v1/signup_settings') return Promise.resolve(reply(200, [settings]))

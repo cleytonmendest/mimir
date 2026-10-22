@@ -4,7 +4,7 @@ App para **fornecedores** reservarem estandes de degustação nos mercados de um
 
 > Nomes: o repositório é `mimir`, o pacote é `agenda-degustacoes` e o produto é "Agenda de Degustações".
 
-**Estado atual:** o produto foi reposicionado (era a "rota do repositor"; ver [ADR 0005](docs/adr/0005-reserva-com-limite-garantido-no-banco.md)). Hoje existem o login por e-mail e senha, os dois papéis (administrador e fornecedor), cada um com a sua área ainda vazia, o fuso de Brasília e a auditoria. O caminho até o MVP (regras de reserva e limite no banco, telas do fornecedor e do administrador, cadastro de fornecedores, implantação) está em [`docs/mvp.md`](docs/mvp.md), e o protótipo aprovado pelo dono em [`docs/prototipo/`](docs/prototipo/agenda-degustacoes.html). As decisões de arquitetura estão em [`docs/adr/`](docs/adr).
+**Estado atual:** o produto foi reposicionado (era a "rota do repositor"; ver [ADR 0005](docs/adr/0005-reserva-com-limite-garantido-no-banco.md)) e as funções do MVP estão prontas. O fornecedor vê as vagas por mercado e dia, reserva e cancela (o limite nunca é ultrapassado, nem com disputa pela última vaga). O administrador define o limite de cada mercado, fecha datas, vê quem reservou e cancela reservas; cadastra fornecedores (link de ativação para eles escolherem a senha), desativa quem não deve mais reservar e escolhe se a página de cadastro fica fechada, com código de convite ou livre ([ADR 0006](docs/adr/0006-acesso-por-link-de-ativacao-e-cadastro-configuravel.md)). O que falta (homologação, produção, SMTP, endurecimento e piloto) está em [`docs/mvp.md`](docs/mvp.md); o protótipo aprovado pelo dono, em [`docs/prototipo/`](docs/prototipo/agenda-degustacoes.html). As decisões de arquitetura estão em [`docs/adr/`](docs/adr) e a operação em [`docs/runbooks/`](docs/runbooks).
 
 ## Rodando localmente
 
@@ -18,11 +18,15 @@ cp .env.example .env.local            # e preencha VITE_SUPABASE_URL (API_URL) e
 npm run dev                           # http://localhost:5173
 ```
 
-Não existe cadastro pela tela (`enable_signup = false`): as contas são criadas pelo administrador. Enquanto essa tela não existe, crie pelo Studio local (http://127.0.0.1:54323, Authentication → Add user) e promova a administrador por SQL (toda conta nasce como fornecedor):
+Não existe cadastro pelo navegador (`enable_signup = false`): as contas nascem nas Edge Functions. Para o primeiro administrador do seu ambiente local:
 
-```sql
-update public.profiles set role = 'admin' where id = '<id do usuário>';
+```sh
+eval "$(npx supabase status -o env | sed 's/^/export /')"
+SUPABASE_URL=$API_URL SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY \
+  node scripts/bootstrap-admin.ts --email voce@teste.dev --nome "Você" --app-url http://localhost:5173
 ```
+
+O script imprime um link: abra, escolha a senha e você já entra como administrador. Dali em diante, cadastre fornecedores pela aba Fornecedores. Em produção, veja o [runbook de acesso](docs/runbooks/acesso.md).
 
 ## Comandos
 
@@ -32,7 +36,7 @@ update public.profiles set role = 'admin' where id = '<id do usuário>';
 | `npm test` / `npm run test:coverage` | Testes (Vitest). O domínio exige **100% de cobertura**                                                                                               |
 | `npm run test:tz`                    | Testes do domínio em 4 fusos horários (o CI roda a suíte inteira nesses fusos)                                                                       |
 | `npm run e2e`                        | E2E no celular simulado (Playwright). Descobre o Supabase local sozinho; precisa de `npm run db:start` e de `npx playwright install chromium`        |
-| `npm run db:test`                    | Testes do banco (pgTAP: RLS, auditoria, constraints)                                                                                                 |
+| `npm run db:test`                    | Testes do banco (pgTAP: RLS, auditoria, constraints, funções de reserva e de acesso)                                                                 |
 | `npm run db:gen-cases`               | Regera o pgTAP das reservas (`70_booking_cases.test.sql`) a partir dos casos compartilhados com o domínio (`src/domain/fixtures/booking.cases.json`) |
 | `npm run db:lint`                    | Lint do schema                                                                                                                                       |
 | `npm run db:types`                   | Regera `src/lib/database.types.ts` (commitar a saída **crua**, sem formatar)                                                                         |
@@ -47,7 +51,7 @@ Camadas, de baixo para cima (o ESLint barra importar para cima):
 3. `src/lib`: integração com o mundo. **Único** lugar que importa o SDK do Supabase.
 4. `src/features` e `src/App.tsx`: as telas.
 
-O banco está em `supabase/` (migrations, testes pgTAP). O domínio e o banco falam do mesmo modelo; `src/domain/schema-sync.test.ts` quebra se um lado mudar sem o outro.
+O banco e as Edge Functions estão em `supabase/` (migrations, testes pgTAP, `functions/`). As funções só usam `fetch` (sem pacote externo); a lógica fica em `functions/_shared` e é testada no Vitest. O domínio e o banco falam do mesmo modelo; `src/domain/schema-sync.test.ts` quebra se um lado mudar sem o outro.
 
 ## Regras que o CI faz cumprir
 
