@@ -314,6 +314,20 @@ export async function runSeed(db: Db, plan: SeedPlan): Promise<SeedSummary> {
 
 // ---------------------------------------------------------------- linha de comando
 
+/**
+ * Coluna ou tabela que "não existe" é quase sempre o banco local atrás das migrations (o
+ * "supabase start" de um banco que já estava rodando não aplica as novas, por exemplo depois de um
+ * git pull). Diz isso e o que fazer, em vez de só repassar o erro do Postgres.
+ */
+export function explainFailure(message: string): string {
+  if (!/does not exist|schema cache|Could not find/i.test(message)) return message
+  return (
+    `${message}\n\n` +
+    'O banco local parece desatualizado (faltam migrations). Rode "npm run db:migrate" e tente de novo. ' +
+    'Se não resolver, "npx supabase db reset" recria o banco do zero (ele só tem dados de teste).'
+  )
+}
+
 /** Cria o .env.local que o app precisa, se ainda não existir (sem ele o app abre pedindo isso). */
 function ensureEnvFile(apiUrl: string, anonKey: string): string {
   const file = '.env.local'
@@ -353,7 +367,7 @@ async function main(): Promise<void> {
 
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error: unknown) => {
-    console.error(error instanceof Error ? error.message : error)
+    console.error(explainFailure(error instanceof Error ? error.message : String(error)))
     process.exitCode = 1
   })
 }

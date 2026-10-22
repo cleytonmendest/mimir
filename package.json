@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:local": "npm run db:start && npm run db:seed-dev && npm run dev",
+    "dev:local": "npm run db:start && npm run db:migrate && npm run db:seed-dev && npm run dev",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
@@ -20,6 +20,7 @@
     "build-storybook": "storybook build",
     "e2e": "playwright test",
     "db:start": "supabase start -x realtime,storage-api,imgproxy,mailpit,studio,logflare,vector,supavisor",
+    "db:migrate": "supabase migration up --local",
     "db:test": "supabase test db",
     "db:gen-cases": "node scripts/gen-booking-cases.ts",
     "db:seed-dev": "node scripts/seed-dev.ts",
