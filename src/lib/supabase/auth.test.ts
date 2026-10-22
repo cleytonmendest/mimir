@@ -29,7 +29,11 @@ describe('signIn', () => {
       'INVALID_CREDENTIALS',
     ],
     ['falta de internet', new AuthRetryableFetchError('fetch failed', 0), 'NETWORK'],
-    ['qualquer outra falha', new AuthApiError('Database error', 500, 'unexpected_failure'), 'UNKNOWN'],
+    [
+      'qualquer outra falha',
+      new AuthApiError('Database error', 500, 'unexpected_failure'),
+      'UNKNOWN',
+    ],
   ])('%s vira AuthFailure com o código certo', async (_name, error, code) => {
     const signInWithPassword = vi.fn().mockResolvedValue({ data: {}, error })
 
@@ -110,7 +114,11 @@ describe('subscribe', () => {
       emit = callback
       return { data: { subscription: { unsubscribe } } }
     })
-    return { onAuthStateChange, unsubscribe, emit: (...args: Parameters<typeof emit>) => emit(...args) }
+    return {
+      onAuthStateChange,
+      unsubscribe,
+      emit: (...args: Parameters<typeof emit>) => emit(...args),
+    }
   }
 
   it('avisa quem entrou ou saiu, adiando o aviso para fora do lock do SDK', () => {

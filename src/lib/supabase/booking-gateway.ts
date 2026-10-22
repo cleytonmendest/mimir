@@ -51,7 +51,8 @@ interface Failed {
 /** Classifica o erro do PostgREST (e do fetch): rede, sessão ou servidor. */
 export function toFailure(error: Failed, status: number): RequestFailure {
   const code = error.code ?? ''
-  if (status === 0) return new RequestFailure('NETWORK', 'Sem conexão com o servidor', { cause: error })
+  if (status === 0)
+    return new RequestFailure('NETWORK', 'Sem conexão com o servidor', { cause: error })
   if (status === 401 || status === 403 || code.startsWith('PGRST30')) {
     return new RequestFailure('AUTH', 'A sessão não vale mais, ou você não pode fazer isso', {
       cause: error,
@@ -94,9 +95,7 @@ export function createBookingGateway(
     },
 
     async book(marketId, day) {
-      const data = unwrap(
-        await getClient().rpc('book_slot_v1', { p_market: marketId, p_day: day }),
-      )
+      const data = unwrap(await getClient().rpc('book_slot_v1', { p_market: marketId, p_day: day }))
       return parseBookResult(data)
     },
 

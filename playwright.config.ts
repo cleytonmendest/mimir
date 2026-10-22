@@ -8,6 +8,9 @@ export default defineConfig({
   testDir: './e2e',
   // .only esquecido não pode chegar ao CI.
   forbidOnly: !!process.env['CI'],
+  // Os testes de acesso mexem em estado global do banco (modo de cadastro, limite de tentativas):
+  // dois arquivos ao mesmo tempo se atrapalhariam. A suíte é pequena, então um worker basta.
+  workers: 1,
   retries: process.env['CI'] ? 1 : 0,
   reporter: process.env['CI'] ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: { baseURL: 'http://localhost:5173', trace: 'on-first-retry' },

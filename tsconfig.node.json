@@ -21,5 +21,12 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "playwright.config.ts", "e2e", ".storybook/*.ts", "scripts"]
+  "include": [
+    "vite.config.ts",
+    "playwright.config.ts",
+    "e2e",
+    ".storybook/*.ts",
+    "scripts",
+    "supabase/functions/_shared"
+  ]
 }

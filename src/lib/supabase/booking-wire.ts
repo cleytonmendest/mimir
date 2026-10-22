@@ -20,8 +20,7 @@ export type BookResult =
   | { ok: false; code: BookingRefusal | 'UNRECOGNIZED' }
 
 export type CancelResult =
-  | { ok: true; alreadyCancelled: boolean }
-  | { ok: false; code: CancelRefusal | 'UNRECOGNIZED' }
+  { ok: true; alreadyCancelled: boolean } | { ok: false; code: CancelRefusal | 'UNRECOGNIZED' }
 
 export const AVAILABILITY_REFUSALS = ['INVALID_RANGE', 'MARKET_NOT_FOUND', 'FORBIDDEN'] as const
 export type AvailabilityRefusal = (typeof AVAILABILITY_REFUSALS)[number]

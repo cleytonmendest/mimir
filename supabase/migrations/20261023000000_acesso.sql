@@ -313,7 +313,7 @@ create table public.signup_settings (
   -- 8 caracteres sem 0, O, 1, I (nada que se confunda ao ditar por telefone). Guardado sem hífen.
   invite_code text check (invite_code ~ '^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$'),
   updated_at timestamptz not null default now(),
-  updated_by uuid references public.profiles (id)
+  updated_by uuid references public.profiles (id) on delete set null
 );
 
 insert into public.signup_settings default values;
