@@ -1,3 +1,4 @@
+export * from './access'
 export * from './booking'
 export * from './calendar'
 export * from './dates'

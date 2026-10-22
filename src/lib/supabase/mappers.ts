@@ -17,6 +17,8 @@ export interface Market {
 
 export interface UserProfile extends Actor {
   fullName: string
+  /** false = o administrador desativou a conta: ela entra, mas não faz mais nada. */
+  active: boolean
 }
 
 export function marketFromRow(row: Tables<'markets'>): Market {
@@ -30,7 +32,12 @@ export function marketFromRow(row: Tables<'markets'>): Market {
 }
 
 export function profileFromRow(row: Tables<'profiles'>): UserProfile {
-  return { id: row.id, role: row.role, fullName: row.full_name }
+  return {
+    id: row.id,
+    role: row.role,
+    fullName: row.full_name,
+    active: row.deactivated_at === null,
+  }
 }
 
 /** Uma reserva ativa do fornecedor logado, com o nome do mercado. */

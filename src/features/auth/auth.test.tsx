@@ -203,7 +203,7 @@ describe('falhas ao abrir o app', () => {
     const semNome = {
       userId: 'u-y',
       password: 'y',
-      profile: { id: 'u-y', role: 'supplier' as const, fullName: '  ' },
+      profile: { id: 'u-y', role: 'supplier' as const, fullName: '  ', active: true },
     }
     setup({ accounts: { 'y@test.dev': semNome }, signedInAs: 'y@test.dev' })
 
