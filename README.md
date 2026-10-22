@@ -8,18 +8,18 @@ App para **fornecedores** reservarem estandes de degustação nos mercados de um
 
 ## Rodando localmente
 
-Precisa de **Node 22.18+** (`.nvmrc`) e **Docker** (o Supabase local roda em contêineres).
+Precisa de **Node 22.18+** (`.nvmrc`) e **Docker aberto** (o Supabase local roda em contêineres). Nada mais: sem criar arquivo, sem copiar chave.
 
 ```sh
 npm ci
-npm run db:start                      # sobe o Supabase local e aplica as migrations (leva alguns minutos na 1ª vez)
-npm run db:seed-dev                   # dados de mentira e o .env.local (veja abaixo)
-npm run dev                           # http://localhost:5173
+npm run dev:local        # sobe o banco, cria os dados de teste e abre o app em http://localhost:5173
 ```
 
-### Banco de teste local, com dados de mentira
+Na primeira vez o Docker baixa as imagens e leva alguns minutos. O `dev:local` faz três coisas, que também dá para rodar separadas: `npm run db:start` (sobe o Supabase local: banco, login, API e Edge Functions), `npm run db:seed-dev` (os dados de teste, abaixo, e o `.env.local` que o app precisa) e `npm run dev`.
 
-O Supabase do `npm run db:start` é um banco só seu, dentro do Docker: mexer nele não toca em nenhum banco de verdade. `npm run db:seed-dev` o enche de dados fictícios:
+### Dados de teste (o seed)
+
+O Supabase do `db:start` é um banco só seu, dentro do Docker: mexer nele não toca em nenhum banco de verdade. `npm run db:seed-dev` o enche de dados fictícios:
 
 | Quem                  | E-mail                                                | Senha        |
 | --------------------- | ----------------------------------------------------- | ------------ |
@@ -27,26 +27,17 @@ O Supabase do `npm run db:start` é um banco só seu, dentro do Docker: mexer ne
 | Fornecedores          | `fornecedor1@example.com` a `fornecedor8@example.com` | `senha12345` |
 | Fornecedor desativado | `fornecedor9@example.com`                             | `senha12345` |
 
-Vêm junto 4 mercados (limites de 2 a 5 estandes), datas fechadas e reservas a partir de hoje, com dia lotado, dia com vaga, reserva cancelada e a conta desativada, para ver cada situação das telas. O script também cria o `.env.local` (o app abre pedindo `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` sem ele; se o `npm run dev` já estava rodando, reinicie). Rodar de novo é seguro: reaproveita as contas e refaz as reservas e as datas fechadas desses 4 mercados. `npx supabase db reset` apaga tudo; rode o seed outra vez depois.
+Vêm junto 4 mercados (limites de 2 a 5 estandes), datas fechadas e reservas a partir de hoje, com dia lotado, dia com vaga, reserva cancelada e a conta desativada, para ver cada situação das telas. Rodar de novo é seguro: reaproveita as contas e refaz as reservas e as datas fechadas desses 4 mercados (útil quando os dias do seed ficam para trás). `npx supabase db reset` apaga tudo; rode o seed outra vez depois.
 
-Essas senhas são públicas (estão no código), então o seed **só roda contra o Supabase local**: ele recusa qualquer outro endereço e qualquer chave de serviço que não seja a do Supabase local, antes de escrever qualquer coisa.
+Essas senhas são públicas (estão no código), então o seed **só roda contra o Supabase local**: ele recusa qualquer outro endereço e qualquer chave de serviço que não seja a do Supabase local, antes de escrever qualquer coisa. Se o app abrir pedindo `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`, falta o `.env.local`: rode `npm run db:seed-dev` e reinicie o `npm run dev`.
 
-### Sem o seed
-
-Não existe cadastro pelo navegador (`enable_signup = false`): as contas nascem nas Edge Functions. Copie `.env.example` para `.env.local` e preencha `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` com `API_URL` e `ANON_KEY` de `npx supabase status -o env`. Para o primeiro administrador:
-
-```sh
-eval "$(npx supabase status -o env | sed 's/^/export /')"
-SUPABASE_URL=$API_URL SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY \
-  node scripts/bootstrap-admin.ts --email voce@teste.dev --nome "Você" --app-url http://localhost:5173
-```
-
-O script imprime um link: abra, escolha a senha e você já entra como administrador. Dali em diante, cadastre fornecedores pela aba Fornecedores. Em produção, é este o caminho (nunca o seed): veja o [runbook de acesso](docs/runbooks/acesso.md).
+Em produção o primeiro administrador nasce de outro caminho (nunca o seed): veja o [runbook de acesso](docs/runbooks/acesso.md).
 
 ## Comandos
 
 | Comando                              | O que faz                                                                                                                                            |
 | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev:local`                  | Tudo para rodar na sua máquina: sobe o Supabase local, cria os dados de teste (`db:seed-dev`) e abre o app                                           |
 | `npm run verify`                     | O que o CI roda antes do PR: lint, tipos, guards, testes com cobertura e Storybook                                                                   |
 | `npm test` / `npm run test:coverage` | Testes (Vitest). O domínio exige **100% de cobertura**                                                                                               |
 | `npm run test:tz`                    | Testes do domínio em 4 fusos horários (o CI roda a suíte inteira nesses fusos)                                                                       |
