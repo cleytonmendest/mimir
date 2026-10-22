@@ -88,7 +88,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           version: latest
       - name: Sobe o Supabase local aplicando todas as migrations do zero
@@ -114,7 +114,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           version: latest
       - name: Sobe o Supabase local (banco, auth, API e Edge Functions; o E2E não usa o resto)
