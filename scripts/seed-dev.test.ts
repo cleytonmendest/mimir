@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../src/domain/access.ts'
-import { refuseNonLocal, SEED_PLAN } from './seed-dev.ts'
+import { explainFailure, refuseNonLocal, SEED_PLAN } from './seed-dev.ts'
 
 // Espelha BOOKING_WINDOW_DAYS (src/domain/booking.ts). Não dá para importar de lá: os imports
 // internos do domínio não têm extensão, e os scripts rodam direto no Node. Se mudar, só o realismo
@@ -42,6 +42,26 @@ describe('refuseNonLocal', () => {
     )
     expect(refuseNonLocal('http://127.0.0.1:54321', 'a.%%%.c')).toMatch(/chave de serviço/)
     expect(refuseNonLocal('http://127.0.0.1:54321', '')).toMatch(/chave de serviço/)
+  })
+})
+
+describe('explainFailure', () => {
+  it('explica o banco desatualizado (coluna ou tabela que não existe) e diz o que rodar', () => {
+    for (const message of [
+      'achar admin@admin.com: column profiles.email does not exist',
+      "reservas: Could not find the table 'public.bookings' in the schema cache",
+    ]) {
+      const explained = explainFailure(message)
+      expect(explained).toContain(message)
+      expect(explained).toContain('npm run db:migrate')
+      expect(explained).toContain('npx supabase db reset')
+    }
+  })
+
+  it('deixa qualquer outro erro como veio', () => {
+    expect(explainFailure('criar admin@admin.com: Database error')).toBe(
+      'criar admin@admin.com: Database error',
+    )
   })
 })
 
