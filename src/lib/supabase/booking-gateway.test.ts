@@ -224,7 +224,11 @@ describe('escritas do administrador', () => {
   })
 
   it('closeDay com outro erro falha', async () => {
-    const { gateway } = fakeClient({ data: null, error: { message: 'boom', code: '42501' }, status: 403 })
+    const { gateway } = fakeClient({
+      data: null,
+      error: { message: 'boom', code: '42501' },
+      status: 403,
+    })
     await expect(gateway.closeDay('m-a', '2026-11-02')).rejects.toMatchObject({ code: 'AUTH' })
   })
 

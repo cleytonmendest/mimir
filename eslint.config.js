@@ -49,7 +49,9 @@ export default defineConfig([
     'storybook-static',
     'playwright-report',
     'test-results',
-    'supabase',
+    // Pontos de entrada do Deno (Deno.serve): três linhas cada, cobertos pelo E2E. A lógica fica em
+    // supabase/functions/_shared, que é lintada e testada.
+    'supabase/functions/*/index.ts',
     'src/lib/database.types.ts',
   ]),
 
@@ -103,7 +105,13 @@ export default defineConfig([
   },
 
   {
-    files: ['.storybook/**/*.ts', 'e2e/**/*.ts', 'scripts/**/*.ts', '*.config.{ts,js}'],
+    files: [
+      '.storybook/**/*.ts',
+      'e2e/**/*.ts',
+      'scripts/**/*.ts',
+      'supabase/functions/**/*.ts',
+      '*.config.{ts,js}',
+    ],
     languageOptions: { globals: globals.node },
     rules: { 'no-console': 'off', 'no-restricted-syntax': 'off' },
   },

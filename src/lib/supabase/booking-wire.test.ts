@@ -5,7 +5,13 @@ import { RequestFailure } from './errors'
 describe('parseBookResult', () => {
   it('reserva feita', () => {
     expect(
-      parseBookResult({ ok: true, booking_id: 'b-1', already_booked: false, booked: 2, capacity: 3 }),
+      parseBookResult({
+        ok: true,
+        booking_id: 'b-1',
+        already_booked: false,
+        booked: 2,
+        capacity: 3,
+      }),
     ).toEqual({ ok: true, bookingId: 'b-1', alreadyBooked: false, booked: 2, capacity: 3 })
   })
 

@@ -75,7 +75,8 @@ export function myBookingFromRow(row: MyBookingRow): MyBooking {
 }
 
 export function adminBookingFromRow(
-  row: MyBookingRow & Pick<Tables<'bookings'>, 'supplier_id'> & { profiles: { full_name: string } | null },
+  row: MyBookingRow &
+    Pick<Tables<'bookings'>, 'supplier_id'> & { profiles: { full_name: string } | null },
 ): AdminBooking {
   return {
     ...myBookingFromRow(row),
