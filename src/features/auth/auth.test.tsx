@@ -243,3 +243,30 @@ describe('useAuth', () => {
     silence.mockRestore()
   })
 })
+
+describe('conta desativada', () => {
+  it('entra, mas só vê o aviso e a saída, nunca a área do fornecedor', async () => {
+    const desativada = {
+      userId: 'u-d',
+      password: 'd',
+      profile: { id: 'u-d', role: 'supplier' as const, fullName: 'Dora', active: false },
+    }
+    const user = userEvent.setup()
+    render(
+      <AuthProvider
+        gateway={createFakeGateway({
+          accounts: { 'd@test.dev': desativada },
+          signedInAs: 'd@test.dev',
+        })}
+      >
+        <AuthGate>{() => <p>ÁREA DO FORNECEDOR</p>}</AuthGate>
+      </AuthProvider>,
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sua conta foi desativada')
+    expect(screen.queryByText('ÁREA DO FORNECEDOR')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Sair' }))
+    expect(await screen.findByLabelText('E-mail')).toBeInTheDocument()
+  })
+})

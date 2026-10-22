@@ -4,7 +4,10 @@ import { ConfigError } from './errors'
 import type { UserProfile } from './mappers'
 import { getProfile } from './repository'
 
-export type AuthFailureCode = 'INVALID_CREDENTIALS' | 'NETWORK' | 'UNKNOWN'
+export type AuthFailureCode = 'INVALID_CREDENTIALS' | 'NETWORK' | 'WEAK_PASSWORD' | 'UNKNOWN'
+
+/** O que acontece quando o fornecedor abre o link de ativação que o administrador enviou. */
+export type ActivationResult = 'OK' | 'INVALID_LINK'
 
 export class AuthFailure extends Error {
   readonly code: AuthFailureCode
@@ -17,8 +20,9 @@ export class AuthFailure extends Error {
 }
 
 /**
- * O que as telas precisam saber de autenticação, sem tipo do SDK. Não existe cadastro: os
- * contas são criadas pelo administrador (ou por uma Edge Function), nunca pelo navegador (enable_signup = false no Supabase).
+ * O que as telas precisam saber de autenticação, sem tipo do SDK. O navegador nunca cria conta
+ * (enable_signup = false no Supabase): as contas nascem nas Edge Functions, e o fornecedor só
+ * define a própria senha, pelo link de ativação.
  */
 export interface AuthGateway {
   /** Quem está logado neste aparelho (a sessão fica guardada nele), ou null. */
@@ -29,6 +33,13 @@ export interface AuthGateway {
   /** Sai deste aparelho (não nos outros do mesmo usuário). Funciona sem internet. */
   signOut(): Promise<void>
   loadProfile(userId: string): Promise<UserProfile | null>
+  /**
+   * Troca o token do link de ativação por uma sessão (vale uma vez só). Quem abre o link já fica
+   * logado neste aparelho, e o passo seguinte é setPassword.
+   */
+  redeemActivationToken(tokenHash: string): Promise<ActivationResult>
+  /** Define a senha de quem está logado (é o que fecha a ativação). */
+  setPassword(password: string): Promise<void>
 }
 
 function toSignInFailure(error: { code?: string | undefined; message: string }): AuthFailure {
@@ -39,6 +50,16 @@ function toSignInFailure(error: { code?: string | undefined; message: string }):
     return new AuthFailure('NETWORK', 'Sem conexão com o servidor', { cause: error })
   }
   return new AuthFailure('UNKNOWN', `Falha ao entrar: ${error.message}`, { cause: error })
+}
+
+function toPasswordFailure(error: { code?: string | undefined; message: string }): AuthFailure {
+  if (error.code === 'weak_password' || error.code === 'same_password') {
+    return new AuthFailure('WEAK_PASSWORD', 'Essa senha não serve', { cause: error })
+  }
+  if (isAuthRetryableFetchError(error)) {
+    return new AuthFailure('NETWORK', 'Sem conexão com o servidor', { cause: error })
+  }
+  return new AuthFailure('UNKNOWN', `Falha ao definir a senha: ${error.message}`, { cause: error })
 }
 
 /** O cliente só é pedido na hora de usar: sem .env o app abre e a falha aparece como erro de config. */
@@ -97,5 +118,23 @@ export function createAuthGateway(getClient: () => AppSupabaseClient = getSupaba
     },
 
     loadProfile: (userId) => getProfile(getClient(), userId),
+
+    async redeemActivationToken(tokenHash) {
+      const { error } = await getClient().auth.verifyOtp({
+        token_hash: tokenHash,
+        type: 'recovery',
+      })
+      if (error === null) return 'OK'
+      // Sem internet o link ainda pode estar bom: não dizer que venceu.
+      if (isAuthRetryableFetchError(error)) {
+        throw new AuthFailure('NETWORK', 'Sem conexão com o servidor', { cause: error })
+      }
+      return 'INVALID_LINK'
+    },
+
+    async setPassword(password) {
+      const { error } = await getClient().auth.updateUser({ password })
+      if (error !== null) throw toPasswordFailure(error)
+    },
   }
 }

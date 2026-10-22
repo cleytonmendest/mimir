@@ -1,6 +1,7 @@
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
+import { createFakeAccessGateway } from '@/features/access/testing'
 import { createFakeBookingGateway, market, type FakeBooking } from '@/features/booking/testing'
 import { AdminScreen } from './AdminScreen'
 
@@ -26,7 +27,9 @@ function setup(
     names: { 'u-bia': 'Biscoitos Dona Bia', 'u-caio': 'Café do Caio' },
   })
   const user = userEvent.setup()
-  render(<AdminScreen gateway={fake.gateway} now={now} />)
+  render(
+    <AdminScreen gateway={fake.gateway} access={createFakeAccessGateway().gateway} now={now} />,
+  )
   return { ...fake, user }
 }
 
@@ -144,7 +147,9 @@ describe('Agenda', () => {
     })
     fake.state.fail = 'NETWORK'
     const user = userEvent.setup()
-    render(<AdminScreen gateway={fake.gateway} now={now} />)
+    render(
+      <AdminScreen gateway={fake.gateway} access={createFakeAccessGateway().gateway} now={now} />,
+    )
     expect(await screen.findByRole('alert')).toHaveTextContent('Sem conexão')
     fake.state.fail = null
     await user.click(screen.getByRole('button', { name: 'Tentar de novo' }))
@@ -269,7 +274,9 @@ describe('Mercados', () => {
       markets: [],
     })
     const user = userEvent.setup()
-    render(<AdminScreen gateway={fake.gateway} now={now} />)
+    render(
+      <AdminScreen gateway={fake.gateway} access={createFakeAccessGateway().gateway} now={now} />,
+    )
     expect(
       await screen.findByText('Nenhum mercado ativo. Cadastre um na aba Mercados.'),
     ).toBeInTheDocument()

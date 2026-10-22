@@ -8,10 +8,14 @@ import { useAuth } from './auth-context'
 const MESSAGES: Record<AuthFailureCode, string> = {
   INVALID_CREDENTIALS: 'E-mail ou senha incorretos.',
   NETWORK: 'Sem conexão com o servidor. Verifique a internet e tente de novo.',
+  WEAK_PASSWORD: 'Não foi possível entrar. Tente de novo.',
   UNKNOWN: 'Não foi possível entrar. Tente de novo.',
 }
 
-/** Sem "criar conta" nem "esqueci a senha" de propósito: quem cria os acessos é o administrador. */
+/**
+ * Sem "esqueci a senha" de propósito: quem perdeu o acesso pede ao administrador um novo link. A
+ * página de cadastro (/cadastro) é endereço próprio, que o administrador compartilha quando quer.
+ */
 export function LoginForm() {
   const { signIn } = useAuth()
   const [email, setEmail] = useState('')

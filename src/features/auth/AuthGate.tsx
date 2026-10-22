@@ -37,6 +37,25 @@ export function AuthGate({ children }: { children: (profile: UserProfile) => Rea
         </div>
       )
     case 'signedIn':
+      if (!state.profile.active) {
+        return (
+          <div className="mt-6 grid gap-4">
+            <p role="alert">
+              Sua conta foi desativada. Fale com o administrador dos mercados para voltar a usar o
+              app.
+            </p>
+            <div>
+              <Button
+                onClick={() => {
+                  void signOut()
+                }}
+              >
+                Sair
+              </Button>
+            </div>
+          </div>
+        )
+      }
       return <>{children(state.profile)}</>
   }
 }

@@ -162,3 +162,55 @@ describe('subscribe', () => {
     expect(() => gateway.subscribe(vi.fn())).toThrow('inesperado')
   })
 })
+
+describe('redeemActivationToken', () => {
+  it('troca o token do link por uma sessão (tipo recovery)', async () => {
+    const verifyOtp = vi.fn().mockResolvedValue({ data: {}, error: null })
+
+    expect(await gatewayWith({ verifyOtp }).redeemActivationToken('tok')).toBe('OK')
+
+    expect(verifyOtp).toHaveBeenCalledWith({ token_hash: 'tok', type: 'recovery' })
+  })
+
+  it('link vencido ou já usado: INVALID_LINK', async () => {
+    const error = new AuthApiError('Email link is invalid or has expired', 403, 'otp_expired')
+    const verifyOtp = vi.fn().mockResolvedValue({ data: {}, error })
+
+    expect(await gatewayWith({ verifyOtp }).redeemActivationToken('tok')).toBe('INVALID_LINK')
+  })
+
+  it('sem internet não dá o link por vencido', async () => {
+    const error = new AuthRetryableFetchError('fetch failed', 0)
+    const verifyOtp = vi.fn().mockResolvedValue({ data: {}, error })
+
+    await expect(gatewayWith({ verifyOtp }).redeemActivationToken('tok')).rejects.toMatchObject({
+      code: 'NETWORK',
+    })
+  })
+})
+
+describe('setPassword', () => {
+  it('define a senha de quem está logado', async () => {
+    const updateUser = vi.fn().mockResolvedValue({ data: {}, error: null })
+
+    await gatewayWith({ updateUser }).setPassword('uma-senha-longa')
+
+    expect(updateUser).toHaveBeenCalledWith({ password: 'uma-senha-longa' })
+  })
+
+  it.each([
+    ['senha fraca', new AuthApiError('weak', 422, 'weak_password'), 'WEAK_PASSWORD'],
+    ['a mesma senha de antes', new AuthApiError('same', 422, 'same_password'), 'WEAK_PASSWORD'],
+    ['falta de internet', new AuthRetryableFetchError('fetch failed', 0), 'NETWORK'],
+    ['outra falha', new AuthApiError('boom', 500, 'unexpected_failure'), 'UNKNOWN'],
+  ])('%s vira AuthFailure com o código certo', async (_name, error, code) => {
+    const updateUser = vi.fn().mockResolvedValue({ data: {}, error })
+
+    const failure = await gatewayWith({ updateUser })
+      .setPassword('x')
+      .catch((caught: unknown) => caught)
+
+    expect(failure).toBeInstanceOf(AuthFailure)
+    expect(failure).toMatchObject({ code, cause: error })
+  })
+})
