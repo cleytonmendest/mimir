@@ -47,16 +47,18 @@ export function validateMarketInput(raw: {
 }
 
 /**
- * O maior número de reservas ativas num mesmo dia de um mercado, a partir das reservas dele. Serve
- * para avisar o administrador quando ele reduz o limite abaixo do que já está reservado.
+ * O dia com mais reservas ativas, a partir das contagens da disponibilidade do mercado (uma por
+ * dia). Serve para avisar o administrador quando ele reduz o limite abaixo do que já está
+ * reservado. Em empate vale o dia mais cedo; sem nenhuma reserva, não há dia mais cheio.
  */
-export function busiestDay(days: readonly string[]): { day: string; count: number } | null {
-  const counts = new Map<string, number>()
-  for (const day of days) counts.set(day, (counts.get(day) ?? 0) + 1)
+export function busiestDay(
+  days: readonly { day: string; booked: number }[],
+): { day: string; count: number } | null {
   let best: { day: string; count: number } | null = null
-  for (const [day, count] of counts) {
-    if (best === null || count > best.count || (count === best.count && day < best.day)) {
-      best = { day, count }
+  for (const { day, booked } of days) {
+    if (booked <= 0) continue
+    if (best === null || booked > best.count || (booked === best.count && day < best.day)) {
+      best = { day, count: booked }
     }
   }
   return best

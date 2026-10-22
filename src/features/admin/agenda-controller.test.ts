@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createFakeBookingGateway, market } from '@/features/booking/testing'
-import { createAgendaController, type AgendaReady } from './agenda-controller'
+import { createAgendaController, UPCOMING_COUNT, type AgendaReady } from './agenda-controller'
 
 const TODAY = '2026-10-21'
 const NOW = () => new Date('2026-10-21T15:00:00Z')
@@ -41,7 +41,7 @@ describe('carregar', () => {
     expect(ready().marketId).toBe('m-a')
     expect(dayOf('2026-10-23')).toMatchObject({ booked: 2 })
     expect(ready().closedDays).toEqual([{ day: '2026-10-26', reason: 'Inventário' }])
-    expect(ready().bookings.map((entry) => entry.supplierName)).toEqual([
+    expect(ready().upcoming.map((entry) => entry.supplierName)).toEqual([
       'Biscoitos Dona Bia',
       'Café do Caio',
       'Doces da Dora',
@@ -65,7 +65,7 @@ describe('carregar', () => {
     const controller = createAgendaController({ gateway: fake.gateway, now: NOW })
     await controller.start()
     expect(controller.getState()).toMatchObject({ status: 'ready', marketId: null })
-    controller.selectDay('2026-10-24')
+    await controller.selectDay('2026-10-24')
     await controller.toggleClosed()
     await controller.refresh()
     expect(fake.closed).toHaveLength(0)
@@ -73,7 +73,7 @@ describe('carregar', () => {
 
   it('ações antes de carregar não fazem nada', async () => {
     const { controller } = world()
-    controller.selectDay('2026-10-24')
+    await controller.selectDay('2026-10-24')
     controller.setCloseReason('x')
     controller.askCancel('b1')
     controller.setCancelReason('x')
@@ -122,7 +122,7 @@ describe('escolher mercado, mês e dia', () => {
   it('trocar de mercado carrega o dele e esquece o dia', async () => {
     const { controller, ready } = world()
     await controller.start()
-    controller.selectDay('2026-10-23')
+    await controller.selectDay('2026-10-23')
     await controller.selectMarket('m-b')
     expect(ready()).toMatchObject({ marketId: 'm-b', selectedDay: null, closedDays: [] })
     expect(ready().availability?.capacity).toBe(2)
@@ -167,10 +167,10 @@ describe('escolher mercado, mês e dia', () => {
   it('escolher outro dia limpa o motivo digitado e a pergunta de cancelamento', async () => {
     const { controller, ready } = world()
     await controller.start()
-    controller.selectDay('2026-10-23')
+    await controller.selectDay('2026-10-23')
     controller.setCloseReason('Feriado')
     controller.askCancel('b1')
-    controller.selectDay('2026-10-24')
+    await controller.selectDay('2026-10-24')
     expect(ready()).toMatchObject({ closeReason: '', cancelling: null })
   })
 })
@@ -179,7 +179,7 @@ describe('fechar e liberar datas', () => {
   it('fecha o dia com o motivo, avisa que as reservas já feitas continuam, e o calendário mostra fechado', async () => {
     const { controller, ready, dayOf, closed } = world()
     await controller.start()
-    controller.selectDay('2026-10-23') // já tem 2 reservas
+    await controller.selectDay('2026-10-23') // já tem 2 reservas
     controller.setCloseReason('  Dedetização  ')
 
     await controller.toggleClosed()
@@ -197,7 +197,7 @@ describe('fechar e liberar datas', () => {
   it('fecha um dia sem reservas e sem motivo', async () => {
     const { controller, ready, closed } = world()
     await controller.start()
-    controller.selectDay('2026-10-27')
+    await controller.selectDay('2026-10-27')
     await controller.toggleClosed()
     expect(closed).toContainEqual({ marketId: 'm-a', day: '2026-10-27', reason: null })
     expect(ready().notice?.text).toBe('Dia fechado para novas reservas.')
@@ -206,7 +206,7 @@ describe('fechar e liberar datas', () => {
   it('com uma reserva só, o aviso fica no singular', async () => {
     const { controller, ready } = world()
     await controller.start()
-    controller.selectDay('2026-10-24')
+    await controller.selectDay('2026-10-24')
     await controller.toggleClosed()
     expect(ready().notice?.text).toBe(
       'Dia fechado para novas reservas. 1 reserva já feita continua valendo.',
@@ -216,7 +216,7 @@ describe('fechar e liberar datas', () => {
   it('libera um dia que estava fechado', async () => {
     const { controller, ready, dayOf, closed } = world()
     await controller.start()
-    controller.selectDay('2026-10-26')
+    await controller.selectDay('2026-10-26')
     await controller.toggleClosed()
     expect(closed).toHaveLength(0)
     expect(ready().notice).toMatchObject({ kind: 'success', text: 'Dia liberado para reservas.' })
@@ -227,7 +227,7 @@ describe('fechar e liberar datas', () => {
     const { controller, state } = world()
     await controller.start()
     await controller.toggleClosed()
-    controller.selectDay('2026-10-27')
+    await controller.selectDay('2026-10-27')
     await Promise.all([controller.toggleClosed(), controller.toggleClosed()])
     expect(state.calls.filter((call) => call === 'closeDay')).toHaveLength(1)
   })
@@ -235,7 +235,7 @@ describe('fechar e liberar datas', () => {
   it('falha de rede ao fechar avisa', async () => {
     const { controller, ready, state } = world()
     await controller.start()
-    controller.selectDay('2026-10-27')
+    await controller.selectDay('2026-10-27')
     state.fail = 'NETWORK'
     await controller.toggleClosed()
     expect(ready()).toMatchObject({ busy: false })
@@ -264,7 +264,7 @@ describe('cancelar uma reserva', () => {
       kind: 'success',
       text: 'Reserva cancelada. O sistema não avisa o fornecedor: combine com ele.',
     })
-    expect(ready().bookings.some((entry) => entry.id === 'b1')).toBe(false)
+    expect(ready().upcoming.some((entry) => entry.id === 'b1')).toBe(false)
     expect(dayOf('2026-10-23')).toMatchObject({ booked: 1 })
     expect(ready().cancelling).toBeNull()
   })
@@ -321,7 +321,7 @@ describe('atualizar e avisos', () => {
     await controller.start()
     occupy('m-a', '2026-10-27', 'u-bia')
     await controller.refresh()
-    expect(ready().bookings.filter((entry) => entry.day === '2026-10-27')).toHaveLength(1)
+    expect(ready().upcoming.filter((entry) => entry.day === '2026-10-27')).toHaveLength(1)
   })
 
   it('atualizar sem sinal avisa em vez de falhar calado', async () => {
@@ -337,14 +337,126 @@ describe('atualizar e avisos', () => {
     const listener = vi.fn()
     const stop = controller.subscribe(listener)
     await controller.start()
-    controller.selectDay('2026-10-27')
+    await controller.selectDay('2026-10-27')
     await controller.toggleClosed()
     expect(ready().notice).not.toBeNull()
     controller.dismissNotice()
     expect(ready().notice).toBeNull()
     const calls = listener.mock.calls.length
     stop()
-    controller.selectDay('2026-10-28')
+    await controller.selectDay('2026-10-28')
     expect(listener.mock.calls.length).toBe(calls)
+  })
+})
+
+describe('reservas de um dia e próximas reservas (o servidor corta listas em 1.000 linhas)', () => {
+  it('as próximas reservas pedem só as primeiras, não tudo', async () => {
+    const { controller, gateway } = world()
+    const spy = vi.spyOn(gateway, 'adminBookings')
+    await controller.start()
+    expect(spy).toHaveBeenCalledWith({ from: TODAY, limit: UPCOMING_COUNT })
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('escolher um dia pede só as reservas daquele mercado e dia', async () => {
+    const { controller, ready, gateway } = world()
+    await controller.start()
+    const spy = vi.spyOn(gateway, 'adminBookings')
+    await controller.selectDay('2026-10-23')
+    expect(spy).toHaveBeenCalledWith({ from: '2026-10-23', to: '2026-10-23', marketId: 'm-a' })
+    expect(ready().dayBookings?.map((entry) => entry.supplierName)).toEqual([
+      'Biscoitos Dona Bia',
+      'Café do Caio',
+    ])
+    await controller.selectDay('2026-10-22')
+    expect(ready().dayBookings).toEqual([])
+  })
+
+  it('enquanto carrega, o dia aparece como carregando, e sem dia escolhido não há lista', async () => {
+    const { controller, ready } = world()
+    await controller.start()
+    expect(ready().dayBookings).toBeNull()
+    const loading = controller.selectDay('2026-10-23')
+    expect(ready().dayBookings).toBeNull()
+    await loading
+    expect(ready().dayBookings).toHaveLength(2)
+  })
+
+  it('um dia distante continua mostrando quem reservou mesmo com o teto de linhas do servidor', async () => {
+    const { controller, ready, state, occupy } = world()
+    // Muitas reservas cedo, que sozinhas já estourariam o teto; o dia distante vem depois.
+    for (let index = 0; index < 6; index += 1) occupy('m-b', '2026-10-22', `u-forn-${index}`)
+    occupy('m-a', '2026-12-10', 'u-caio')
+    state.maxRows = 5
+    await controller.start()
+    expect(ready().upcoming).toHaveLength(UPCOMING_COUNT > 5 ? 5 : UPCOMING_COUNT)
+    await controller.selectDay('2026-12-10')
+    expect(ready().dayBookings?.map((entry) => entry.supplierName)).toEqual(['Café do Caio'])
+  })
+
+  it('trocar de mercado limpa o dia e ignora a resposta atrasada do anterior', async () => {
+    const { controller, ready, gateway } = world()
+    await controller.start()
+    let release: () => void = () => undefined
+    const original = gateway.adminBookings.bind(gateway)
+    gateway.adminBookings = async (filter) => {
+      await new Promise<void>((resolve) => {
+        release = resolve
+      })
+      return original(filter)
+    }
+    const slow = controller.selectDay('2026-10-23')
+    await controller.selectMarket('m-b')
+    expect(ready().selectedDay).toBeNull()
+    release()
+    await slow
+    expect(ready().dayBookings).toBeNull()
+  })
+
+  it('atualizar recarrega também o dia escolhido', async () => {
+    const { controller, ready, occupy } = world()
+    await controller.start()
+    await controller.selectDay('2026-10-24')
+    expect(ready().dayBookings).toHaveLength(1)
+    occupy('m-a', '2026-10-24', 'u-bia')
+    await controller.refresh()
+    expect(ready().dayBookings).toHaveLength(2)
+  })
+
+  it('cancelar tira a reserva da lista do dia escolhido', async () => {
+    const { controller, ready } = world()
+    await controller.start()
+    await controller.selectDay('2026-10-23')
+    controller.askCancel('b1')
+    await controller.confirmCancel()
+    expect(ready().dayBookings?.map((entry) => entry.id)).toEqual(['b2'])
+  })
+
+  it('falha ao buscar o dia vira erro na lista, e escolher de novo limpa', async () => {
+    const { controller, ready, state } = world()
+    await controller.start()
+    state.fail = 'NETWORK'
+    await controller.selectDay('2026-10-23')
+    expect(ready().dayError).toMatch(/Sem conexão/)
+    expect(ready().dayBookings).toBeNull()
+    state.fail = null
+    await controller.selectDay('2026-10-23')
+    expect(ready().dayError).toBeNull()
+    expect(ready().dayBookings).toHaveLength(2)
+  })
+
+  it('atualizar sem dia escolhido não busca reservas de dia', async () => {
+    const { controller, gateway } = world()
+    await controller.start()
+    const spy = vi.spyOn(gateway, 'adminBookings')
+    await controller.refresh()
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy).toHaveBeenCalledWith({ from: TODAY, limit: UPCOMING_COUNT })
+  })
+
+  it('ações antes de carregar não fazem nada com o dia', async () => {
+    const { controller } = world()
+    await controller.selectDay('2026-10-23')
+    expect(controller.getState()).toEqual({ status: 'loading' })
   })
 })

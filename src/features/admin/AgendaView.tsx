@@ -127,7 +127,7 @@ export function AgendaView({ gateway, now }: { gateway: BookingGateway; now?: ()
               selected={state.selectedDay}
               subtitle={market?.name ?? ''}
               onSelect={(day) => {
-                controller.selectDay(day)
+                void controller.selectDay(day)
               }}
               onMonthChange={(month) => {
                 controller.changeMonth(month)

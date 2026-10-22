@@ -56,9 +56,7 @@ export function AgendaDayPanel({
     capacity: availability.capacity,
   })
   const market = state.markets.find((candidate) => candidate.id === state.marketId)
-  const here = state.bookings.filter(
-    (booking) => booking.marketId === state.marketId && booking.day === selectedDay,
-  )
+  const here = state.dayBookings
   const closedReason = state.closedDays.find((closed) => closed.day === selectedDay)?.reason
   const free = freeSlots(availability.capacity, entry.booked)
   const canChange = status !== 'past' && status !== 'far'
@@ -85,7 +83,15 @@ export function AgendaDayPanel({
       <h3 className="mt-4 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
         Quem reservou
       </h3>
-      {here.length === 0 ? (
+      {state.dayError !== null ? (
+        <p role="alert" className="mt-2 text-destructive">
+          {state.dayError}
+        </p>
+      ) : here === null ? (
+        <p role="status" className="mt-2 text-muted-foreground">
+          Carregando…
+        </p>
+      ) : here.length === 0 ? (
         <p className="mt-2 text-muted-foreground">Nenhuma reserva neste dia.</p>
       ) : (
         <ul className="mt-2 grid gap-2">

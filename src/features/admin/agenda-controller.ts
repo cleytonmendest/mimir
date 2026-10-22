@@ -17,8 +17,14 @@ export interface AgendaReady {
   availabilityError: string | null
   /** As datas fechadas do mercado escolhido, com o motivo. */
   closedDays: ClosedDay[]
-  /** Todas as reservas ativas de hoje em diante, de todos os mercados, com o nome do fornecedor. */
-  bookings: AdminBooking[]
+  /** As próximas reservas de todos os mercados, com o nome do fornecedor (só as primeiras). */
+  upcoming: AdminBooking[]
+  /**
+   * Quem reservou o dia escolhido, no mercado escolhido. null = ainda carregando (ou nenhum dia
+   * escolhido). Só se pede esse recorte: baixar tudo esbarraria no teto de 1.000 linhas do servidor.
+   */
+  dayBookings: AdminBooking[] | null
+  dayError: string | null
   month: YearMonth
   selectedDay: IsoDate | null
   /** O que o administrador digitou como motivo ao fechar o dia. */
@@ -39,7 +45,7 @@ export interface AgendaController {
   refresh(): Promise<void>
   selectMarket(marketId: string): Promise<void>
   changeMonth(month: YearMonth): void
-  selectDay(day: IsoDate): void
+  selectDay(day: IsoDate): Promise<void>
   setCloseReason(text: string): void
   /** Fecha o dia escolhido para novas reservas, ou o libera se já estiver fechado. */
   toggleClosed(): Promise<void>
@@ -49,6 +55,9 @@ export interface AgendaController {
   confirmCancel(): Promise<void>
   dismissNotice(): void
 }
+
+/** Quantas reservas "próximas" aparecem na lista. */
+export const UPCOMING_COUNT = 8
 
 export function createAgendaController(deps: {
   gateway: BookingGateway
@@ -61,6 +70,7 @@ export function createAgendaController(deps: {
   const listeners = new Set<() => void>()
   let noticeId = 0
   let marketRequest = 0
+  let dayRequest = 0
 
   function set(next: AgendaState): void {
     state = next
@@ -112,20 +122,40 @@ export function createAgendaController(deps: {
     }
   }
 
-  async function loadBookings(): Promise<void> {
+  async function loadUpcoming(): Promise<void> {
     try {
-      patch({ bookings: await gateway.adminBookings({ from: today(), to: horizon() }) })
+      patch({ upcoming: await gateway.adminBookings({ from: today(), limit: UPCOMING_COUNT }) })
     } catch (error) {
       patch({ notice: notify('error', describeFailure(error)) })
+    }
+  }
+
+  /** Quem reservou o dia escolhido no mercado escolhido. */
+  async function loadDay(): Promise<void> {
+    const current = ready()
+    if (current === null) return
+    const { marketId, selectedDay } = current
+    dayRequest += 1
+    const request = dayRequest
+    if (marketId === null || selectedDay === null) {
+      patch({ dayBookings: null, dayError: null })
+      return
+    }
+    patch({ dayBookings: null, dayError: null })
+    try {
+      const rows = await gateway.adminBookings({ from: selectedDay, to: selectedDay, marketId })
+      if (request === dayRequest) patch({ dayBookings: rows })
+    } catch (error) {
+      if (request === dayRequest) patch({ dayError: describeFailure(error) })
     }
   }
 
   async function start(): Promise<void> {
     set({ status: 'loading' })
     try {
-      const [markets, bookings] = await Promise.all([
+      const [markets, upcoming] = await Promise.all([
         gateway.listMarkets(),
-        gateway.adminBookings({ from: today(), to: horizon() }),
+        gateway.adminBookings({ from: today(), limit: UPCOMING_COUNT }),
       ])
       const open = markets.filter((entry) => !entry.archived)
       set({
@@ -135,7 +165,9 @@ export function createAgendaController(deps: {
         availability: null,
         availabilityError: null,
         closedDays: [],
-        bookings,
+        upcoming,
+        dayBookings: null,
+        dayError: null,
         month: monthOf(addDays(today(), 1)),
         selectedDay: null,
         closeReason: '',
@@ -150,7 +182,7 @@ export function createAgendaController(deps: {
   }
 
   async function refresh(): Promise<void> {
-    await Promise.all([loadMarket(), loadBookings()])
+    await Promise.all([loadMarket(), loadUpcoming(), loadDay()])
   }
 
   async function selectMarket(marketId: string): Promise<void> {
@@ -162,9 +194,12 @@ export function createAgendaController(deps: {
       availabilityError: null,
       closedDays: [],
       selectedDay: null,
+      dayBookings: null,
+      dayError: null,
       closeReason: '',
       cancelling: null,
     })
+    dayRequest += 1
     await loadMarket()
   }
 
@@ -179,8 +214,9 @@ export function createAgendaController(deps: {
     patch({ month })
   }
 
-  function selectDay(day: IsoDate): void {
+  async function selectDay(day: IsoDate): Promise<void> {
     patch({ selectedDay: day, closeReason: '', cancelling: null })
+    await loadDay()
   }
 
   function setCloseReason(text: string): void {

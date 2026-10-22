@@ -49,6 +49,8 @@ export function createFakeBookingGateway(setup: FakeBookingSetup) {
   const names = setup.names ?? {}
   const state = {
     fail: null as RequestFailureCode | null,
+    /** Como o max_rows do servidor: corta qualquer lista de reservas do administrador, sem avisar. */
+    maxRows: null as number | null,
     beforeBook: null as (() => void) | null,
     nextId: 1,
     calls: [] as string[],
@@ -175,7 +177,7 @@ export function createFakeBookingGateway(setup: FakeBookingSetup) {
       return Promise.resolve(mine)
     },
 
-    adminBookings({ from, to, marketId }) {
+    adminBookings({ from, to, marketId, limit }) {
       guard('adminBookings')
       const rows: AdminBooking[] = bookings
         .filter(
@@ -186,6 +188,7 @@ export function createFakeBookingGateway(setup: FakeBookingSetup) {
             (marketId === undefined || b.marketId === marketId),
         )
         .sort((a, b) => a.day.localeCompare(b.day))
+        .slice(0, Math.min(limit ?? Infinity, state.maxRows ?? Infinity))
         .map((b) => ({
           id: b.id,
           marketId: b.marketId,
