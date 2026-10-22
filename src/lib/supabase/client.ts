@@ -21,7 +21,9 @@ export function getSupabase(): AppSupabaseClient {
   const url = import.meta.env.VITE_SUPABASE_URL
   const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
   if (url === undefined || url.trim() === '' || anonKey === undefined || anonKey.trim() === '') {
-    throw new ConfigError('Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY (veja .env.example)')
+    throw new ConfigError(
+      'Faltam VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY. Para desenvolver, rode "npm run dev:local" (ele cria o .env.local); veja também o .env.example.',
+    )
   }
 
   client = createClient<Database>(url, anonKey, {

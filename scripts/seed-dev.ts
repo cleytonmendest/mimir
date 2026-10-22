@@ -3,7 +3,10 @@ import { pathToFileURL } from 'node:url'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../src/lib/database.types.ts'
 import { companyDay } from '../e2e/support/dates.ts'
-import { localSupabase, NO_SUPABASE_MESSAGE } from '../e2e/support/supabase.ts'
+import { localSupabase } from '../e2e/support/supabase.ts'
+
+const NOT_RUNNING =
+  'Não achei o Supabase local rodando. Abra o Docker e rode "npm run dev:local" (sobe o banco, cria os dados de teste e abre o app), ou só "npm run db:start" antes deste comando.'
 
 /**
  * Dados de mentira para trabalhar no app em máquina de desenvolvimento: um administrador com
@@ -322,7 +325,7 @@ function ensureEnvFile(apiUrl: string, anonKey: string): string {
 async function main(): Promise<void> {
   const local = localSupabase()
   if (local === null) {
-    console.error(NO_SUPABASE_MESSAGE)
+    console.error(NOT_RUNNING)
     process.exitCode = 1
     return
   }
