@@ -180,7 +180,7 @@ enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-minimum_password_length = 6
+minimum_password_length = 10
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
 password_requirements = ""
@@ -220,7 +220,7 @@ web3 = 30
 [auth.email]
 # Atenção: aqui false DESLIGA o provedor de e-mail inteiro (GOTRUE_EXTERNAL_EMAIL_ENABLED), e com ele o
 # login por e-mail e senha. Quem impede o auto-cadastro é [auth] enable_signup = false: os usuários
-# são criados pelo líder/administrador.
+# são criados pelo administrador (Edge Functions admin-create-supplier e public-signup).
 enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
@@ -233,8 +233,10 @@ secure_password_change = false
 max_frequency = "1s"
 # Number of characters used in the email OTP.
 otp_length = 6
-# Number of seconds before the email OTP expires (defaults to 1 hour).
-otp_expiry = 3600
+# Número de segundos até o link/código expirar. 24 h: é o prazo do link de ativação que o administrador
+# manda ao fornecedor (admin-create-supplier / admin-supplier-link). Em produção, o mesmo valor em
+# Authentication > Providers > Email > "Email OTP Expiration" (86400).
+otp_expiry = 86400
 
 # Use a production-ready SMTP server
 # [auth.email.smtp]
@@ -387,6 +389,21 @@ deno_version = 2
 
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
+
+# Funções do acesso (supabase/functions). As do administrador exigem o JWT de quem chama e ainda
+# conferem, dentro delas, que é um administrador ativo. As duas públicas atendem quem ainda não tem
+# conta: o que elas fazem é decidido por signup_settings, nunca por quem chama.
+[functions.admin-create-supplier]
+verify_jwt = true
+
+[functions.admin-supplier-link]
+verify_jwt = true
+
+[functions.signup-status]
+verify_jwt = false
+
+[functions.public-signup]
+verify_jwt = false
 
 [analytics]
 enabled = true

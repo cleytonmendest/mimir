@@ -68,6 +68,8 @@ describe('getProfile', () => {
         id: 'u-ana',
         role: 'supplier',
         full_name: 'Ana',
+        email: 'ana@loja.com',
+        deactivated_at: null,
         created_at: '2026-10-20T09:00:00+00:00',
       },
       error: null,
@@ -77,6 +79,7 @@ describe('getProfile', () => {
       id: 'u-ana',
       role: 'supplier',
       fullName: 'Ana',
+      active: true,
     })
     expect(calls).toContainEqual(['eq', 'id', 'u-ana'])
   })

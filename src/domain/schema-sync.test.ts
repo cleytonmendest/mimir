@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  INVITE_CODE_ALPHABET,
+  INVITE_CODE_LENGTH,
+  MIN_PASSWORD_LENGTH,
+  SIGNUP_MODES,
+} from './access'
+import {
   BOOKING_REFUSALS,
   BOOKING_WINDOW_DAYS,
   CANCEL_REFUSALS,
@@ -18,6 +24,12 @@ const migrationFiles = import.meta.glob<string>('/supabase/migrations/*.sql', {
   import: 'default',
   eager: true,
 })
+const configFiles = import.meta.glob<string>('/supabase/config.toml', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
+const config = Object.values(configFiles).join('\n')
 const sql = Object.keys(migrationFiles)
   .sort()
   .map((file) => migrationFiles[file])
@@ -72,5 +84,22 @@ describe('domínio ↔ banco', () => {
   it.each(CANCEL_REFUSALS)('cancel_booking_v1 sabe devolver %s', (code) => {
     const body = /create function public\.cancel_booking_v1\([^)]*\)[\s\S]*?\n\$\$;/.exec(sql)
     expect(body?.[0]).toContain(`booking_refusal('${code}')`)
+  })
+
+  it('o enum signup_mode tem os mesmos valores do domínio', () => {
+    expect(enumValues('signup_mode').sort()).toEqual([...SIGNUP_MODES].sort())
+  })
+
+  it('o código de convite tem o mesmo alfabeto e tamanho no domínio e no banco', () => {
+    const check = /invite_code ~ '\^\[([A-Z0-9]+)\]\{(\d+)\}\$'/.exec(sql)
+    expect(check?.[1]).toBe(INVITE_CODE_ALPHABET)
+    expect(Number(check?.[2])).toBe(INVITE_CODE_LENGTH)
+    const generator = /alphabet constant text := '([A-Z0-9]+)'/.exec(sql)
+    expect(generator?.[1]).toBe(INVITE_CODE_ALPHABET)
+  })
+
+  it('o tamanho mínimo da senha é o mesmo no domínio e na configuração do Auth', () => {
+    const minimum = /^minimum_password_length = (\d+)$/m.exec(config)
+    expect(Number(minimum?.[1])).toBe(MIN_PASSWORD_LENGTH)
   })
 })

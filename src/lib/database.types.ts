@@ -105,17 +105,51 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "created_at": string,"full_name": string,"id": string,"role": Database["public"]['Enums']["user_role"]
+                    "created_at": string,"deactivated_at": string | null,"email": string | null,"full_name": string,"id": string,"role": Database["public"]['Enums']["user_role"]
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"full_name"?: string,"id": string,"role"?: Database["public"]['Enums']["user_role"]
+                    "created_at"?: string,"deactivated_at"?: string | null,"email"?: string | null,"full_name"?: string,"id": string,"role"?: Database["public"]['Enums']["user_role"]
                   }
                   Update: {
-                    "created_at"?: string,"full_name"?: string,"id"?: string,"role"?: Database["public"]['Enums']["user_role"]
+                    "created_at"?: string,"deactivated_at"?: string | null,"email"?: string | null,"full_name"?: string,"id"?: string,"role"?: Database["public"]['Enums']["user_role"]
                   }
                   Relationships: [
                     
+                  ]
+                },"signup_attempts": {
+                  Row: {
+                    "at": string,"email_hash": string,"id": number,"ip_hash": string,"outcome": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "at"?: string,"email_hash": string,"id"?: never,"ip_hash": string,"outcome": string
+                  }
+                  Update: {
+                    "at"?: string,"email_hash"?: string,"id"?: never,"ip_hash"?: string,"outcome"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"signup_settings": {
+                  Row: {
+                    "id": string,"invite_code": string | null,"mode": Database["public"]['Enums']["signup_mode"],"singleton": boolean,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: string,"invite_code"?: string | null,"mode"?: Database["public"]['Enums']["signup_mode"],"singleton"?: boolean,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "id"?: string,"invite_code"?: string | null,"mode"?: Database["public"]['Enums']["signup_mode"],"singleton"?: boolean,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "signup_settings_updated_by_fkey"
+      columns: ["updated_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
                   ]
                 }
           }
@@ -141,15 +175,30 @@ isOneToOne: false
 "company_date":
 { Args: { "instant": string }; Returns: string
                            },
+"generate_invite_code":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"is_active_user":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "market_availability_v1":
 { Args: { "p_from": string,"p_market": string,"p_to": string }; Returns: Json
+                           },
+"regenerate_invite_code_v1":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"set_signup_mode_v1":
+{ Args: { "p_mode": Database["public"]['Enums']["signup_mode"] }; Returns: Json
+                           },
+"set_supplier_active_v1":
+{ Args: { "p_active": boolean,"p_supplier": string }; Returns: Json
                            }
           }
           Enums: {
-            "user_role": "admin"|"supplier"
+            "signup_mode": "closed"|"invite"|"open","user_role": "admin"|"supplier"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -269,7 +318,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "user_role": ["admin", "supplier"]
+            "signup_mode": ["closed", "invite", "open"],"user_role": ["admin", "supplier"]
           }
         }
 } as const
