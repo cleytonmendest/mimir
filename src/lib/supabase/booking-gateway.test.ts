@@ -178,6 +178,14 @@ describe('leituras', () => {
     await gateway.adminBookings({ from: '2026-10-21' })
     expect(calls.some(([method]) => method === 'lte')).toBe(false)
     expect(calls.some(([method]) => method === 'eq')).toBe(false)
+    // Sem `limit` o pedido não limita nada de propósito (o teto é do servidor).
+    expect(calls.some(([method]) => method === 'limit')).toBe(false)
+  })
+
+  it('adminBookings com limite pede só as primeiras linhas', async () => {
+    const { gateway, calls } = fakeClient(ok([]))
+    await gateway.adminBookings({ from: '2026-10-21', limit: 8 })
+    expect(calls).toContainEqual(['limit', 8])
   })
 
   it('closedDays devolve dia e motivo', async () => {

@@ -54,16 +54,31 @@ describe('validateMarketInput', () => {
 })
 
 describe('busiestDay', () => {
+  const count = (day: string, booked: number) => ({ day, booked })
+
   it('sem reservas não há dia mais cheio', () => {
     expect(busiestDay([])).toBeNull()
+    expect(busiestDay([count('2026-10-24', 0), count('2026-10-25', 0)])).toBeNull()
   })
 
   it('o dia com mais reservas, e o mais cedo se empatar', () => {
-    expect(busiestDay(['2026-10-24', '2026-10-23', '2026-10-24', '2026-10-25'])).toEqual({
+    expect(
+      busiestDay([count('2026-10-23', 1), count('2026-10-24', 2), count('2026-10-25', 1)]),
+    ).toEqual({ day: '2026-10-24', count: 2 })
+    expect(busiestDay([count('2026-10-25', 1), count('2026-10-24', 1)])).toEqual({
       day: '2026-10-24',
-      count: 2,
+      count: 1,
     })
-    expect(busiestDay(['2026-10-25', '2026-10-24'])).toEqual({ day: '2026-10-24', count: 1 })
-    expect(busiestDay(['2026-10-24', '2026-10-25'])).toEqual({ day: '2026-10-24', count: 1 })
+    expect(busiestDay([count('2026-10-24', 1), count('2026-10-25', 1)])).toEqual({
+      day: '2026-10-24',
+      count: 1,
+    })
+  })
+
+  it('ignora dias sem reserva no meio', () => {
+    expect(busiestDay([count('2026-10-23', 0), count('2026-10-24', 3)])).toEqual({
+      day: '2026-10-24',
+      count: 3,
+    })
   })
 })

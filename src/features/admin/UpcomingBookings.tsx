@@ -3,7 +3,7 @@ import type { AgendaReady } from './agenda-controller'
 
 /** As próximas reservas de todos os mercados, só para consulta. */
 export function UpcomingBookings({ state }: { state: AgendaReady }) {
-  const upcoming = state.bookings.slice(0, 8)
+  const upcoming = state.upcoming
   return (
     <section
       aria-labelledby="upcoming-title"

@@ -168,13 +168,14 @@ export function createMarketsController(deps: {
       let text = `Limite de ${updated.name}: ${capacity} ${capacity === 1 ? 'estande' : 'estandes'} por dia.`
       if (capacity < market.capacity) {
         // Reduzir não cancela nada: avisa se já há dias com mais reservas do que o limite novo.
+        // Pelas contagens da disponibilidade (uma por dia), que não esbarram no teto de linhas.
         const today = companyDate(now())
-        const booked = await gateway.adminBookings({
-          from: today,
-          to: addDays(today, BOOKING_WINDOW_DAYS + 1),
-          marketId: id,
-        })
-        const busiest = busiestDay(booked.map((entry) => entry.day))
+        const result = await gateway.availability(
+          id,
+          today,
+          addDays(today, BOOKING_WINDOW_DAYS + 1),
+        )
+        const busiest = result.ok ? busiestDay(result.availability.days) : null
         if (busiest !== null && busiest.count > capacity) {
           text += ` ${longDate(busiest.day)} já tem ${busiest.count} reservas: os dias que passam do limite novo continuam como estão, só as reservas novas respeitam.`
         }

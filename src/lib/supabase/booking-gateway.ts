@@ -35,7 +35,17 @@ export interface BookingGateway {
   myBookings(from: IsoDate): Promise<MyBooking[]>
 
   /** Só o administrador. */
-  adminBookings(filter: { from: IsoDate; to?: IsoDate; marketId?: string }): Promise<AdminBooking[]>
+  /**
+   * `limit` existe porque o servidor corta qualquer resposta em 1.000 linhas (max_rows) sem avisar:
+   * quem precisa só das primeiras (as próximas reservas) ou de um recorte pequeno (um mercado e um
+   * dia) deve pedir só isso, em vez de baixar tudo e receber um pedaço.
+   */
+  adminBookings(filter: {
+    from: IsoDate
+    to?: IsoDate
+    marketId?: string
+    limit?: number
+  }): Promise<AdminBooking[]>
   createMarket(input: MarketInput): Promise<Market>
   updateMarket(id: string, patch: Partial<MarketInput> & { archived?: boolean }): Promise<Market>
   closedDays(marketId: string, from: IsoDate, to: IsoDate): Promise<ClosedDay[]>
@@ -121,7 +131,7 @@ export function createBookingGateway(
       return rows.map(myBookingFromRow)
     },
 
-    async adminBookings({ from, to, marketId }) {
+    async adminBookings({ from, to, marketId, limit }) {
       let query = getClient()
         .from('bookings')
         .select(
@@ -131,7 +141,9 @@ export function createBookingGateway(
         .gte('day', from)
       if (to !== undefined) query = query.lte('day', to)
       if (marketId !== undefined) query = query.eq('market_id', marketId)
-      const rows = unwrap(await query.order('day').order('created_at'))
+      query = query.order('day').order('created_at')
+      if (limit !== undefined) query = query.limit(limit)
+      const rows = unwrap(await query)
       return rows.map(adminBookingFromRow)
     },
 
