@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../src/domain/access.ts'
-import { explainFailure, refuseNonLocal, SEED_PLAN, syncEnvFile } from './seed-dev.ts'
+import {
+  authSettingsProblem,
+  explainFailure,
+  refuseNonLocal,
+  SEED_PLAN,
+  syncEnvFile,
+} from './seed-dev.ts'
 
 // Espelha BOOKING_WINDOW_DAYS (src/domain/booking.ts). Não dá para importar de lá: os imports
 // internos do domínio não têm extensão, e os scripts rodam direto no Node. Se mudar, só o realismo
@@ -62,6 +68,26 @@ describe('explainFailure', () => {
     expect(explainFailure('criar admin@admin.com: Database error')).toBe(
       'criar admin@admin.com: Database error',
     )
+  })
+})
+
+describe('authSettingsProblem', () => {
+  it('avisa quando o servidor de login foi criado com o login por e-mail desligado', () => {
+    const problem = authSettingsProblem({ external: { email: false }, disable_signup: true })
+    expect(problem).toContain('login por e-mail')
+    expect(problem).toContain('npx supabase stop')
+    expect(problem).toContain('npm run dev:local')
+  })
+
+  it('deixa passar um servidor com o e-mail ligado', () => {
+    expect(authSettingsProblem({ external: { email: true }, disable_signup: true })).toBeNull()
+  })
+
+  it('não bloqueia por uma resposta que não dá para entender', () => {
+    for (const settings of [null, undefined, 'x', 42, {}, { external: null }, { external: {} }]) {
+      expect(authSettingsProblem(settings)).toBeNull()
+    }
+    expect(authSettingsProblem({ external: { email: 'false' } })).toBeNull()
   })
 })
 

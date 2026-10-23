@@ -328,6 +328,41 @@ export function explainFailure(message: string): string {
   )
 }
 
+/**
+ * O servidor de login lê o config.toml só quando o contêiner é criado. Um Supabase local criado numa
+ * versão antiga do projeto segue com o login por e-mail desligado (era assim no primeiro commit): o
+ * login devolve 422 "Email logins are disabled" e o app só mostra "Não foi possível entrar". O
+ * endpoint de configurações do servidor conta isso na hora; devolve o aviso, ou null se está certo.
+ */
+export function authSettingsProblem(settings: unknown): string | null {
+  const external =
+    typeof settings === 'object' && settings !== null
+      ? (settings as Record<string, unknown>)['external']
+      : undefined
+  const email =
+    typeof external === 'object' && external !== null
+      ? (external as Record<string, unknown>)['email']
+      : undefined
+  if (email !== false) return null
+  return (
+    'O servidor de login do seu Supabase local foi criado com uma configuração antiga: o login por e-mail ' +
+    'está desligado (por isso o app mostra "Não foi possível entrar"). Rode "npx supabase stop" e depois ' +
+    '"npm run dev:local": ele recria os contêineres com a configuração atual, e os dados ficam.'
+  )
+}
+
+/** Pergunta ao servidor de login como ele foi configurado. Sem resposta, não bloqueia: o seed segue. */
+async function staleAuthServer(apiUrl: string, anonKey: string): Promise<string | null> {
+  try {
+    const response = await fetch(`${apiUrl}/auth/v1/settings`, { headers: { apikey: anonKey } })
+    if (!response.ok) return null
+    const settings: unknown = await response.json()
+    return authSettingsProblem(settings)
+  } catch {
+    return null
+  }
+}
+
 const ENV_FILE = '.env.local'
 const URL_KEY = 'VITE_SUPABASE_URL'
 const ANON_KEY = 'VITE_SUPABASE_ANON_KEY'
@@ -408,6 +443,13 @@ async function main(): Promise<void> {
   const refusal = refuseNonLocal(local.apiUrl, local.serviceKey)
   if (refusal !== null) {
     console.error(refusal)
+    process.exitCode = 1
+    return
+  }
+
+  const stale = await staleAuthServer(local.apiUrl, local.anonKey)
+  if (stale !== null) {
+    console.error(stale)
     process.exitCode = 1
     return
   }
