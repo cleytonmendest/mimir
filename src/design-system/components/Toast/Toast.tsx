@@ -4,7 +4,7 @@ import { cn } from '../../utils'
 export type ToastKind = 'success' | 'info' | 'error'
 
 const KIND: Record<ToastKind, string> = {
-  success: 'bg-primary text-primary-foreground',
+  success: 'bg-success text-success-foreground',
   info: 'bg-foreground text-background',
   error: 'bg-destructive text-destructive-foreground',
 }
