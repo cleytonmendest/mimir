@@ -222,7 +222,7 @@ export function AvailabilityCalendar({
                 'relative flex min-h-[74px] min-w-0 flex-col items-start justify-between gap-1 rounded-md border p-1.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring max-sm:min-h-[62px]',
                 CELL[status],
                 !disabled && 'cursor-pointer',
-                mine && 'border-2 border-primary p-[5px]',
+                mine && 'border-2 border-slot-mine p-[5px]',
                 selected === date && 'outline-3 outline-offset-1 outline-foreground',
               )}
             >
@@ -234,7 +234,9 @@ export function AvailabilityCalendar({
               >
                 {Number(date.slice(8))}
               </span>
-              {mine && <Check aria-hidden className="absolute top-1 right-1 size-4 text-primary" />}
+              {mine && (
+                <Check aria-hidden className="absolute top-1 right-1 size-4 text-slot-mine" />
+              )}
               {(status === 'free' || status === 'partial' || status === 'full') && (
                 <SlotMeter decorative booked={entry.booked} capacity={capacity} />
               )}
@@ -251,7 +253,7 @@ export function AvailabilityCalendar({
         <Legend swatch="border-slot-partial/40 bg-slot-partial-bg">Algumas vagas</Legend>
         <Legend swatch="border-slot-full/40 bg-slot-full-bg">Lotado</Legend>
         <Legend swatch="border-border bg-slot-closed-bg">Fechado</Legend>
-        {showMine && <Legend swatch="border-2 border-primary bg-card">Sua reserva</Legend>}
+        {showMine && <Legend swatch="border-2 border-slot-mine bg-card">Sua reserva</Legend>}
       </ul>
       <p className="mt-2.5 text-sm text-muted-foreground">
         Cada traço é um estande: cheio = reservado, vazio = livre. Dá para reservar de amanhã até{' '}
