@@ -72,6 +72,20 @@ describe('MarketPicker: tela larga', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(3)
   })
 
+  it('a busca sem resultado oferece mostrar todos os mercados de volta', async () => {
+    screenIs('wide')
+    const { user } = setup()
+    await user.type(screen.getByRole('searchbox'), 'zzz')
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0)
+    expect(
+      screen.getByText('Tente outro bairro ou nome, ou veja a lista inteira.'),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Mostrar todos os mercados' }))
+    expect(screen.getByRole('searchbox')).toHaveValue('')
+    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+  })
+
   it('sem mercados, diz isso', () => {
     screenIs('wide')
     render(

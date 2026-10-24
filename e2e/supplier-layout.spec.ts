@@ -72,8 +72,57 @@ test('as reservas do fornecedor vêm antes da lista de mercados, com o cancelar 
     if (mineBox === null || marketsBox === null) throw new Error('sem medidas da tela')
     expect(mineBox.y).toBeLessThan(marketsBox.y)
     await expect(mine.getByRole('button', { name: 'Cancelar reserva' })).toBeInViewport()
+
+    // Só com o teclado: a confirmação diz qual reserva vai embora e leva o foco a "Manter";
+    // Esc desiste e o foco volta ao botão que a abriu (antes, caía na página).
+    const cancel = mine.getByRole('button', { name: 'Cancelar reserva' })
+    await cancel.focus()
+    await page.keyboard.press('Enter')
+    const confirm = mine.getByRole('group', { name: 'Confirmar cancelamento' })
+    await expect(confirm).toContainText(`Cancelar a reserva de`)
+    await expect(confirm).toContainText(market.name)
+    await expect(confirm.getByRole('button', { name: 'Manter' })).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(confirm).toHaveCount(0)
+    await expect(cancel).toBeFocused()
   } finally {
     await cleanupBooking(seed.db, market.id, [supplier])
+    await seed.cleanup()
+  }
+})
+
+test('os dias do calendário têm pelo menos 44 px de largura num celular de 360 px', async ({
+  page,
+}) => {
+  const supabase = localSupabase()
+  if (supabase === null) throw new Error(NO_SUPABASE_MESSAGE)
+  const seed = await seedUsers(supabase)
+  const market = await createMarket(seed.db, 3, 'Mercado E2E dias do calendário')
+
+  try {
+    await page.setViewportSize({ width: 360, height: 800 })
+    await signIn(page, seed.supplier.email, seed.supplier.password)
+    await page.getByRole('heading', { name: /^\w+ de \d{4}$/ }).waitFor()
+    type Box = { getBoundingClientRect: () => { width: number } }
+    const widths = await page
+      .locator('button[data-status]')
+      .evaluateAll((cells) =>
+        (cells as unknown as Box[]).map((cell) => cell.getBoundingClientRect().width),
+      )
+    expect(widths.length).toBeGreaterThanOrEqual(28)
+    expect(Math.min(...widths)).toBeGreaterThanOrEqual(44)
+    // A página não ganha rolagem lateral por causa disso.
+    const fits = await page.evaluate(() => {
+      const root = (
+        globalThis as unknown as {
+          document: { documentElement: { scrollWidth: number; clientWidth: number } }
+        }
+      ).document.documentElement
+      return root.scrollWidth <= root.clientWidth
+    })
+    expect(fits).toBe(true)
+  } finally {
+    await seed.db.from('markets').delete().eq('id', market.id)
     await seed.cleanup()
   }
 })

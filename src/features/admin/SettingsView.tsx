@@ -129,7 +129,7 @@ function InvitePanel({
         <p className="text-sm text-muted-foreground">Código de convite</p>
         <p
           aria-label="Código de convite"
-          className="font-mono text-3xl font-bold tracking-widest select-all"
+          className="font-mono text-3xl font-semibold tracking-widest select-all"
         >
           {formatInviteCode(code)}
         </p>

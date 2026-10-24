@@ -37,7 +37,7 @@ export default function App({
   const origin = location.origin
   if (route.page === 'activation') {
     return (
-      <main className="mx-auto w-full max-w-[1240px] p-4">
+      <main className="mx-auto w-full max-w-[1240px] p-3 sm:p-4">
         <AuthLayout>
           <SetPasswordPage auth={auth} token={route.token} onDone={onDone} />
         </AuthLayout>
@@ -47,7 +47,7 @@ export default function App({
 
   if (route.page === 'signup') {
     return (
-      <main className="mx-auto w-full max-w-[1240px] p-4">
+      <main className="mx-auto w-full max-w-[1240px] p-3 sm:p-4">
         <AuthLayout>
           <SignupPage access={access} auth={auth} code={route.code} onDone={onDone} />
         </AuthLayout>
@@ -57,12 +57,14 @@ export default function App({
 
   return (
     <AuthProvider gateway={auth}>
-      <main className="mx-auto w-full max-w-[1240px] p-4">
+      <main className="mx-auto w-full max-w-[1240px] p-3 sm:p-4">
         <AuthGate>
           {(profile) => (
             <>
-              <AppTitle />
-              <AccountBar profile={profile} />
+              <header>
+                <AppTitle />
+                <AccountBar profile={profile} />
+              </header>
               {profile.role === 'admin' ? (
                 <AdminScreen
                   key={profile.id}

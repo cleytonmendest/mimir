@@ -40,6 +40,9 @@ describe('SupplierScreen: abrir', () => {
     expect(screen.getAllByText('estandes/dia', { exact: false })).toHaveLength(2)
     expect(screen.getByText('Você ainda não tem reservas.')).toBeInTheDocument()
     expect(
+      screen.getByText('Escolha um mercado e um dia abaixo para fazer a primeira.'),
+    ).toBeInTheDocument()
+    expect(
       screen.getByText('Escolha um dia no calendário. Dias verdes e amarelos têm vaga.'),
     ).toBeInTheDocument()
   })
@@ -227,6 +230,21 @@ describe('SupplierScreen: cancelar', () => {
     expect(bookings[0]?.cancelled).toBe(true)
     expect(await screen.findByText('Você ainda não tem reservas.')).toBeInTheDocument()
     expect(await day(/^Sábado, 24 de outubro: 3 vagas livres de 3$/)).toBeInTheDocument()
+  })
+
+  it('a confirmação diz qual reserva vai embora, leva o foco a "Manter" e Esc devolve o foco ao botão', async () => {
+    const { user } = setup({ bookings: [own] })
+    const mine = await screen.findByRole('region', { name: 'Minhas reservas' })
+    within(mine).getByRole('button', { name: 'Cancelar reserva' }).focus()
+    await user.keyboard('{Enter}')
+
+    const confirm = within(mine).getByRole('group', { name: 'Confirmar cancelamento' })
+    expect(confirm).toHaveTextContent('Cancelar a reserva de sáb 24/10 em Mercado A?')
+    expect(within(confirm).getByRole('button', { name: 'Manter' })).toHaveFocus()
+
+    await user.keyboard('{Escape}')
+    expect(within(mine).queryByRole('group')).not.toBeInTheDocument()
+    expect(within(mine).getByRole('button', { name: 'Cancelar reserva' })).toHaveFocus()
   })
 
   it('cancela pelo painel do dia, e "Manter" desiste', async () => {

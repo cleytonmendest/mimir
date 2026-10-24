@@ -9,7 +9,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto w-full max-w-md pt-4 sm:pt-12">
       <AppTitle centered />
-      <div className="relative mt-6 overflow-hidden rounded-xl border border-border bg-card p-5 pt-6 shadow-sm sm:p-6 sm:pt-7">
+      <div className="relative mt-6 overflow-hidden rounded-xl border border-border bg-card p-5 pt-6 sm:p-6 sm:pt-7">
         <div aria-hidden className="absolute inset-x-0 top-0 h-1.5 bg-primary" />
         {children}
       </div>

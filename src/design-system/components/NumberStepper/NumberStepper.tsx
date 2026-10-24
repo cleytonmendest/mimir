@@ -34,7 +34,7 @@ export function NumberStepper({
       </Button>
       <output
         aria-live="polite"
-        className="min-w-[1.4ch] text-center font-display text-2xl font-bold tabular-nums"
+        className="min-w-[1.4ch] text-center font-display text-2xl font-semibold tabular-nums"
       >
         {value}
       </output>

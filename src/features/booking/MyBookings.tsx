@@ -44,7 +44,12 @@ export function MyBookings({
         )}
       </div>
       {bookings.length === 0 ? (
-        <p className="text-muted-foreground">Você ainda não tem reservas.</p>
+        <>
+          <p className="text-muted-foreground">Você ainda não tem reservas.</p>
+          <p className="text-muted-foreground">
+            Escolha um mercado e um dia abaixo para fazer a primeira.
+          </p>
+        </>
       ) : (
         <ul className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {shown.map((booking) => (

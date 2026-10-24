@@ -135,11 +135,25 @@ export function MarketPicker<T extends PickableMarket>({
         ) : (
           <>
             <MarketSearchField search={search} />
-            <ul className="mt-3 grid max-h-[min(26rem,55dvh)] gap-2 overflow-y-auto overscroll-contain pr-0.5 lg:max-h-[calc(100dvh-15rem)]">
-              {search.shown.map((market) => (
-                <li key={market.id}>{row(market)}</li>
-              ))}
-            </ul>
+            {search.shown.length === 0 ? (
+              <div className="mt-3 grid justify-items-start gap-2">
+                <p>Tente outro bairro ou nome, ou veja a lista inteira.</p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    search.setQuery('')
+                  }}
+                >
+                  Mostrar todos os mercados
+                </Button>
+              </div>
+            ) : (
+              <ul className="mt-3 grid max-h-[min(26rem,55dvh)] gap-2 overflow-y-auto overscroll-contain pr-0.5 lg:max-h-[calc(100dvh-15rem)]">
+                {search.shown.map((market) => (
+                  <li key={market.id}>{row(market)}</li>
+                ))}
+              </ul>
+            )}
           </>
         )}
       </div>

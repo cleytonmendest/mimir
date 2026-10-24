@@ -51,7 +51,7 @@ test('o administrador cadastra um fornecedor, que define a senha pelo link e res
     const phone = await newPhone(browser, playwright.devices, baseURL)
     await phone.goto(link)
     await expect(phone.getByRole('heading', { name: 'Defina a sua senha' })).toBeVisible()
-    await phone.getByRole('button', { name: 'Continuar' }).click()
+    await phone.getByRole('button', { name: 'Definir minha senha' }).click()
     await phone.getByLabel('Escolha a sua senha').fill(PASSWORD)
     await phone.getByRole('button', { name: 'Salvar senha e entrar' }).click()
 
@@ -69,7 +69,7 @@ test('o administrador cadastra um fornecedor, que define a senha pelo link e res
     // O link só vale uma vez.
     const another = await newPhone(browser, playwright.devices, baseURL)
     await another.goto(link)
-    await another.getByRole('button', { name: 'Continuar' }).click()
+    await another.getByRole('button', { name: 'Definir minha senha' }).click()
     await expect(another.getByRole('alert')).toContainText('venceu ou já foi usado')
 
     // A senha escolhida entra de verdade, em outro aparelho.
