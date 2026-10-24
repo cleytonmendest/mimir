@@ -16,7 +16,7 @@ Não há rastreador, publicidade, localização nem dado de menor. O fornecedor 
 
 ## Quem trata os dados (operadores)
 
-Supabase (banco e login), a hospedagem do app (a escolher), Sentry (erros, quando ligado) e o provedor de e-mail (quando existir). Precisam de contrato ou termo de tratamento de dados e de região adequada (o banco fica em São Paulo, `sa-east-1`). Os dados de erro enviados ao Sentry não devem conter e-mail nem nome (configurar o scrubbing ao ligar).
+Supabase (banco e login), a hospedagem do app (Netlify), Sentry (erros, quando ligado) e o provedor de e-mail (quando existir). Precisam de contrato ou termo de tratamento de dados e de região adequada (o banco fica em São Paulo, `sa-east-1`). Os dados de erro enviados ao Sentry não devem conter e-mail nem nome (configurar o scrubbing ao ligar).
 
 ## Decisões pendentes
 
