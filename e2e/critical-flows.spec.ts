@@ -48,7 +48,7 @@ test('o administrador entra e cai na área de mercados, não na de reservas', as
   try {
     await signIn(page, seed.admin.email, seed.admin.password)
 
-    await expect(page.getByRole('heading', { name: 'Mercados' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Mercados', exact: true })).toBeVisible()
     await expect(page.getByText(`${seed.admin.fullName} · Administrador`)).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Reservas', exact: true })).toBeHidden()
   } finally {
