@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react'
+import { validateEmail, validateLoginPassword } from '@/domain/access'
+import { TextField } from '@/design-system/components/TextField/TextField'
 import { Button } from '@/design-system/components/ui/button'
-import { Input } from '@/design-system/components/ui/input'
-import { Label } from '@/design-system/components/ui/label'
+import { checkAll, useValidatedField } from '@/features/forms/useValidatedField'
 import type { AuthFailureCode } from '@/lib/supabase/auth'
 import { useAuth } from './auth-context'
 
@@ -18,16 +19,17 @@ const MESSAGES: Record<AuthFailureCode, string> = {
  */
 export function LoginForm() {
   const { signIn } = useAuth()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const email = useValidatedField(validateEmail)
+  const password = useValidatedField(validateLoginPassword)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<AuthFailureCode | null>(null)
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (!checkAll([email, password])) return
     setPending(true)
     setError(null)
-    const result = await signIn(email.trim(), password)
+    const result = await signIn(email.value.trim(), password.value)
     setPending(false)
     if (!result.ok) setError(result.code)
   }
@@ -39,37 +41,42 @@ export function LoginForm() {
         <p className="text-muted-foreground">Reserve estandes de degustação nos mercados.</p>
       </div>
       <form
+        noValidate
         onSubmit={(event) => {
           void submit(event)
         }}
         className="grid gap-4"
       >
-        <div className="grid gap-2">
-          <Label htmlFor="login-email">E-mail</Label>
-          <Input
-            id="login-email"
-            type="email"
-            autoComplete="username"
-            required
-            value={email}
-            onChange={(event) => {
-              setEmail(event.target.value)
-            }}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="login-password">Senha</Label>
-          <Input
-            id="login-password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(event) => {
-              setPassword(event.target.value)
-            }}
-          />
-        </div>
+        <TextField
+          id="login-email"
+          label="E-mail"
+          type="email"
+          autoComplete="username"
+          required
+          value={email.value}
+          error={email.error}
+          inputRef={email.ref}
+          onChange={(event) => {
+            email.change(event.target.value)
+          }}
+          onFocus={email.focus}
+          onBlur={email.blur}
+        />
+        <TextField
+          id="login-password"
+          label="Senha"
+          type="password"
+          autoComplete="current-password"
+          required
+          value={password.value}
+          error={password.error}
+          inputRef={password.ref}
+          onChange={(event) => {
+            password.change(event.target.value)
+          }}
+          onFocus={password.focus}
+          onBlur={password.blur}
+        />
         {error !== null && (
           <p role="alert" className="text-destructive">
             {MESSAGES[error]}

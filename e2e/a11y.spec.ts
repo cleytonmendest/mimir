@@ -67,6 +67,10 @@ test('telas do fornecedor, do administrador e as páginas públicas, nos dois te
     await page.goto('/')
     await page.getByLabel('E-mail').waitFor()
     await audit(page, 'entrada', found)
+    // A mesma tela com os erros à mostra (texto de erro, campos marcados).
+    await page.getByRole('button', { name: 'Entrar' }).click()
+    await page.getByRole('alert').first().waitFor()
+    await audit(page, 'entrada com erros', found)
 
     await page.goto('/definir-senha?token=qualquer')
     await page.getByRole('button', { name: 'Definir minha senha' }).waitFor()

@@ -133,3 +133,37 @@ describe('erros ao longo do caminho', () => {
     expect(screen.getByLabelText('Escolha a sua senha')).toHaveValue(PASSWORD)
   })
 })
+
+describe('senha: validação ao sair do campo', () => {
+  async function openForm() {
+    const world = setup()
+    await world.user.click(screen.getByRole('button', { name: 'Definir minha senha' }))
+    await screen.findByLabelText('Escolha a sua senha')
+    return world
+  }
+
+  it('não reclama enquanto digita; senha curta é apontada ao sair, e o erro some ao voltar', async () => {
+    const { user } = await openForm()
+    const field = screen.getByLabelText('Escolha a sua senha')
+    await user.type(field, 'curta')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+    await user.tab()
+    expect(screen.getByRole('alert')).toHaveTextContent('A senha precisa ter pelo menos 10')
+    expect(field).toHaveAttribute('aria-invalid', 'true')
+
+    await user.click(field)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('enviar com senha curta mostra o erro, leva o foco ao campo e não chama o servidor', async () => {
+    const { auth, user } = await openForm()
+    const setPassword = vi.spyOn(auth, 'setPassword')
+    await user.type(screen.getByLabelText('Escolha a sua senha'), 'curta')
+    await user.click(screen.getByRole('button', { name: 'Salvar senha e entrar' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('A senha precisa ter pelo menos 10')
+    expect(screen.getByLabelText('Escolha a sua senha')).toHaveFocus()
+    expect(setPassword).not.toHaveBeenCalled()
+  })
+})

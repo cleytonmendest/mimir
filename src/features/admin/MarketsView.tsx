@@ -1,13 +1,19 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { DEFAULT_CAPACITY, MAX_CAPACITY, MIN_CAPACITY } from '@/domain/booking'
+import {
+  MAX_ADDRESS_LENGTH,
+  MAX_NAME_LENGTH,
+  validateMarketAddress,
+  validateMarketName,
+} from '@/domain/market'
 import { InlineConfirm } from '@/design-system/components/InlineConfirm/InlineConfirm'
 import { useFocusReturn } from '@/design-system/components/InlineConfirm/useFocusReturn'
 import { NumberStepper } from '@/design-system/components/NumberStepper/NumberStepper'
 import { Button } from '@/design-system/components/ui/button'
-import { Input } from '@/design-system/components/ui/input'
-import { Label } from '@/design-system/components/ui/label'
+import { TextField } from '@/design-system/components/TextField/TextField'
 import { cn } from '@/design-system/utils'
 import { NoticeToast } from '@/features/booking/NoticeToast'
+import { checkAll, useValidatedField } from '@/features/forms/useValidatedField'
 import { MarketSearchField } from '@/features/market-search/MarketSearchField'
 import { useMarketSearch } from '@/features/market-search/useMarketSearch'
 import type { BookingGateway } from '@/lib/supabase/booking-gateway'
@@ -108,23 +114,25 @@ function NewMarketForm({
   state: MarketsReady
   controller: MarketsController
 }) {
-  const [name, setName] = useState('')
-  const [address, setAddress] = useState('')
+  const name = useValidatedField(validateMarketName)
+  const address = useValidatedField(validateMarketAddress)
   const [capacity, setCapacity] = useState(DEFAULT_CAPACITY)
   // O erro de validação é do formulário aberto: o de edição aparece na linha do mercado.
   const error = state.editing === null ? state.formError : null
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (await controller.create({ name, address, capacity })) {
-      setName('')
-      setAddress('')
+    if (!checkAll([name, address])) return
+    if (await controller.create({ name: name.value, address: address.value, capacity })) {
+      name.reset()
+      address.reset()
       setCapacity(DEFAULT_CAPACITY)
     }
   }
 
   return (
     <form
+      noValidate
       onSubmit={(event) => {
         void submit(event)
       }}
@@ -134,28 +142,32 @@ function NewMarketForm({
       <h2 id="new-market-title" className="font-display text-2xl leading-tight font-semibold">
         Novo mercado
       </h2>
-      <div className="grid gap-1.5">
-        <Label htmlFor="new-market-name">Nome</Label>
-        <Input
-          id="new-market-name"
-          value={name}
-          maxLength={100}
-          onChange={(event) => {
-            setName(event.target.value)
-          }}
-        />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="new-market-address">Endereço (opcional)</Label>
-        <Input
-          id="new-market-address"
-          value={address}
-          maxLength={200}
-          onChange={(event) => {
-            setAddress(event.target.value)
-          }}
-        />
-      </div>
+      <TextField
+        id="new-market-name"
+        label="Nome"
+        maxLength={MAX_NAME_LENGTH}
+        value={name.value}
+        error={name.error}
+        inputRef={name.ref}
+        onChange={(event) => {
+          name.change(event.target.value)
+        }}
+        onFocus={name.focus}
+        onBlur={name.blur}
+      />
+      <TextField
+        id="new-market-address"
+        label="Endereço (opcional)"
+        maxLength={MAX_ADDRESS_LENGTH}
+        value={address.value}
+        error={address.error}
+        inputRef={address.ref}
+        onChange={(event) => {
+          address.change(event.target.value)
+        }}
+        onFocus={address.focus}
+        onBlur={address.blur}
+      />
       <div className="grid gap-1.5">
         <span className="text-sm leading-none font-medium">Estandes por dia</span>
         <NumberStepper
@@ -306,40 +318,46 @@ function EditForm({
   state: MarketsReady
   controller: MarketsController
 }) {
-  const [name, setName] = useState(market.name)
-  const [address, setAddress] = useState(market.address ?? '')
+  const name = useValidatedField(validateMarketName, market.name)
+  const address = useValidatedField(validateMarketAddress, market.address ?? '')
 
   return (
     <form
+      noValidate
       aria-label={`Editar ${market.name}`}
       className="grid gap-3"
       onSubmit={(event) => {
         event.preventDefault()
-        void controller.save(market.id, { name, address })
+        if (!checkAll([name, address])) return
+        void controller.save(market.id, { name: name.value, address: address.value })
       }}
     >
-      <div className="grid gap-1.5">
-        <Label htmlFor={`name-${market.id}`}>Nome</Label>
-        <Input
-          id={`name-${market.id}`}
-          value={name}
-          maxLength={100}
-          onChange={(event) => {
-            setName(event.target.value)
-          }}
-        />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor={`address-${market.id}`}>Endereço (opcional)</Label>
-        <Input
-          id={`address-${market.id}`}
-          value={address}
-          maxLength={200}
-          onChange={(event) => {
-            setAddress(event.target.value)
-          }}
-        />
-      </div>
+      <TextField
+        id={`name-${market.id}`}
+        label="Nome"
+        maxLength={MAX_NAME_LENGTH}
+        value={name.value}
+        error={name.error}
+        inputRef={name.ref}
+        onChange={(event) => {
+          name.change(event.target.value)
+        }}
+        onFocus={name.focus}
+        onBlur={name.blur}
+      />
+      <TextField
+        id={`address-${market.id}`}
+        label="Endereço (opcional)"
+        maxLength={MAX_ADDRESS_LENGTH}
+        value={address.value}
+        error={address.error}
+        inputRef={address.ref}
+        onChange={(event) => {
+          address.change(event.target.value)
+        }}
+        onFocus={address.focus}
+        onBlur={address.blur}
+      />
       {state.formError !== null && (
         <p role="alert" className="text-destructive">
           {state.formError}

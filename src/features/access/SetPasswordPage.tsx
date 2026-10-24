@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { validatePassword } from '@/domain/access'
 import { Button } from '@/design-system/components/ui/button'
+import { checkAll, useValidatedField } from '@/features/forms/useValidatedField'
 import { AuthFailure, type AuthGateway } from '@/lib/supabase/auth'
 import { PasswordField } from './PasswordField'
 
@@ -29,7 +30,7 @@ export function SetPasswordPage({
   onDone: () => void
 }) {
   const [step, setStep] = useState<Step>(token === null ? 'invalid' : 'intro')
-  const [password, setPassword] = useState('')
+  const password = useValidatedField(validatePassword)
   const [error, setError] = useState<string | null>(null)
 
   async function redeem() {
@@ -50,15 +51,11 @@ export function SetPasswordPage({
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const problem = validatePassword(password)
-    if (problem !== null) {
-      setError(problem)
-      return
-    }
+    if (!checkAll([password])) return
     setStep('saving')
     setError(null)
     try {
-      await auth.setPassword(password)
+      await auth.setPassword(password.value)
       setStep('done')
       onDone()
     } catch (failure) {
@@ -109,8 +106,12 @@ export function SetPasswordPage({
           <PasswordField
             id="activation-password"
             label="Escolha a sua senha"
-            value={password}
-            onChange={setPassword}
+            value={password.value}
+            onChange={password.change}
+            error={password.error}
+            onFocus={password.focus}
+            onBlur={password.blur}
+            inputRef={password.ref}
           />
           <Button type="submit" disabled={step === 'saving'}>
             {step === 'saving' ? 'Salvando…' : 'Salvar senha e entrar'}

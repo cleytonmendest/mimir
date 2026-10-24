@@ -1,13 +1,16 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import {
   formatInviteCode,
+  validateEmail,
+  validateInviteCodeEntry,
   validatePassword,
   validateSupplierInput,
+  validateSupplierName,
   type SignupMode,
 } from '@/domain/access'
+import { TextField } from '@/design-system/components/TextField/TextField'
 import { Button } from '@/design-system/components/ui/button'
-import { Input } from '@/design-system/components/ui/input'
-import { Label } from '@/design-system/components/ui/label'
+import { checkAll, useValidatedField } from '@/features/forms/useValidatedField'
 import { describeFailure } from '@/features/booking/messages'
 import type { AccessGateway, SignUpRefusal } from '@/lib/supabase/access-gateway'
 import type { AuthGateway } from '@/lib/supabase/auth'
@@ -139,30 +142,25 @@ function SignupForm({
   onDone: () => void
   onClosed: () => void
 }) {
-  const [inviteCode, setInviteCode] = useState(
+  const code = useValidatedField(
+    validateInviteCodeEntry,
     initialCode === '' ? '' : formatInviteCode(initialCode),
   )
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const fullName = useValidatedField(validateSupplierName)
+  const email = useValidatedField(validateEmail)
+  const password = useValidatedField(validatePassword)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null)
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const person = validateSupplierInput({ fullName, email })
+    const fields =
+      mode === 'invite' ? [code, fullName, email, password] : [fullName, email, password]
+    if (!checkAll(fields)) return
+    const person = validateSupplierInput({ fullName: fullName.value, email: email.value })
     if (!person.ok) {
       setError(person.message)
-      return
-    }
-    const passwordProblem = validatePassword(password)
-    if (passwordProblem !== null) {
-      setError(passwordProblem)
-      return
-    }
-    if (mode === 'invite' && inviteCode.trim() === '') {
-      setError('Informe o código de convite.')
       return
     }
 
@@ -171,8 +169,8 @@ function SignupForm({
     try {
       const result = await access.signUp({
         ...person.value,
-        password,
-        ...(mode === 'invite' ? { code: inviteCode } : {}),
+        password: password.value,
+        ...(mode === 'invite' ? { code: code.value } : {}),
       })
       if (!result.ok) {
         if (result.code === 'SIGNUP_CLOSED') onClosed()
@@ -185,7 +183,7 @@ function SignupForm({
       }
       // Conta criada e confirmada: entra já, com a senha que acabou de escolher.
       try {
-        await auth.signIn(person.value.email, password)
+        await auth.signIn(person.value.email, password.value)
         onDone()
       } catch {
         setError('Conta criada! Mas não conseguimos entrar agora. Use "Entre aqui", abaixo.')
@@ -227,48 +225,58 @@ function SignupForm({
           : 'Crie a sua conta para reservar estandes de degustação nos mercados.'}
       </p>
       {mode === 'invite' && (
-        <div className="grid gap-1.5">
-          <Label htmlFor="signup-code">Código de convite</Label>
-          <Input
-            id="signup-code"
-            value={inviteCode}
-            autoComplete="off"
-            autoCapitalize="characters"
-            className="font-mono tracking-widest uppercase"
-            onChange={(event) => {
-              setInviteCode(event.target.value)
-            }}
-          />
-        </div>
+        <TextField
+          id="signup-code"
+          label="Código de convite"
+          autoComplete="off"
+          autoCapitalize="characters"
+          className="font-mono tracking-widest uppercase"
+          value={code.value}
+          error={code.error}
+          inputRef={code.ref}
+          onChange={(event) => {
+            code.change(event.target.value)
+          }}
+          onFocus={code.focus}
+          onBlur={code.blur}
+        />
       )}
-      <div className="grid gap-1.5">
-        <Label htmlFor="signup-name">Nome ou empresa</Label>
-        <Input
-          id="signup-name"
-          value={fullName}
-          autoComplete="organization"
-          onChange={(event) => {
-            setFullName(event.target.value)
-          }}
-        />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="signup-email">E-mail</Label>
-        <Input
-          id="signup-email"
-          type="email"
-          value={email}
-          autoComplete="email"
-          onChange={(event) => {
-            setEmail(event.target.value)
-          }}
-        />
-      </div>
+      <TextField
+        id="signup-name"
+        label="Nome ou empresa"
+        autoComplete="organization"
+        value={fullName.value}
+        error={fullName.error}
+        inputRef={fullName.ref}
+        onChange={(event) => {
+          fullName.change(event.target.value)
+        }}
+        onFocus={fullName.focus}
+        onBlur={fullName.blur}
+      />
+      <TextField
+        id="signup-email"
+        label="E-mail"
+        type="email"
+        autoComplete="email"
+        value={email.value}
+        error={email.error}
+        inputRef={email.ref}
+        onChange={(event) => {
+          email.change(event.target.value)
+        }}
+        onFocus={email.focus}
+        onBlur={email.blur}
+      />
       <PasswordField
         id="signup-password"
         label="Escolha uma senha"
-        value={password}
-        onChange={setPassword}
+        value={password.value}
+        onChange={password.change}
+        error={password.error}
+        onFocus={password.focus}
+        onBlur={password.blur}
+        inputRef={password.ref}
       />
       {error !== null && (
         <p role="alert" className="text-destructive">
