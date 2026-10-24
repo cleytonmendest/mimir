@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { MAX_SUPPLIER_NAME_LENGTH } from '@/domain/access'
+import { InlineConfirm } from '@/design-system/components/InlineConfirm/InlineConfirm'
+import { useFocusReturn } from '@/design-system/components/InlineConfirm/useFocusReturn'
 import { Button } from '@/design-system/components/ui/button'
 import { Input } from '@/design-system/components/ui/input'
 import { Label } from '@/design-system/components/ui/label'
@@ -197,6 +199,7 @@ function SupplierRow({
   controller: SuppliersController
 }) {
   const confirming = state.confirmingDeactivate === supplier.id
+  const deactivateTrigger = useFocusReturn<HTMLButtonElement>(confirming)
 
   return (
     <li className="grid gap-3 rounded-xl border border-border bg-card p-4">
@@ -223,6 +226,7 @@ function SupplierRow({
               Gerar novo link
             </Button>
             <Button
+              ref={deactivateTrigger}
               variant="outline"
               disabled={state.busy}
               aria-label={`Desativar ${supplier.fullName}`}
@@ -247,35 +251,20 @@ function SupplierRow({
         )}
       </div>
       {confirming && (
-        <div
-          role="group"
-          aria-label={`Confirmar a desativação de ${supplier.fullName}`}
-          className="grid gap-2"
-        >
-          <p>
-            Desativar {supplier.fullName}? A pessoa perde o acesso na hora e as reservas futuras
-            dela são canceladas.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="destructive"
-              disabled={state.busy}
-              onClick={() => {
-                void controller.setActive(supplier.id, false)
-              }}
-            >
-              Sim, desativar
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                controller.keepActive()
-              }}
-            >
-              Voltar
-            </Button>
-          </div>
-        </div>
+        <InlineConfirm
+          label={`Confirmar a desativação de ${supplier.fullName}`}
+          title={`Desativar ${supplier.fullName}?`}
+          description="A pessoa perde o acesso na hora e as reservas futuras dela são canceladas."
+          confirmLabel="Sim, desativar"
+          cancelLabel="Voltar"
+          busy={state.busy}
+          onConfirm={() => {
+            void controller.setActive(supplier.id, false)
+          }}
+          onCancel={() => {
+            controller.keepActive()
+          }}
+        />
       )}
     </li>
   )

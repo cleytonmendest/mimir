@@ -1,10 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { dayStatus, freeSlots } from '@/domain/booking'
-import { longDate, plural } from '@/domain/format'
+import { longDate, plural, shortDate } from '@/domain/format'
+import { InlineConfirm } from '@/design-system/components/InlineConfirm/InlineConfirm'
+import { useFocusReturn } from '@/design-system/components/InlineConfirm/useFocusReturn'
 import { SlotMeter } from '@/design-system/components/SlotMeter/SlotMeter'
 import { Button } from '@/design-system/components/ui/button'
 import { Input } from '@/design-system/components/ui/input'
 import { Label } from '@/design-system/components/ui/label'
+import type { AdminBooking } from '@/lib/supabase/mappers'
 import type { AgendaController, AgendaReady } from './agenda-controller'
 
 const CARD = 'rounded-xl border border-border bg-card p-4'
@@ -95,67 +98,16 @@ export function AgendaDayPanel({
         <p className="mt-2 text-muted-foreground">Nenhuma reserva neste dia.</p>
       ) : (
         <ul className="mt-2 grid gap-2">
-          {here.map((booking) => {
-            const asking = state.cancelling?.id === booking.id
-            return (
-              <li key={booking.id} className="grid gap-2 rounded-md border border-border p-2.5">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-medium">
-                    {booking.supplierName || 'Fornecedor sem nome'}
-                  </span>
-                  {!asking && canChange && (
-                    <Button
-                      variant="outline"
-                      className="border-destructive/50 text-destructive"
-                      disabled={state.busy}
-                      aria-label={`Cancelar a reserva de ${booking.supplierName || 'fornecedor sem nome'}`}
-                      onClick={() => {
-                        controller.askCancel(booking.id)
-                      }}
-                    >
-                      Cancelar
-                    </Button>
-                  )}
-                </div>
-                {asking && state.cancelling !== null && (
-                  <div role="group" aria-label="Confirmar cancelamento" className="grid gap-2">
-                    <Label htmlFor="cancel-reason">Motivo (opcional)</Label>
-                    <Input
-                      id="cancel-reason"
-                      value={state.cancelling.reason}
-                      maxLength={500}
-                      onChange={(event) => {
-                        controller.setCancelReason(event.target.value)
-                      }}
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      O sistema não avisa o fornecedor: combine com ele.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="destructive"
-                        disabled={state.busy}
-                        onClick={() => {
-                          void controller.confirmCancel()
-                        }}
-                      >
-                        Cancelar reserva
-                      </Button>
-                      <Button
-                        variant="outline"
-                        disabled={state.busy}
-                        onClick={() => {
-                          controller.keepBooking()
-                        }}
-                      >
-                        Manter
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </li>
-            )
-          })}
+          {here.map((booking) => (
+            <DayBookingRow
+              key={booking.id}
+              booking={booking}
+              day={selectedDay}
+              canChange={canChange}
+              state={state}
+              controller={controller}
+            />
+          ))}
         </ul>
       )}
 
@@ -190,5 +142,74 @@ export function AgendaDayPanel({
         </div>
       )}
     </section>
+  )
+}
+
+/** Uma reserva do dia, com o botão de cancelar e a confirmação que diz qual reserva vai embora. */
+function DayBookingRow({
+  booking,
+  day,
+  canChange,
+  state,
+  controller,
+}: {
+  booking: AdminBooking
+  day: string
+  canChange: boolean
+  state: AgendaReady
+  controller: AgendaController
+}) {
+  const asking = state.cancelling?.id === booking.id
+  const trigger = useFocusReturn<HTMLButtonElement>(asking)
+  const who = booking.supplierName || 'fornecedor sem nome'
+
+  return (
+    <li className="grid gap-2 rounded-md border border-border p-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-medium">{booking.supplierName || 'Fornecedor sem nome'}</span>
+        {!asking && canChange && (
+          <Button
+            ref={trigger}
+            variant="outline"
+            className="border-destructive/50 text-destructive"
+            disabled={state.busy}
+            aria-label={`Cancelar a reserva de ${who}`}
+            onClick={() => {
+              controller.askCancel(booking.id)
+            }}
+          >
+            Cancelar
+          </Button>
+        )}
+      </div>
+      {asking && state.cancelling !== null && (
+        <InlineConfirm
+          label="Confirmar cancelamento"
+          title={`Cancelar a reserva de ${who} em ${shortDate(day)}?`}
+          description="O sistema não avisa o fornecedor: combine com ele."
+          confirmLabel="Cancelar reserva"
+          cancelLabel="Manter"
+          busy={state.busy}
+          onConfirm={() => {
+            void controller.confirmCancel()
+          }}
+          onCancel={() => {
+            controller.keepBooking()
+          }}
+        >
+          <div className="grid gap-1.5">
+            <Label htmlFor="cancel-reason">Motivo (opcional)</Label>
+            <Input
+              id="cancel-reason"
+              value={state.cancelling.reason}
+              maxLength={500}
+              onChange={(event) => {
+                controller.setCancelReason(event.target.value)
+              }}
+            />
+          </div>
+        </InlineConfirm>
+      )}
+    </li>
   )
 }

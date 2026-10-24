@@ -244,8 +244,12 @@ describe('Mercados', () => {
     const { user, markets } = await openMarkets()
     await user.click(screen.getByRole('button', { name: 'Arquivar Mercado B' }))
     const confirm = screen.getByRole('group', { name: 'Confirmar arquivamento' })
+    expect(confirm).toHaveTextContent('Arquivar Mercado B?')
+    expect(within(confirm).getByRole('button', { name: 'Manter' })).toHaveFocus()
     await user.click(within(confirm).getByRole('button', { name: 'Manter' }))
     expect(screen.queryByRole('group', { name: 'Confirmar arquivamento' })).not.toBeInTheDocument()
+    // O botão que abriu a confirmação recebe o foco de volta.
+    expect(screen.getByRole('button', { name: 'Arquivar Mercado B' })).toHaveFocus()
 
     await user.click(screen.getByRole('button', { name: 'Arquivar Mercado B' }))
     await user.click(screen.getByRole('button', { name: 'Sim, arquivar' }))

@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { DEFAULT_CAPACITY, MAX_CAPACITY, MIN_CAPACITY } from '@/domain/booking'
+import { InlineConfirm } from '@/design-system/components/InlineConfirm/InlineConfirm'
+import { useFocusReturn } from '@/design-system/components/InlineConfirm/useFocusReturn'
 import { NumberStepper } from '@/design-system/components/NumberStepper/NumberStepper'
 import { Button } from '@/design-system/components/ui/button'
 import { Input } from '@/design-system/components/ui/input'
@@ -187,6 +189,7 @@ function MarketRow({
 }) {
   const editing = state.editing === market.id
   const archiving = state.confirmingArchive === market.id
+  const archiveTrigger = useFocusReturn<HTMLButtonElement>(archiving)
 
   const stepper = (
     <NumberStepper
@@ -214,6 +217,7 @@ function MarketRow({
     </Button>
   ) : (
     <Button
+      ref={archiveTrigger}
       variant="outline"
       disabled={state.busy}
       aria-label={`Arquivar ${market.name}`}
@@ -273,32 +277,21 @@ function MarketRow({
       )}
 
       {archiving && (
-        <div role="group" aria-label="Confirmar arquivamento" className="col-span-full grid gap-2">
-          <p className="max-w-[60ch] text-sm">
-            Arquivar este mercado? Ele deixa de aparecer para os fornecedores e não aceita novas
-            reservas. As que já existem continuam.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="destructive"
-              disabled={state.busy}
-              onClick={() => {
-                void controller.setArchived(market.id, true)
-              }}
-            >
-              Sim, arquivar
-            </Button>
-            <Button
-              variant="outline"
-              disabled={state.busy}
-              onClick={() => {
-                controller.keepActive()
-              }}
-            >
-              Manter
-            </Button>
-          </div>
-        </div>
+        <InlineConfirm
+          label="Confirmar arquivamento"
+          title={`Arquivar ${market.name}?`}
+          description="Ele deixa de aparecer para os fornecedores e não aceita novas reservas. As que já existem continuam."
+          confirmLabel="Sim, arquivar"
+          cancelLabel="Manter"
+          busy={state.busy}
+          className="col-span-full"
+          onConfirm={() => {
+            void controller.setArchived(market.id, true)
+          }}
+          onCancel={() => {
+            controller.keepActive()
+          }}
+        />
       )}
     </li>
   )
