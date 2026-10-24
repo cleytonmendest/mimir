@@ -6,7 +6,13 @@ import type { MarketAvailability } from '@/domain/booking'
 import type { IsoDate } from '@/domain/types'
 import type { BookingGateway } from '@/lib/supabase/booking-gateway'
 import type { Market, MyBooking } from '@/lib/supabase/mappers'
-import { describeBookingRefusal, describeCancelRefusal, describeFailure } from './messages'
+import type { Failure } from '@/features/diagnostics/error-report'
+import {
+  describeBookingRefusal,
+  describeCancelRefusal,
+  describeFailure,
+  toFailure,
+} from './messages'
 
 export interface Notice {
   /** Muda a cada aviso: é o que faz um aviso igual ao anterior aparecer de novo. */
@@ -22,7 +28,7 @@ export interface ReadyState {
   marketId: string | null
   /** O calendário do mercado escolhido (null enquanto carrega). */
   availability: MarketAvailability | null
-  availabilityError: string | null
+  availabilityError: Failure | null
   month: YearMonth
   selectedDay: IsoDate | null
   /** A pessoa clicou em "Reservar" e falta confirmar. */
@@ -35,8 +41,7 @@ export interface ReadyState {
   notice: Notice | null
 }
 
-export type BookingState =
-  { status: 'loading' } | { status: 'failed'; message: string } | ReadyState
+export type BookingState = { status: 'loading' } | ({ status: 'failed' } & Failure) | ReadyState
 
 export interface BookingController {
   getState(): BookingState
@@ -112,10 +117,13 @@ export function createBookingController(deps: BookingControllerDeps): BookingCon
       if (request !== availabilityRequest) return
       if (result.ok) patch({ availability: result.availability, availabilityError: null })
       else
-        patch({ availability: null, availabilityError: 'Não foi possível mostrar este mercado.' })
+        patch({
+          availability: null,
+          availabilityError: { message: 'Não foi possível mostrar este mercado.', details: null },
+        })
     } catch (error) {
       if (request !== availabilityRequest) return
-      patch({ availability: null, availabilityError: describeFailure(error) })
+      patch({ availability: null, availabilityError: toFailure(error) })
     }
   }
 
@@ -152,7 +160,7 @@ export function createBookingController(deps: BookingControllerDeps): BookingCon
       })
       await loadAvailability()
     } catch (error) {
-      set({ status: 'failed', message: describeFailure(error) })
+      set({ status: 'failed', ...toFailure(error) })
     }
   }
 

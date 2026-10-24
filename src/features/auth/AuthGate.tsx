@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Button } from '@/design-system/components/ui/button'
+import { FailureNotice } from '@/features/diagnostics/FailureNotice'
 import type { UserProfile } from '@/lib/supabase/mappers'
 import { useAuth } from './auth-context'
 import { AuthLayout } from './AuthLayout'
@@ -27,22 +28,21 @@ export function AuthGate({ children }: { children: (profile: UserProfile) => Rea
     case 'failed':
       return (
         <AuthLayout>
-          <div className="grid gap-4">
-            <p role="alert" className="text-destructive">
-              {state.message}
-            </p>
-            <div className="flex gap-2">
-              <Button onClick={retry}>Tentar de novo</Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  void signOut()
-                }}
-              >
-                Sair
-              </Button>
-            </div>
-          </div>
+          <FailureNotice
+            className="grid gap-4"
+            message={state.message}
+            details={state.details}
+            onRetry={retry}
+          >
+            <Button
+              variant="outline"
+              onClick={() => {
+                void signOut()
+              }}
+            >
+              Sair
+            </Button>
+          </FailureNotice>
         </AuthLayout>
       )
     case 'signedIn':

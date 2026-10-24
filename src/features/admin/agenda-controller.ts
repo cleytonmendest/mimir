@@ -6,7 +6,8 @@ import type { IsoDate } from '@/domain/types'
 import type { BookingGateway } from '@/lib/supabase/booking-gateway'
 import type { AdminBooking, ClosedDay, Market } from '@/lib/supabase/mappers'
 import type { Notice } from '@/features/booking/booking-controller'
-import { describeCancelRefusal, describeFailure } from '@/features/booking/messages'
+import type { Failure } from '@/features/diagnostics/error-report'
+import { describeCancelRefusal, describeFailure, toFailure } from '@/features/booking/messages'
 
 export interface AgendaReady {
   status: 'ready'
@@ -14,7 +15,7 @@ export interface AgendaReady {
   markets: Market[]
   marketId: string | null
   availability: MarketAvailability | null
-  availabilityError: string | null
+  availabilityError: Failure | null
   /** As datas fechadas do mercado escolhido, com o motivo. */
   closedDays: ClosedDay[]
   /** As próximas reservas de todos os mercados, com o nome do fornecedor (só as primeiras). */
@@ -35,8 +36,7 @@ export interface AgendaReady {
   notice: Notice | null
 }
 
-export type AgendaState =
-  { status: 'loading' } | { status: 'failed'; message: string } | AgendaReady
+export type AgendaState = { status: 'loading' } | ({ status: 'failed' } & Failure) | AgendaReady
 
 export interface AgendaController {
   getState(): AgendaState
@@ -113,12 +113,12 @@ export function createAgendaController(deps: {
         patch({
           availability: null,
           closedDays: [],
-          availabilityError: 'Não foi possível mostrar este mercado.',
+          availabilityError: { message: 'Não foi possível mostrar este mercado.', details: null },
         })
       }
     } catch (error) {
       if (request !== marketRequest) return
-      patch({ availability: null, closedDays: [], availabilityError: describeFailure(error) })
+      patch({ availability: null, closedDays: [], availabilityError: toFailure(error) })
     }
   }
 
@@ -177,7 +177,7 @@ export function createAgendaController(deps: {
       })
       await loadMarket()
     } catch (error) {
-      set({ status: 'failed', message: describeFailure(error) })
+      set({ status: 'failed', ...toFailure(error) })
     }
   }
 

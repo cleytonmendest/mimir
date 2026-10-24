@@ -237,6 +237,22 @@ describe('falhas ao abrir o app', () => {
     expect(await screen.findByText('Ana · Fornecedor')).toBeInTheDocument()
   })
 
+  it('a falha de conexão deixa copiar os detalhes do erro e ainda oferece "Sair"', async () => {
+    const gateway = createFakeGateway({ accounts: ACCOUNTS, signedInAs: 'ana@test.dev' })
+    gateway.setFault('offline')
+    render(
+      <AuthProvider gateway={gateway}>
+        <AuthGate>{(profile) => <AccountBar profile={profile} />}</AuthGate>
+      </AuthProvider>,
+    )
+    await screen.findByRole('alert')
+    expect(screen.getByRole('button', { name: 'Sair' })).toBeInTheDocument()
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Copiar detalhes do erro' }))
+    expect(await screen.findByText('Detalhes copiados.')).toBeInTheDocument()
+    expect(await navigator.clipboard.readText()).toContain('Versão:')
+  })
+
   it('usuário sem perfil: avisa para falar com o administrador e permite sair', async () => {
     const semPerfil = { userId: 'u-x', password: 'x', profile: null }
     const { user } = setup({

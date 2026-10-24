@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { formatInviteCode, type SignupMode } from '@/domain/access'
 import { SegmentedControl } from '@/design-system/components/SegmentedControl/SegmentedControl'
 import { Button } from '@/design-system/components/ui/button'
+import { FailureNotice } from '@/features/diagnostics/FailureNotice'
 import { AccessLinkPanel } from '@/features/access/AccessLinkPanel'
 import { SIGNUP_PATH } from '@/features/access/routes'
 import { copyText, inviteMessage } from '@/features/access/share'
@@ -53,20 +54,14 @@ export function SettingsView({
 
   if (state.status === 'failed') {
     return (
-      <div className="mt-6 grid gap-3">
-        <p role="alert" className="text-destructive">
-          {state.message}
-        </p>
-        <div>
-          <Button
-            onClick={() => {
-              void controller.start()
-            }}
-          >
-            Tentar de novo
-          </Button>
-        </div>
-      </div>
+      <FailureNotice
+        className="mt-6 grid gap-3"
+        message={state.message}
+        details={state.details}
+        onRetry={() => {
+          void controller.start()
+        }}
+      />
     )
   }
 

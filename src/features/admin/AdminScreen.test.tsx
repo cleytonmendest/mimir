@@ -155,6 +155,25 @@ describe('Agenda', () => {
     await user.click(screen.getByRole('button', { name: 'Tentar de novo' }))
     expect(await screen.findByRole('heading', { name: 'Outubro de 2026' })).toBeInTheDocument()
   })
+
+  it('a tela que falhou deixa copiar os detalhes técnicos do erro', async () => {
+    const fake = createFakeBookingGateway({
+      actor: { id: 'u-lia', role: 'admin' },
+      today: TODAY,
+      markets: [market('m-a', 'Mercado A')],
+    })
+    fake.state.fail = 'NETWORK'
+    const user = userEvent.setup()
+    render(
+      <AdminScreen gateway={fake.gateway} access={createFakeAccessGateway().gateway} now={now} />,
+    )
+    await screen.findByRole('alert')
+    await user.click(screen.getByRole('button', { name: 'Copiar detalhes do erro' }))
+    expect(await screen.findByText('Detalhes copiados.')).toBeInTheDocument()
+    const copied = await navigator.clipboard.readText()
+    expect(copied).toContain('O que a tela disse: Sem conexão com o servidor.')
+    expect(copied).toMatch(/RequestFailure NETWORK: /)
+  })
 })
 
 describe('Mercados', () => {

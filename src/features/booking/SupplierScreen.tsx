@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AvailabilityCalendar } from '@/design-system/components/AvailabilityCalendar/AvailabilityCalendar'
-import { Button } from '@/design-system/components/ui/button'
+import { FailureNotice } from '@/features/diagnostics/FailureNotice'
 import type { BookingGateway } from '@/lib/supabase/booking-gateway'
 import { createBookingController } from './booking-controller'
 import { DayPanel } from './DayPanel'
@@ -44,20 +44,14 @@ export function SupplierScreen({ gateway, now }: { gateway: BookingGateway; now?
       )}
 
       {state.status === 'failed' && (
-        <div className="mt-6 grid gap-3">
-          <p role="alert" className="text-destructive">
-            {state.message}
-          </p>
-          <div>
-            <Button
-              onClick={() => {
-                void controller.start()
-              }}
-            >
-              Tentar de novo
-            </Button>
-          </div>
-        </div>
+        <FailureNotice
+          className="mt-6 grid gap-3"
+          message={state.message}
+          details={state.details}
+          onRetry={() => {
+            void controller.start()
+          }}
+        />
       )}
 
       {state.status === 'ready' && (
@@ -75,20 +69,13 @@ export function SupplierScreen({ gateway, now }: { gateway: BookingGateway; now?
               {state.marketId === null ? (
                 <p>Escolha um mercado para ver os dias.</p>
               ) : state.availabilityError !== null ? (
-                <div className="grid gap-3">
-                  <p role="alert" className="text-destructive">
-                    {state.availabilityError}
-                  </p>
-                  <div>
-                    <Button
-                      onClick={() => {
-                        void controller.refresh()
-                      }}
-                    >
-                      Tentar de novo
-                    </Button>
-                  </div>
-                </div>
+                <FailureNotice
+                  message={state.availabilityError.message}
+                  details={state.availabilityError.details}
+                  onRetry={() => {
+                    void controller.refresh()
+                  }}
+                />
               ) : state.availability === null ? (
                 <p role="status" className="text-muted-foreground">
                   Carregando o calendário…

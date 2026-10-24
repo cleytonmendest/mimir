@@ -13,7 +13,9 @@ import { Button } from '@/design-system/components/ui/button'
 import { DraftNotice } from '@/features/forms/DraftNotice'
 import { useDraft, useDraftSync } from '@/features/forms/useDraft'
 import { checkAll, useValidatedField } from '@/features/forms/useValidatedField'
-import { describeFailure } from '@/features/booking/messages'
+import { describeFailure, toFailure } from '@/features/booking/messages'
+import type { Failure } from '@/features/diagnostics/error-report'
+import { FailureNotice } from '@/features/diagnostics/FailureNotice'
 import type { AccessGateway, SignUpRefusal } from '@/lib/supabase/access-gateway'
 import type { AuthGateway } from '@/lib/supabase/auth'
 import { PasswordField } from './PasswordField'
@@ -30,7 +32,7 @@ const REFUSALS: Record<SignUpRefusal | 'UNRECOGNIZED', string> = {
 
 const SIGNUP_DRAFT = 'cadastro'
 
-type Loaded = { status: 'failed'; message: string } | { status: 'ready'; mode: SignupMode }
+type Loaded = ({ status: 'failed' } & Failure) | { status: 'ready'; mode: SignupMode }
 type Load = { status: 'loading' } | Loaded
 
 /**
@@ -62,8 +64,7 @@ export function SignupPage({
         if (active) setResult({ attempt, value: { status: 'ready', mode } })
       },
       (error: unknown) => {
-        if (active)
-          setResult({ attempt, value: { status: 'failed', message: describeFailure(error) } })
+        if (active) setResult({ attempt, value: { status: 'failed', ...toFailure(error) } })
       },
     )
     return () => {
@@ -84,20 +85,13 @@ export function SignupPage({
       )}
 
       {load.status === 'failed' && (
-        <>
-          <p role="alert" className="text-destructive">
-            {load.message}
-          </p>
-          <div>
-            <Button
-              onClick={() => {
-                setAttempt((count) => count + 1)
-              }}
-            >
-              Tentar de novo
-            </Button>
-          </div>
-        </>
+        <FailureNotice
+          message={load.message}
+          details={load.details}
+          onRetry={() => {
+            setAttempt((count) => count + 1)
+          }}
+        />
       )}
 
       {load.status === 'ready' && load.mode === 'closed' && (
