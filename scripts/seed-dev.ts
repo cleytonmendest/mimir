@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../src/lib/database.types.ts'
 import { companyDay } from '../e2e/support/dates.ts'
 import { localSupabase } from '../e2e/support/supabase.ts'
+import { demoCapacity, storeName, ZONA_SUL_STORES } from './seed-stores.ts'
 
 const NOT_RUNNING =
   'Não achei o Supabase local rodando. Abra o Docker e rode "npm run dev:local" (sobe o banco, cria os dados de teste e abre o app), ou só "npm run db:start" antes deste comando.'
@@ -57,6 +58,8 @@ export interface SeedBooking {
 export interface SeedPlan {
   users: SeedUser[]
   markets: SeedMarket[]
+  /** Mercados fictícios de versões antigas do seed: se existirem no banco, saem (com suas reservas e datas fechadas). */
+  retiredMarkets: string[]
   closedDays: SeedClosedDay[]
   bookings: SeedBooking[]
 }
@@ -69,10 +72,18 @@ const supplier = (number: number, fullName: string, active = true): SeedUser => 
   active,
 })
 
-const CENTRAL = 'Mercado Central'
-const BELA_VISTA = 'Supermercado Bela Vista'
-const BAIRRO = 'Mercado do Bairro'
-const NORTE = 'Hiper Norte'
+// As lojas onde o seed monta os cenários (dia lotado, dia com vaga, data fechada, reserva cancelada).
+// O limite delas é fixo, para os cenários valerem; o das demais sai de demoCapacity.
+const LEBLON = 'Loja 07 - Leblon'
+const IPANEMA = 'Loja 01 - Ipanema'
+const ARNALDO = 'Loja 36 - Arnaldo Quintela'
+const BARRA = 'Loja 17 - Barra da Tijuca'
+const SCENARIO_CAPACITY = new Map([
+  [LEBLON, 3],
+  [IPANEMA, 5],
+  [ARNALDO, 2],
+  [BARRA, 4],
+])
 
 export const SEED_PLAN: SeedPlan = {
   users: [
@@ -93,40 +104,45 @@ export const SEED_PLAN: SeedPlan = {
     supplier(8, 'Massas da Nonna'),
     supplier(9, 'Frios Antigos Ltda (desativado)', false),
   ],
-  markets: [
-    { name: CENTRAL, address: 'Rua das Flores, 120 - Centro', capacity: 3 },
-    { name: BELA_VISTA, address: 'Av. Brasil, 2400 - Bela Vista', capacity: 5 },
-    { name: BAIRRO, address: 'Rua do Comércio, 45 - Jardim das Acácias', capacity: 2 },
-    { name: NORTE, address: 'Rodovia BR-101, km 12 - Zona Norte', capacity: 4 },
+  markets: ZONA_SUL_STORES.map((store) => ({
+    name: storeName(store),
+    address: store.address,
+    capacity: SCENARIO_CAPACITY.get(storeName(store)) ?? demoCapacity(store),
+  })),
+  retiredMarkets: [
+    'Mercado Central',
+    'Supermercado Bela Vista',
+    'Mercado do Bairro',
+    'Hiper Norte',
   ],
   closedDays: [
-    { market: CENTRAL, dayOffset: 10, reason: 'Inventário' },
-    { market: BELA_VISTA, dayOffset: 14, reason: 'Feriado municipal' },
-    { market: BAIRRO, dayOffset: 4, reason: 'Reforma da loja' },
+    { market: LEBLON, dayOffset: 10, reason: 'Inventário' },
+    { market: IPANEMA, dayOffset: 14, reason: 'Feriado municipal' },
+    { market: ARNALDO, dayOffset: 4, reason: 'Reforma da loja' },
   ],
   bookings: [
     // Um dia com uma vaga sobrando e um dia lotado, no mesmo mercado.
-    { market: CENTRAL, supplier: 'fornecedor1@example.com', dayOffset: 2 },
-    { market: CENTRAL, supplier: 'fornecedor2@example.com', dayOffset: 2 },
-    { market: CENTRAL, supplier: 'fornecedor1@example.com', dayOffset: 3 },
-    { market: CENTRAL, supplier: 'fornecedor2@example.com', dayOffset: 3 },
-    { market: CENTRAL, supplier: 'fornecedor3@example.com', dayOffset: 3 },
-    { market: CENTRAL, supplier: 'fornecedor4@example.com', dayOffset: 7 },
-    { market: BELA_VISTA, supplier: 'fornecedor5@example.com', dayOffset: 1 },
-    { market: BELA_VISTA, supplier: 'fornecedor1@example.com', dayOffset: 2 },
-    { market: BELA_VISTA, supplier: 'fornecedor3@example.com', dayOffset: 2 },
-    { market: BELA_VISTA, supplier: 'fornecedor6@example.com', dayOffset: 2 },
-    { market: BELA_VISTA, supplier: 'fornecedor7@example.com', dayOffset: 2 },
-    { market: BELA_VISTA, supplier: 'fornecedor2@example.com', dayOffset: 9 },
-    { market: BAIRRO, supplier: 'fornecedor4@example.com', dayOffset: 3 },
-    { market: BAIRRO, supplier: 'fornecedor8@example.com', dayOffset: 3 },
-    { market: BAIRRO, supplier: 'fornecedor5@example.com', dayOffset: 5 },
-    { market: NORTE, supplier: 'fornecedor6@example.com', dayOffset: 4 },
-    { market: NORTE, supplier: 'fornecedor7@example.com', dayOffset: 4 },
-    { market: NORTE, supplier: 'fornecedor1@example.com', dayOffset: 10 },
-    { market: NORTE, supplier: 'fornecedor2@example.com', dayOffset: 10 },
+    { market: LEBLON, supplier: 'fornecedor1@example.com', dayOffset: 2 },
+    { market: LEBLON, supplier: 'fornecedor2@example.com', dayOffset: 2 },
+    { market: LEBLON, supplier: 'fornecedor1@example.com', dayOffset: 3 },
+    { market: LEBLON, supplier: 'fornecedor2@example.com', dayOffset: 3 },
+    { market: LEBLON, supplier: 'fornecedor3@example.com', dayOffset: 3 },
+    { market: LEBLON, supplier: 'fornecedor4@example.com', dayOffset: 7 },
+    { market: IPANEMA, supplier: 'fornecedor5@example.com', dayOffset: 1 },
+    { market: IPANEMA, supplier: 'fornecedor1@example.com', dayOffset: 2 },
+    { market: IPANEMA, supplier: 'fornecedor3@example.com', dayOffset: 2 },
+    { market: IPANEMA, supplier: 'fornecedor6@example.com', dayOffset: 2 },
+    { market: IPANEMA, supplier: 'fornecedor7@example.com', dayOffset: 2 },
+    { market: IPANEMA, supplier: 'fornecedor2@example.com', dayOffset: 9 },
+    { market: ARNALDO, supplier: 'fornecedor4@example.com', dayOffset: 3 },
+    { market: ARNALDO, supplier: 'fornecedor8@example.com', dayOffset: 3 },
+    { market: ARNALDO, supplier: 'fornecedor5@example.com', dayOffset: 5 },
+    { market: BARRA, supplier: 'fornecedor6@example.com', dayOffset: 4 },
+    { market: BARRA, supplier: 'fornecedor7@example.com', dayOffset: 4 },
+    { market: BARRA, supplier: 'fornecedor1@example.com', dayOffset: 10 },
+    { market: BARRA, supplier: 'fornecedor2@example.com', dayOffset: 10 },
     {
-      market: NORTE,
+      market: BARRA,
       supplier: 'fornecedor3@example.com',
       dayOffset: 6,
       cancelledReason: 'Pedido do fornecedor',
@@ -222,6 +238,29 @@ async function ensureUser(db: Db, user: SeedUser): Promise<string> {
   return id
 }
 
+/**
+ * Tira os mercados fictícios de versões antigas do seed (com as reservas e datas fechadas deles). Sem
+ * isso, quem já tinha semeado ficaria com eles ao lado das lojas reais, e a lista de mercados, longa e
+ * misturada, seria justamente o que o seed existe para mostrar bem.
+ */
+async function removeRetiredMarkets(db: Db, names: readonly string[]): Promise<void> {
+  if (names.length === 0) return
+  const found = await db
+    .from('markets')
+    .select('id')
+    .in('name', [...names])
+  if (found.error !== null) throw fail('ler mercados antigos', found.error)
+  const ids = found.data.map((row) => row.id)
+  if (ids.length === 0) return
+
+  const bookings = await db.from('bookings').delete().in('market_id', ids)
+  if (bookings.error !== null) throw fail('limpar reservas dos mercados antigos', bookings.error)
+  const days = await db.from('closed_days').delete().in('market_id', ids)
+  if (days.error !== null) throw fail('limpar datas fechadas dos mercados antigos', days.error)
+  const markets = await db.from('markets').delete().in('id', ids)
+  if (markets.error !== null) throw fail('apagar mercados antigos', markets.error)
+}
+
 async function ensureMarkets(db: Db, markets: readonly SeedMarket[]): Promise<Map<string, string>> {
   const existing = await db
     .from('markets')
@@ -265,6 +304,7 @@ export async function runSeed(db: Db, plan: SeedPlan): Promise<SeedSummary> {
   const adminId = userIds.get(plan.users.find((user) => user.role === 'admin')?.email ?? '')
   if (adminId === undefined) throw new Error('O plano do seed precisa de um administrador.')
 
+  await removeRetiredMarkets(db, plan.retiredMarkets)
   const marketIds = await ensureMarkets(db, plan.markets)
   const marketIdList = [...marketIds.values()]
 
