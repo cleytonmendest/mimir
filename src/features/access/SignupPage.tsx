@@ -10,6 +10,8 @@ import {
 } from '@/domain/access'
 import { TextField } from '@/design-system/components/TextField/TextField'
 import { Button } from '@/design-system/components/ui/button'
+import { DraftNotice } from '@/features/forms/DraftNotice'
+import { useDraft, useDraftSync } from '@/features/forms/useDraft'
 import { checkAll, useValidatedField } from '@/features/forms/useValidatedField'
 import { describeFailure } from '@/features/booking/messages'
 import type { AccessGateway, SignUpRefusal } from '@/lib/supabase/access-gateway'
@@ -25,6 +27,8 @@ const REFUSALS: Record<SignUpRefusal | 'UNRECOGNIZED', string> = {
   INVALID_INPUT: 'Confira os dados e tente de novo.',
   UNRECOGNIZED: 'Não foi possível criar a conta agora. Tente de novo.',
 }
+
+const SIGNUP_DRAFT = 'cadastro'
 
 type Loaded = { status: 'failed'; message: string } | { status: 'ready'; mode: SignupMode }
 type Load = { status: 'loading' } | Loaded
@@ -146,9 +150,12 @@ function SignupForm({
     validateInviteCodeEntry,
     initialCode === '' ? '' : formatInviteCode(initialCode),
   )
-  const fullName = useValidatedField(validateSupplierName)
-  const email = useValidatedField(validateEmail)
+  const draft = useDraft(SIGNUP_DRAFT, ['fullName', 'email'])
+  const fullName = useValidatedField(validateSupplierName, draft.initial.fullName)
+  const email = useValidatedField(validateEmail, draft.initial.email)
   const password = useValidatedField(validatePassword)
+  // Só o nome e o e-mail ficam no rascunho: a senha e o código de convite nunca são guardados.
+  useDraftSync(SIGNUP_DRAFT, { fullName: fullName.value, email: email.value })
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null)
@@ -177,6 +184,7 @@ function SignupForm({
         setError(REFUSALS[result.code])
         return
       }
+      draft.clear()
       if (result.status === 'CONFIRM_EMAIL') {
         setConfirmEmail(person.value.email)
         return
@@ -224,6 +232,15 @@ function SignupForm({
           ? 'Use o código de convite que você recebeu para criar a sua conta e reservar estandes de degustação.'
           : 'Crie a sua conta para reservar estandes de degustação nos mercados.'}
       </p>
+      {draft.recovered && (
+        <DraftNotice
+          onDiscard={() => {
+            fullName.reset()
+            email.reset()
+            draft.clear()
+          }}
+        />
+      )}
       {mode === 'invite' && (
         <TextField
           id="signup-code"

@@ -88,6 +88,26 @@ describe('aba Fornecedores', () => {
     expect(screen.queryByRole('region', { name: 'Link de acesso' })).not.toBeInTheDocument()
   })
 
+  it('guarda o nome e o e-mail digitados e os devolve ao voltar; cadastrar apaga o rascunho', async () => {
+    const { user } = setup()
+    await openTab(user, 'Fornecedores')
+    await user.type(await screen.findByLabelText('Nome ou empresa'), 'Café do Caio')
+    await user.type(screen.getByLabelText('E-mail'), 'caio@loja.com')
+
+    await openTab(user, 'Configurações')
+    await openTab(user, 'Fornecedores')
+    expect(await screen.findByLabelText('Nome ou empresa')).toHaveValue('Café do Caio')
+    expect(screen.getByLabelText('E-mail')).toHaveValue('caio@loja.com')
+    expect(screen.getByText('Recuperamos o que você tinha digitado.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Cadastrar fornecedor' }))
+    await screen.findByRole('region', { name: 'Link de acesso' })
+    await openTab(user, 'Configurações')
+    await openTab(user, 'Fornecedores')
+    expect(await screen.findByLabelText('Nome ou empresa')).toHaveValue('')
+    expect(screen.queryByText('Recuperamos o que você tinha digitado.')).not.toBeInTheDocument()
+  })
+
   it('dados inválidos e e-mail repetido mostram o erro no formulário', async () => {
     const { user } = setup()
     await openTab(user, 'Fornecedores')

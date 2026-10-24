@@ -13,6 +13,8 @@ import { Button } from '@/design-system/components/ui/button'
 import { TextField } from '@/design-system/components/TextField/TextField'
 import { cn } from '@/design-system/utils'
 import { NoticeToast } from '@/features/booking/NoticeToast'
+import { DraftNotice } from '@/features/forms/DraftNotice'
+import { useDraft, useDraftSync } from '@/features/forms/useDraft'
 import { checkAll, useValidatedField } from '@/features/forms/useValidatedField'
 import { MarketSearchField } from '@/features/market-search/MarketSearchField'
 import { useMarketSearch } from '@/features/market-search/useMarketSearch'
@@ -26,6 +28,8 @@ import {
 import { useController } from './useController'
 
 /** Os mercados e o limite de estandes de cada um: cadastrar, editar, mudar o limite, arquivar. */
+const NEW_MARKET_DRAFT = 'novo-mercado'
+
 export function MarketsView({ gateway, now }: { gateway: BookingGateway; now?: () => Date }) {
   const [controller] = useState(() =>
     createMarketsController({ gateway, ...(now === undefined ? {} : { now }) }),
@@ -114,19 +118,26 @@ function NewMarketForm({
   state: MarketsReady
   controller: MarketsController
 }) {
-  const name = useValidatedField(validateMarketName)
-  const address = useValidatedField(validateMarketAddress)
+  const draft = useDraft(NEW_MARKET_DRAFT, ['name', 'address'])
+  const name = useValidatedField(validateMarketName, draft.initial.name)
+  const address = useValidatedField(validateMarketAddress, draft.initial.address)
   const [capacity, setCapacity] = useState(DEFAULT_CAPACITY)
+  useDraftSync(NEW_MARKET_DRAFT, { name: name.value, address: address.value })
   // O erro de validação é do formulário aberto: o de edição aparece na linha do mercado.
   const error = state.editing === null ? state.formError : null
+
+  function startOver() {
+    name.reset()
+    address.reset()
+    setCapacity(DEFAULT_CAPACITY)
+    draft.clear()
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!checkAll([name, address])) return
     if (await controller.create({ name: name.value, address: address.value, capacity })) {
-      name.reset()
-      address.reset()
-      setCapacity(DEFAULT_CAPACITY)
+      startOver()
     }
   }
 
@@ -142,6 +153,7 @@ function NewMarketForm({
       <h2 id="new-market-title" className="font-display text-2xl leading-tight font-semibold">
         Novo mercado
       </h2>
+      {draft.recovered && <DraftNotice onDiscard={startOver} />}
       <TextField
         id="new-market-name"
         label="Nome"

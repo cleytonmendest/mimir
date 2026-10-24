@@ -186,6 +186,41 @@ describe('Mercados', () => {
     expect(name).toHaveFocus()
   })
 
+  it('guarda o que foi digitado: ao voltar à tela o formulário reaparece preenchido, e dá para descartar', async () => {
+    const { user } = await openMarkets()
+    await user.type(screen.getByLabelText('Nome'), 'Mercado Aurora')
+    await user.type(screen.getByLabelText('Endereço (opcional)'), 'Av. 2')
+    expect(screen.queryByText('Recuperamos o que você tinha digitado.')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Agenda' }))
+    await user.click(screen.getByRole('button', { name: 'Mercados' }))
+    expect(await screen.findByLabelText('Nome')).toHaveValue('Mercado Aurora')
+    expect(screen.getByLabelText('Endereço (opcional)')).toHaveValue('Av. 2')
+    expect(screen.getByText('Recuperamos o que você tinha digitado.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Descartar rascunho' }))
+    expect(screen.getByLabelText('Nome')).toHaveValue('')
+    expect(screen.getByLabelText('Endereço (opcional)')).toHaveValue('')
+    expect(screen.queryByText('Recuperamos o que você tinha digitado.')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Agenda' }))
+    await user.click(screen.getByRole('button', { name: 'Mercados' }))
+    expect(await screen.findByLabelText('Nome')).toHaveValue('')
+    expect(screen.queryByText('Recuperamos o que você tinha digitado.')).not.toBeInTheDocument()
+  })
+
+  it('cadastrar o mercado apaga o rascunho', async () => {
+    const { user } = await openMarkets()
+    await user.type(screen.getByLabelText('Nome'), 'Mercado Aurora')
+    await user.click(screen.getByRole('button', { name: 'Cadastrar mercado' }))
+    await screen.findByText('Mercado Aurora', { selector: 'h3' })
+
+    await user.click(screen.getByRole('button', { name: 'Agenda' }))
+    await user.click(screen.getByRole('button', { name: 'Mercados' }))
+    expect(await screen.findByLabelText('Nome')).toHaveValue('')
+    expect(screen.queryByText('Recuperamos o que você tinha digitado.')).not.toBeInTheDocument()
+  })
+
   it('lista os mercados, os arquivados marcados, cada um com o limite', async () => {
     await openMarkets()
     expect(

@@ -175,6 +175,17 @@ describe('sair', () => {
     expect(screen.queryByText('Ana · Fornecedor')).not.toBeInTheDocument()
   })
 
+  it('sair apaga os rascunhos de formulário: o que foi digitado não passa para a próxima pessoa', async () => {
+    sessionStorage.setItem('rascunho:novo-mercado', JSON.stringify({ name: 'Mercado Aurora' }))
+    const { user } = setup({ signedInAs: 'ana@test.dev' })
+    await screen.findByText('Ana · Fornecedor')
+
+    await user.click(screen.getByRole('button', { name: 'Sair' }))
+
+    await screen.findByLabelText('E-mail')
+    expect(sessionStorage.getItem('rascunho:novo-mercado')).toBeNull()
+  })
+
   it('se sair falhar, avisa em vez de fingir que saiu', async () => {
     const gateway = createFakeGateway({ accounts: ACCOUNTS, signedInAs: 'ana@test.dev' })
     gateway.signOut = () => Promise.reject(new Error('sem armazenamento'))
