@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MarketPicker, type PickableMarket } from './MarketPicker'
@@ -170,5 +170,70 @@ describe('MarketPicker: celular', () => {
     expect(screen.queryByRole('button', { name: 'Trocar de mercado' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Fechar a lista' })).not.toBeInTheDocument()
     expect(screen.getAllByRole('listitem')).toHaveLength(3)
+  })
+})
+
+describe('MarketPicker: agrupado por bairro', () => {
+  const BAIRROS = ['Leblon', 'Ipanema', 'Gávea']
+  const MANY: PickableMarket[] = Array.from({ length: 12 }, (_, index) => ({
+    id: `m-${index}`,
+    name: `Loja ${String(index).padStart(2, '0')}`,
+    address: `Rua ${index} - ${BAIRROS[index % BAIRROS.length] ?? ''}`,
+    capacity: 3,
+  }))
+
+  function setupMany(markets: PickableMarket[] = MANY) {
+    screenIs('wide')
+    const onSelect = vi.fn<(id: string) => void>()
+    render(
+      <MarketPicker
+        headingId="picker-title"
+        hint="Escolha."
+        emptyMessage="Vazio."
+        markets={markets}
+        selectedId={null}
+        onSelect={onSelect}
+      />,
+    )
+    return { onSelect, user: userEvent.setup() }
+  }
+
+  it('com muitos mercados em mais de um bairro, põe um título por bairro, em ordem alfabética', () => {
+    setupMany()
+    expect(screen.getAllByRole('heading', { level: 3 }).map((title) => title.textContent)).toEqual([
+      'Gávea4 mercados',
+      'Ipanema4 mercados',
+      'Leblon4 mercados',
+    ])
+    const list = screen.getByRole('list', { name: 'Lista de mercados' })
+    expect(within(list).getAllByRole('button')).toHaveLength(12)
+  })
+
+  it('a busca mantém os títulos só dos bairros que sobraram', async () => {
+    const { user } = setupMany()
+    await user.type(screen.getByRole('searchbox'), 'leblon')
+    expect(screen.getAllByRole('heading', { level: 3 }).map((title) => title.textContent)).toEqual([
+      'Leblon4 mercados',
+    ])
+  })
+
+  it('com poucos mercados, ou todos no mesmo bairro, é uma lista só, sem títulos', () => {
+    setupMany(MANY.slice(0, 8))
+    expect(screen.queryByRole('heading', { level: 3 })).not.toBeInTheDocument()
+    cleanup()
+    setupMany(MANY.map((market) => ({ ...market, address: 'Rua Única 1 - Leblon' })))
+    expect(screen.queryByRole('heading', { level: 3 })).not.toBeInTheDocument()
+  })
+
+  it('mercados sem bairro vão para o fim, em "Outros"', () => {
+    setupMany([...MANY, { id: 'm-x', name: 'Mercado Novo', address: null, capacity: 1 }])
+    const titles = screen.getAllByRole('heading', { level: 3 }).map((title) => title.textContent)
+    expect(titles.at(-1)).toBe('Outros1 mercado')
+  })
+
+  it('escolher um mercado de dentro de um grupo avisa quem usa', async () => {
+    const { onSelect, user } = setupMany()
+    await user.click(screen.getByRole('button', { name: /Loja 04/ }))
+    expect(onSelect).toHaveBeenCalledExactlyOnceWith('m-4')
   })
 })

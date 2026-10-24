@@ -23,7 +23,7 @@ test('com dezenas de lojas a lista rola por dentro e não estica a página', asy
   try {
     await signIn(page, seed.supplier.email, seed.supplier.password)
     const picker = page.getByRole('region', { name: 'Mercados' })
-    const list = picker.getByRole('list')
+    const list = picker.getByRole('list', { name: 'Lista de mercados' })
     await expect(list).toBeVisible()
 
     const viewport = page.viewportSize()
