@@ -11,25 +11,36 @@ export interface MarketInput {
 
 export type MarketValidation = { ok: true; value: MarketInput } | { ok: false; message: string }
 
+/** A mensagem para quem digitou o nome do mercado, ou null se está bom. Espaços das pontas não contam. */
+export function validateMarketName(raw: string): string | null {
+  const name = raw.trim()
+  if (name === '') return 'Informe o nome do mercado.'
+  if (name.length > MAX_NAME_LENGTH) return `O nome pode ter até ${MAX_NAME_LENGTH} caracteres.`
+  return null
+}
+
+/** O endereço é opcional: só o tamanho é conferido. */
+export function validateMarketAddress(raw: string): string | null {
+  if (raw.trim().length > MAX_ADDRESS_LENGTH) {
+    return `O endereço pode ter até ${MAX_ADDRESS_LENGTH} caracteres.`
+  }
+  return null
+}
+
 /**
  * Confere o que o administrador digitou ao cadastrar ou editar um mercado. Espaços das pontas saem,
  * endereço vazio vira "sem endereço". A mensagem é para quem digitou. O banco repete as regras
- * (nome não vazio, limite de 1 a 20): esta conferência só poupa a ida ao servidor.
+ * (nome não vazio, limite de 1 a 20): esta conferência só poupa a ida ao servidor. Cada campo tem
+ * a sua conferência (acima), que as telas usam ao sair do campo; esta junta todas, no envio.
  */
 export function validateMarketInput(raw: {
   name: string
   address: string
   capacity: number
 }): MarketValidation {
-  const name = raw.name.trim()
+  const problem = validateMarketName(raw.name) ?? validateMarketAddress(raw.address)
+  if (problem !== null) return { ok: false, message: problem }
   const address = raw.address.trim()
-  if (name === '') return { ok: false, message: 'Informe o nome do mercado.' }
-  if (name.length > MAX_NAME_LENGTH) {
-    return { ok: false, message: `O nome pode ter até ${MAX_NAME_LENGTH} caracteres.` }
-  }
-  if (address.length > MAX_ADDRESS_LENGTH) {
-    return { ok: false, message: `O endereço pode ter até ${MAX_ADDRESS_LENGTH} caracteres.` }
-  }
   if (
     !Number.isInteger(raw.capacity) ||
     raw.capacity < MIN_CAPACITY ||
@@ -42,7 +53,11 @@ export function validateMarketInput(raw: {
   }
   return {
     ok: true,
-    value: { name, address: address === '' ? null : address, capacity: raw.capacity },
+    value: {
+      name: raw.name.trim(),
+      address: address === '' ? null : address,
+      capacity: raw.capacity,
+    },
   }
 }
 
