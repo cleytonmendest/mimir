@@ -168,7 +168,7 @@ function NewMarketForm({
         onFocus={address.focus}
         onBlur={address.blur}
       />
-      <div className="grid gap-1.5">
+      <div className="grid gap-2">
         <span className="text-sm leading-none font-medium">Estandes por dia</span>
         <NumberStepper
           label="Estandes por dia do novo mercado"

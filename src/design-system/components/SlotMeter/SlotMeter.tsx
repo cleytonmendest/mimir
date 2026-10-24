@@ -39,7 +39,8 @@ export function SlotMeter({
       data-tone={tone}
       className={cn(
         'inline-flex flex-wrap',
-        size === 'lg' ? 'gap-1.5' : 'gap-[3px] max-sm:gap-0.5',
+        // As medidas dos traços (7 px, 3 px, 2 px) são desenho, como as de um ícone, e não espaçamento.
+        size === 'lg' ? 'gap-2' : 'gap-[3px] max-sm:gap-0.5',
         TONE[tone],
         className,
       )}

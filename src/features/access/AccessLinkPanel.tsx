@@ -40,7 +40,7 @@ export function AccessLinkPanel({
     >
       <h3 className="font-display text-xl leading-tight font-semibold">{title}</h3>
       <p className="text-muted-foreground">{hint}</p>
-      <div className="grid gap-1.5">
+      <div className="grid gap-2">
         <Label htmlFor={inputId}>Link</Label>
         <Input
           id={inputId}

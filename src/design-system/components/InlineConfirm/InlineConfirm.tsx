@@ -51,9 +51,9 @@ export function InlineConfirm({
         event.stopPropagation()
         onCancel()
       }}
-      className={cn('grid w-full gap-2.5 rounded-lg border border-input p-3', className)}
+      className={cn('grid w-full gap-3 rounded-lg border border-input p-3', className)}
     >
-      <div id={questionId} className="grid gap-0.5">
+      <div id={questionId} className="grid gap-1">
         <p className="font-semibold">{title}</p>
         {description !== undefined && <p>{description}</p>}
       </div>
