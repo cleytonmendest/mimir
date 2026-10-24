@@ -4,6 +4,7 @@ import { NumberStepper } from '@/design-system/components/NumberStepper/NumberSt
 import { Button } from '@/design-system/components/ui/button'
 import { Input } from '@/design-system/components/ui/input'
 import { Label } from '@/design-system/components/ui/label'
+import { cn } from '@/design-system/utils'
 import { NoticeToast } from '@/features/booking/NoticeToast'
 import { MarketSearchField } from '@/features/market-search/MarketSearchField'
 import { useMarketSearch } from '@/features/market-search/useMarketSearch'
@@ -187,13 +188,64 @@ function MarketRow({
   const editing = state.editing === market.id
   const archiving = state.confirmingArchive === market.id
 
+  const stepper = (
+    <NumberStepper
+      label={`Limite de estandes por dia, ${market.name}`}
+      value={market.capacity}
+      min={MIN_CAPACITY}
+      max={MAX_CAPACITY}
+      unit="por dia"
+      onChange={(value) => {
+        void controller.setCapacity(market.id, value)
+      }}
+    />
+  )
+
+  const archiveControl = archiving ? null : market.archived ? (
+    <Button
+      variant="outline"
+      disabled={state.busy}
+      aria-label={`Reativar ${market.name}`}
+      onClick={() => {
+        void controller.setArchived(market.id, false)
+      }}
+    >
+      Reativar
+    </Button>
+  ) : (
+    <Button
+      variant="outline"
+      disabled={state.busy}
+      aria-label={`Arquivar ${market.name}`}
+      onClick={() => {
+        controller.askArchive(market.id)
+      }}
+    >
+      Arquivar
+    </Button>
+  )
+
+  // Com dezenas de lojas, cada uma ocupa o mínimo de altura: no computador, uma linha só (nome,
+  // limite, Editar, Arquivar); no celular, duas (nome e Editar; limite e Arquivar).
   return (
-    <li className="grid gap-3 rounded-xl border border-border bg-card p-4">
+    <li
+      className={cn(
+        'grid gap-3 rounded-xl border border-border bg-card p-3',
+        !editing &&
+          'grid-cols-[minmax(0,1fr)_auto] gap-y-2 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:items-center md:gap-x-3',
+      )}
+    >
       {editing ? (
-        <EditForm market={market} state={state} controller={controller} />
+        <>
+          <EditForm market={market} state={state} controller={controller} />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {stepper}
+            {archiveControl}
+          </div>
+        </>
       ) : (
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
+        <>
+          <div className="min-w-0">
             <h3 className="font-display text-xl leading-tight font-semibold">{market.name}</h3>
             {market.address !== null && (
               <p className="text-sm text-muted-foreground">{market.address}</p>
@@ -204,8 +256,10 @@ function MarketRow({
               </p>
             )}
           </div>
+          <div className="max-md:col-start-1 max-md:row-start-2">{stepper}</div>
           <Button
             variant="outline"
+            className="max-md:col-start-2 max-md:row-start-1"
             disabled={state.busy}
             aria-label={`Editar ${market.name}`}
             onClick={() => {
@@ -214,71 +268,38 @@ function MarketRow({
           >
             Editar
           </Button>
-        </div>
+          <div className="max-md:col-start-2 max-md:row-start-2">{archiveControl}</div>
+        </>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <NumberStepper
-          label={`Limite de estandes por dia, ${market.name}`}
-          value={market.capacity}
-          min={MIN_CAPACITY}
-          max={MAX_CAPACITY}
-          unit="por dia"
-          onChange={(value) => {
-            void controller.setCapacity(market.id, value)
-          }}
-        />
-        {archiving ? (
-          <div role="group" aria-label="Confirmar arquivamento" className="grid gap-2">
-            <p className="max-w-[40ch] text-sm">
-              Arquivar este mercado? Ele deixa de aparecer para os fornecedores e não aceita novas
-              reservas. As que já existem continuam.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="destructive"
-                disabled={state.busy}
-                onClick={() => {
-                  void controller.setArchived(market.id, true)
-                }}
-              >
-                Sim, arquivar
-              </Button>
-              <Button
-                variant="outline"
-                disabled={state.busy}
-                onClick={() => {
-                  controller.keepActive()
-                }}
-              >
-                Manter
-              </Button>
-            </div>
+      {archiving && (
+        <div role="group" aria-label="Confirmar arquivamento" className="col-span-full grid gap-2">
+          <p className="max-w-[60ch] text-sm">
+            Arquivar este mercado? Ele deixa de aparecer para os fornecedores e não aceita novas
+            reservas. As que já existem continuam.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="destructive"
+              disabled={state.busy}
+              onClick={() => {
+                void controller.setArchived(market.id, true)
+              }}
+            >
+              Sim, arquivar
+            </Button>
+            <Button
+              variant="outline"
+              disabled={state.busy}
+              onClick={() => {
+                controller.keepActive()
+              }}
+            >
+              Manter
+            </Button>
           </div>
-        ) : market.archived ? (
-          <Button
-            variant="outline"
-            disabled={state.busy}
-            aria-label={`Reativar ${market.name}`}
-            onClick={() => {
-              void controller.setArchived(market.id, false)
-            }}
-          >
-            Reativar
-          </Button>
-        ) : (
-          <Button
-            variant="outline"
-            disabled={state.busy}
-            aria-label={`Arquivar ${market.name}`}
-            onClick={() => {
-              controller.askArchive(market.id)
-            }}
-          >
-            Arquivar
-          </Button>
-        )}
-      </div>
+        </div>
+      )}
     </li>
   )
 }
