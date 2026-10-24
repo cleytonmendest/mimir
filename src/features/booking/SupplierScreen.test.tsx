@@ -37,7 +37,7 @@ describe('SupplierScreen: abrir', () => {
       'aria-pressed',
       'true',
     )
-    expect(screen.getAllByText('estandes por dia', { exact: false })).toHaveLength(2)
+    expect(screen.getAllByText('estandes/dia', { exact: false })).toHaveLength(2)
     expect(screen.getByText('Você ainda não tem reservas.')).toBeInTheDocument()
     expect(
       screen.getByText('Escolha um dia no calendário. Dias verdes e amarelos têm vaga.'),
@@ -361,5 +361,45 @@ describe('SupplierScreen: buscar mercado', () => {
     setupLojas([lojas[0]!])
     await screen.findByRole('heading', { name: 'Outubro de 2026' })
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument()
+  })
+})
+
+describe('SupplierScreen: minhas reservas no topo', () => {
+  const own = (days: string[]): FakeBooking[] =>
+    days.map((day, index) => ({
+      id: `b${index}`,
+      marketId: 'm-a',
+      day,
+      supplierId: 'u-ana',
+    }))
+
+  it('mostra as três primeiras e "Ver todas" abre o resto (e "Mostrar menos" fecha)', async () => {
+    const { user } = setup({
+      bookings: own(['2026-10-22', '2026-10-23', '2026-10-24', '2026-10-26']),
+    })
+    const mine = await screen.findByRole('region', { name: 'Minhas reservas' })
+    expect(within(mine).getAllByRole('listitem')).toHaveLength(3)
+
+    const all = within(mine).getByRole('button', { name: 'Ver todas (4)' })
+    expect(all).toHaveAttribute('aria-expanded', 'false')
+    await user.click(all)
+    expect(within(mine).getAllByRole('listitem')).toHaveLength(4)
+
+    await user.click(within(mine).getByRole('button', { name: 'Mostrar menos' }))
+    expect(within(mine).getAllByRole('listitem')).toHaveLength(3)
+  })
+
+  it('com até três reservas não há "Ver todas"', async () => {
+    setup({ bookings: own(['2026-10-22', '2026-10-23', '2026-10-24']) })
+    const mine = await screen.findByRole('region', { name: 'Minhas reservas' })
+    expect(within(mine).getAllByRole('listitem')).toHaveLength(3)
+    expect(within(mine).queryByRole('button', { name: /Ver todas/ })).not.toBeInTheDocument()
+  })
+
+  it('vem antes da lista de mercados na página', async () => {
+    setup({ bookings: own(['2026-10-22']) })
+    const mine = await screen.findByRole('region', { name: 'Minhas reservas' })
+    const markets = screen.getByRole('region', { name: 'Mercados' })
+    expect(mine.compareDocumentPosition(markets) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

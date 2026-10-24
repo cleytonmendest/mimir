@@ -7,7 +7,7 @@ import { Input } from '@/design-system/components/ui/input'
 import { Label } from '@/design-system/components/ui/label'
 import type { AgendaController, AgendaReady } from './agenda-controller'
 
-const CARD = 'rounded-xl border border-border bg-card p-4 lg:[grid-area:pn]'
+const CARD = 'rounded-xl border border-border bg-card p-4'
 
 /** O dia escolhido, para o administrador: quem reservou, e fechar ou liberar a data. */
 export function AgendaDayPanel({

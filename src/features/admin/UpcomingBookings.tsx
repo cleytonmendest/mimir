@@ -7,7 +7,7 @@ export function UpcomingBookings({ state }: { state: AgendaReady }) {
   return (
     <section
       aria-labelledby="upcoming-title"
-      className="rounded-xl border border-border bg-card p-4 lg:[grid-area:mine]"
+      className="rounded-xl border border-border bg-card p-4"
     >
       <h2 id="upcoming-title" className="font-display text-2xl leading-tight font-semibold">
         Próximas reservas
