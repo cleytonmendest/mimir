@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { seedUsers } from './support/seed.ts'
+import { createMarket, seedUsers } from './support/seed.ts'
 import { localSupabase, NO_SUPABASE_MESSAGE } from './support/supabase.ts'
 import { signIn } from './support/ui.ts'
 
@@ -54,6 +54,8 @@ test('o botão só de ícone mostra o tooltip no foco do teclado e some com Esc'
   const supabase = localSupabase()
   if (supabase === null) throw new Error(NO_SUPABASE_MESSAGE)
   const seed = await seedUsers(supabase)
+  // O calendário só aparece havendo um mercado aberto: o teste traz o seu, e não depende do banco.
+  const market = await createMarket(seed.db, 3)
 
   try {
     await signIn(page, seed.supplier.email, seed.supplier.password)
@@ -71,6 +73,7 @@ test('o botão só de ícone mostra o tooltip no foco do teclado e some com Esc'
     await page.keyboard.press('Escape')
     await expect(page.getByRole('tooltip')).toHaveCount(0)
   } finally {
+    await seed.db.from('markets').delete().eq('id', market.id)
     await seed.cleanup()
   }
 })
