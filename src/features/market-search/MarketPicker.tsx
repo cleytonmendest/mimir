@@ -1,7 +1,9 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { MarketCard } from '@/design-system/components/MarketCard/MarketCard'
 import { Button } from '@/design-system/components/ui/button'
-import type { Searchable } from '@/domain/market-search'
+import { cn } from '@/design-system/utils'
+import { plural } from '@/domain/format'
+import { groupByNeighborhood, shouldGroup, type Searchable } from '@/domain/market-search'
 import { MarketSearchField } from './MarketSearchField'
 import { useMarketSearch } from './useMarketSearch'
 import { useWideScreen } from './useWideScreen'
@@ -17,7 +19,9 @@ export interface PickableMarket extends Searchable {
  * - a lista tem altura limitada e rola por dentro (no computador, a caixa fica à vista enquanto o
  *   resto da página rola);
  * - no celular, ao escolher um mercado a lista se recolhe e sobra só ele, com "Trocar de mercado":
- *   o calendário aparece logo abaixo, sem rolar por 30 lojas até encontrá-lo.
+ *   o calendário aparece logo abaixo, sem rolar por 30 lojas até encontrá-lo;
+ * - com muitos mercados em mais de um bairro, a lista ganha um título por bairro (que fica preso no
+ *   topo enquanto se rola): achar a loja de um bairro vira ler títulos, não 30 cartões.
  */
 export function MarketPicker<T extends PickableMarket>({
   headingId,
@@ -39,6 +43,8 @@ export function MarketPicker<T extends PickableMarket>({
   detail?: (market: T) => ReactNode
 }) {
   const search = useMarketSearch(markets)
+  // A decisão olha a lista inteira, não a filtrada: os títulos não somem e voltam enquanto se digita.
+  const grouped = shouldGroup(markets)
   const wide = useWideScreen()
   // Nasce aberta: o app já abre com um mercado escolhido, mas a lista e a busca são o ponto de partida.
   const [open, setOpen] = useState(true)
@@ -148,10 +154,30 @@ export function MarketPicker<T extends PickableMarket>({
                 </Button>
               </div>
             ) : (
-              <ul className="mt-3 grid max-h-[min(26rem,55dvh)] gap-2 overflow-y-auto overscroll-contain pr-1 lg:max-h-[calc(100dvh-15rem)]">
-                {search.shown.map((market) => (
-                  <li key={market.id}>{row(market)}</li>
-                ))}
+              <ul
+                aria-label="Lista de mercados"
+                className={cn(
+                  'mt-3 grid max-h-[min(26rem,55dvh)] overflow-y-auto overscroll-contain pr-1 lg:max-h-[calc(100dvh-15rem)]',
+                  grouped ? 'gap-4' : 'gap-2',
+                )}
+              >
+                {grouped
+                  ? groupByNeighborhood(search.shown).map((group) => (
+                      <li key={group.name ?? ''}>
+                        <h3 className="sticky top-0 z-10 flex items-baseline justify-between gap-2 bg-card py-1 text-sm font-semibold">
+                          <span>{group.name ?? 'Outros'}</span>
+                          <span className="font-normal text-muted-foreground">
+                            {plural(group.markets.length, 'mercado', 'mercados')}
+                          </span>
+                        </h3>
+                        <ul className="mt-1 grid gap-2">
+                          {group.markets.map((market) => (
+                            <li key={market.id}>{row(market)}</li>
+                          ))}
+                        </ul>
+                      </li>
+                    ))
+                  : search.shown.map((market) => <li key={market.id}>{row(market)}</li>)}
               </ul>
             )}
           </>
