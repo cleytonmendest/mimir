@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { clearDrafts } from '@/features/forms/useDraft'
 import { AuthFailure, type AuthGateway } from '@/lib/supabase/auth'
 import { ConfigError } from '@/lib/supabase/errors'
 import {
@@ -82,6 +83,7 @@ export function AuthProvider({ gateway, children }: { gateway: AuthGateway; chil
   )
 
   const signOut = useCallback(async () => {
+    clearDrafts()
     try {
       await gateway.signOut()
     } catch (error) {

@@ -5,6 +5,8 @@ import { InlineConfirm } from '@/design-system/components/InlineConfirm/InlineCo
 import { useFocusReturn } from '@/design-system/components/InlineConfirm/useFocusReturn'
 import { Button } from '@/design-system/components/ui/button'
 import { AccessLinkPanel } from '@/features/access/AccessLinkPanel'
+import { DraftNotice } from '@/features/forms/DraftNotice'
+import { useDraft, useDraftSync } from '@/features/forms/useDraft'
 import { checkAll, useValidatedField } from '@/features/forms/useValidatedField'
 import { activationMessage } from '@/features/access/share'
 import { NoticeToast } from '@/features/booking/NoticeToast'
@@ -16,6 +18,8 @@ import {
   type SuppliersReady,
 } from './suppliers-controller'
 import { useController } from './useController'
+
+const NEW_SUPPLIER_DRAFT = 'novo-fornecedor'
 
 /**
  * Os fornecedores: o administrador cadastra (nome e e-mail), recebe um link para o fornecedor
@@ -130,15 +134,22 @@ function NewSupplierForm({
   state: SuppliersReady
   controller: SuppliersController
 }) {
-  const fullName = useValidatedField(validateSupplierName)
-  const email = useValidatedField(validateEmail)
+  const draft = useDraft(NEW_SUPPLIER_DRAFT, ['fullName', 'email'])
+  const fullName = useValidatedField(validateSupplierName, draft.initial.fullName)
+  const email = useValidatedField(validateEmail, draft.initial.email)
+  useDraftSync(NEW_SUPPLIER_DRAFT, { fullName: fullName.value, email: email.value })
+
+  function startOver() {
+    fullName.reset()
+    email.reset()
+    draft.clear()
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!checkAll([fullName, email])) return
     if (await controller.create({ fullName: fullName.value, email: email.value })) {
-      fullName.reset()
-      email.reset()
+      startOver()
     }
   }
 
@@ -154,6 +165,7 @@ function NewSupplierForm({
       <h2 id="new-supplier-title" className="font-display text-2xl leading-tight font-semibold">
         Novo fornecedor
       </h2>
+      {draft.recovered && <DraftNotice onDiscard={startOver} />}
       <TextField
         id="new-supplier-name"
         label="Nome ou empresa"

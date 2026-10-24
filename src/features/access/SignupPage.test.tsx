@@ -221,6 +221,39 @@ describe('carregar a página', () => {
   })
 })
 
+describe('cadastro: rascunho', () => {
+  it('guarda nome e e-mail, devolve ao reabrir e nunca guarda a senha nem o código', async () => {
+    const first = setup({ mode: 'invite', inviteCode: 'K7QD4MXA' })
+    await fillIn(first.user, { code: 'K7QD-4MXA', name: 'Loja Nova', email: 'nova@loja.com' })
+    cleanup()
+
+    expect(JSON.stringify(Object.entries(sessionStorage))).not.toContain(PASSWORD)
+    expect(JSON.stringify(Object.entries(sessionStorage))).not.toContain('K7QD')
+
+    const second = setup({ mode: 'invite', inviteCode: 'K7QD4MXA' })
+    expect(await screen.findByLabelText('Nome ou empresa')).toHaveValue('Loja Nova')
+    expect(screen.getByLabelText('E-mail')).toHaveValue('nova@loja.com')
+    expect(screen.getByLabelText('Escolha uma senha')).toHaveValue('')
+    expect(screen.getByLabelText('Código de convite')).toHaveValue('')
+
+    await second.user.click(screen.getByRole('button', { name: 'Descartar rascunho' }))
+    expect(screen.getByLabelText('Nome ou empresa')).toHaveValue('')
+    expect(screen.getByLabelText('E-mail')).toHaveValue('')
+    expect(screen.queryByText('Recuperamos o que você tinha digitado.')).not.toBeInTheDocument()
+  })
+
+  it('criar a conta apaga o rascunho', async () => {
+    const { user, onDone } = setup({ mode: 'invite', inviteCode: 'K7QD4MX2' }, 'K7QD4MX2')
+    await fillIn(user, {})
+    expect(sessionStorage.getItem('rascunho:cadastro')).not.toBeNull()
+    await submit(user)
+    await vi.waitFor(() => {
+      expect(onDone).toHaveBeenCalledTimes(1)
+    })
+    expect(sessionStorage.getItem('rascunho:cadastro')).toBeNull()
+  })
+})
+
 describe('cadastro: validação ao sair do campo', () => {
   it('cada campo reclama ao sair, nunca enquanto se digita', async () => {
     const { user } = setup({ mode: 'open', inviteCode: null })
