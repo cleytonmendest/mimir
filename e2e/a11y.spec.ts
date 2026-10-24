@@ -56,6 +56,8 @@ test('telas do fornecedor, do administrador e as páginas públicas, nos dois te
   const seed = await seedUsers(supabase)
   await resetSignupState(seed.db)
   const market = await createMarket(seed.db, 3, 'Mercado E2E acessibilidade')
+  // Com um só mercado a busca não aparece; com dois, ela entra nas telas auditadas.
+  const second = await createMarket(seed.db, 3, 'Mercado E2E acessibilidade', 'Rua Teste 1 - Gávea')
   const [supplier, other] = await createSuppliers(supabase, seed.db, 2)
   if (supplier === undefined || other === undefined) throw new Error('faltam fornecedores')
   const found: string[] = []
@@ -77,6 +79,15 @@ test('telas do fornecedor, do administrador e as páginas públicas, nos dois te
     // O fornecedor, com um dia escolhido e a confirmação aberta.
     const phone = await newPhone(browser, playwright.devices, baseURL)
     await signIn(phone, supplier.email, supplier.password)
+    await audit(phone, 'fornecedor: lista de mercados', found)
+    const phoneSearch = phone.getByRole('searchbox', { name: 'Buscar por bairro ou nome' })
+    await phoneSearch.fill('gavea')
+    await phone.getByText(/^\d+ de \d+ mercados$/).waitFor()
+    await audit(phone, 'fornecedor: busca com resultado', found)
+    await phoneSearch.fill('sem nenhuma loja assim')
+    await phone.getByText('Nenhum mercado encontrado.').waitFor()
+    await audit(phone, 'fornecedor: busca sem resultado', found)
+    await phone.getByRole('button', { name: 'Limpar busca' }).click()
     await openMarket(phone, market.name)
     await audit(phone, 'fornecedor: calendário', found)
     await firstFreeDay(phone).click()
@@ -90,6 +101,10 @@ test('telas do fornecedor, do administrador e as páginas públicas, nos dois te
 
     // O administrador: as quatro áreas.
     await signIn(page, seed.admin.email, seed.admin.password)
+    await page.getByRole('searchbox', { name: 'Buscar por bairro ou nome' }).fill('gavea')
+    await page.getByText(/^\d+ de \d+ mercados$/).waitFor()
+    await audit(page, 'administrador: agenda com busca', found)
+    await page.getByRole('button', { name: 'Limpar busca' }).click()
     await openAgenda(page, market.name)
     await page.locator('button[data-status="partial"]').first().click()
     await audit(page, 'administrador: agenda', found)
@@ -125,6 +140,7 @@ test('telas do fornecedor, do administrador e as páginas públicas, nos dois te
     for (const profile of created.data ?? []) await seed.db.auth.admin.deleteUser(profile.id)
     await resetSignupState(seed.db)
     await cleanupBooking(seed.db, market.id, [supplier, other])
+    await seed.db.from('markets').delete().eq('id', second.id)
     await seed.cleanup()
   }
 })
