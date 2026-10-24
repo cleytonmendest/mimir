@@ -289,3 +289,77 @@ describe('SupplierScreen: escolher e atualizar', () => {
     expect(await day(/^Sábado, 24 de outubro: 2 vagas livres de 3/)).toBeInTheDocument()
   })
 })
+
+describe('SupplierScreen: buscar mercado', () => {
+  const lojas = [
+    { ...market('m-1', 'Loja 01 - Ipanema', 3), address: 'Rua Visconde de Pirajá 118 - Ipanema' },
+    { ...market('m-2', 'Loja 06 - Gávea', 2), address: 'Av Rodrigo Otavio 269 - Gávea' },
+    { ...market('m-3', 'Loja 07 - Leblon', 4), address: 'Rua Dias Ferreira 290 - Leblon' },
+    { ...market('m-4', 'Loja 22 - São Conrado', 3), address: 'Estrada da Gávea 870 - São Conrado' },
+  ]
+
+  function setupLojas(markets = lojas) {
+    const fake = createFakeBookingGateway({
+      actor: { id: 'u-ana', role: 'supplier' },
+      today: TODAY,
+      markets,
+      bookings: [],
+      closed: [],
+    })
+    const user = userEvent.setup()
+    render(<SupplierScreen gateway={fake.gateway} now={now} />)
+    return { ...fake, user }
+  }
+
+  it('filtra pelo bairro sem ligar para acento nem maiúscula, e diz quantos sobraram', async () => {
+    const { user } = setupLojas()
+    await screen.findByRole('heading', { name: 'Outubro de 2026' })
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar por bairro ou nome' }), 'GAVEA')
+
+    // A Gávea pelo nome e a São Conrado, que só tem "Gávea" na rua.
+    expect(screen.getByRole('button', { name: /Loja 06 - Gávea/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Loja 22 - São Conrado/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Loja 07 - Leblon/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Loja 01 - Ipanema/ })).not.toBeInTheDocument()
+    expect(screen.getByText('2 de 4 mercados')).toBeInTheDocument()
+  })
+
+  it('sem resultado diz isso, e o "x" limpa a busca e traz todos de volta', async () => {
+    const { user } = setupLojas()
+    await screen.findByRole('heading', { name: 'Outubro de 2026' })
+    await user.type(screen.getByRole('searchbox'), 'zzz')
+    expect(screen.getByText('Nenhum mercado encontrado.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Loja 07/ })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Limpar busca' }))
+    expect(screen.getAllByRole('button', { name: /^Loja \d\d - / })).toHaveLength(4)
+    expect(screen.queryByText('Nenhum mercado encontrado.')).not.toBeInTheDocument()
+  })
+
+  it('o mercado escolhido continua escolhido (e com o calendário) mesmo fora do filtro', async () => {
+    const { user } = setupLojas()
+    await screen.findByRole('heading', { name: 'Outubro de 2026' })
+    expect(screen.getByRole('button', { name: /Loja 01 - Ipanema/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await user.type(screen.getByRole('searchbox'), 'leblon')
+    expect(screen.queryByRole('button', { name: /Loja 01 - Ipanema/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Outubro de 2026' })).toBeInTheDocument()
+    expect(
+      screen.getByText('Loja 01 - Ipanema', { exact: false, selector: 'p' }),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Loja 07 - Leblon/ }))
+    expect(screen.getByRole('button', { name: /Loja 07 - Leblon/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
+  it('com um mercado só, não há o que buscar', async () => {
+    setupLojas([lojas[0]!])
+    await screen.findByRole('heading', { name: 'Outubro de 2026' })
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument()
+  })
+})

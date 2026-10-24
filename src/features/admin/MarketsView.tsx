@@ -5,6 +5,8 @@ import { Button } from '@/design-system/components/ui/button'
 import { Input } from '@/design-system/components/ui/input'
 import { Label } from '@/design-system/components/ui/label'
 import { NoticeToast } from '@/features/booking/NoticeToast'
+import { MarketSearchField } from '@/features/market-search/MarketSearchField'
+import { useMarketSearch } from '@/features/market-search/useMarketSearch'
 import type { BookingGateway } from '@/lib/supabase/booking-gateway'
 import type { Market } from '@/lib/supabase/mappers'
 import {
@@ -67,15 +69,7 @@ export function MarketsView({ gateway, now }: { gateway: BookingGateway; now?: (
             O limite vale para todos os dias do mercado. Reduzir o limite não cancela reservas que
             já existem.
           </p>
-          {state.markets.length === 0 ? (
-            <p className="mt-3">Nenhum mercado cadastrado ainda.</p>
-          ) : (
-            <ul className="mt-3 grid gap-3">
-              {state.markets.map((market) => (
-                <MarketRow key={market.id} market={market} state={state} controller={controller} />
-              ))}
-            </ul>
-          )}
+          <MarketRows state={state} controller={controller} />
         </section>
       </div>
       <NoticeToast
@@ -84,6 +78,22 @@ export function MarketsView({ gateway, now }: { gateway: BookingGateway; now?: (
           controller.dismissNotice()
         }}
       />
+    </>
+  )
+}
+
+/** As linhas de mercado, com a busca (o hook precisa ficar fora dos retornos antecipados da tela). */
+function MarketRows({ state, controller }: { state: MarketsReady; controller: MarketsController }) {
+  const search = useMarketSearch(state.markets)
+  if (state.markets.length === 0) return <p className="mt-3">Nenhum mercado cadastrado ainda.</p>
+  return (
+    <>
+      <MarketSearchField search={search} />
+      <ul className="mt-3 grid gap-3">
+        {search.shown.map((market) => (
+          <MarketRow key={market.id} market={market} state={state} controller={controller} />
+        ))}
+      </ul>
     </>
   )
 }
