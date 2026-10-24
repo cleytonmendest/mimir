@@ -10,8 +10,12 @@ import {
   isInviteCode,
   isPlausibleEmail,
   normalizeInviteCode,
+  validateEmail,
+  validateInviteCodeEntry,
+  validateLoginPassword,
   validatePassword,
   validateSupplierInput,
+  validateSupplierName,
 } from './access'
 
 describe('validatePassword', () => {
@@ -52,6 +56,33 @@ describe('isPlausibleEmail', () => {
   it('recusa e-mail maior que o permitido', () => {
     const long = `${'a'.repeat(MAX_EMAIL_LENGTH)}@loja.com`
     expect(isPlausibleEmail(long)).toBe(false)
+  })
+})
+
+describe('conferência de cada campo', () => {
+  it('nome: obrigatório, sem contar espaços, e com tamanho máximo', () => {
+    expect(validateSupplierName('Sabor da Serra')).toBeNull()
+    expect(validateSupplierName('  ')).toBe('Informe o nome do fornecedor.')
+    expect(validateSupplierName('a'.repeat(MAX_SUPPLIER_NAME_LENGTH))).toBeNull()
+    expect(validateSupplierName('a'.repeat(MAX_SUPPLIER_NAME_LENGTH + 1))).toBe(
+      `O nome pode ter até ${MAX_SUPPLIER_NAME_LENGTH} caracteres.`,
+    )
+  })
+
+  it('e-mail: obrigatório e com cara de e-mail; maiúsculas e espaços nas pontas não contam', () => {
+    expect(validateEmail('  Ana@Exemplo.com ')).toBeNull()
+    expect(validateEmail('')).toBe('Informe o e-mail.')
+    expect(validateEmail('ana@')).toBe('Esse e-mail não parece certo. Confira e tente de novo.')
+  })
+
+  it('senha na entrada: só confere que existe', () => {
+    expect(validateLoginPassword('x')).toBeNull()
+    expect(validateLoginPassword('')).toBe('Informe a senha.')
+  })
+
+  it('código de convite: só confere que foi preenchido', () => {
+    expect(validateInviteCodeEntry('K7QD-4MXA')).toBeNull()
+    expect(validateInviteCodeEntry('  ')).toBe('Informe o código de convite.')
   })
 })
 

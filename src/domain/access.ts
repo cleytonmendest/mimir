@@ -40,22 +40,45 @@ export interface SupplierInput {
 
 export type SupplierValidation = { ok: true; value: SupplierInput } | { ok: false; message: string }
 
-/** Confere o que se digitou ao cadastrar um fornecedor. O e-mail sai em minúsculas e sem espaços. */
-export function validateSupplierInput(raw: SupplierInput): SupplierValidation {
-  const fullName = raw.fullName.trim()
-  const email = raw.email.trim().toLowerCase()
-  if (fullName === '') return { ok: false, message: 'Informe o nome do fornecedor.' }
+/** O nome ou a empresa do fornecedor. */
+export function validateSupplierName(raw: string): string | null {
+  const fullName = raw.trim()
+  if (fullName === '') return 'Informe o nome do fornecedor.'
   if (fullName.length > MAX_SUPPLIER_NAME_LENGTH) {
-    return {
-      ok: false,
-      message: `O nome pode ter até ${MAX_SUPPLIER_NAME_LENGTH} caracteres.`,
-    }
+    return `O nome pode ter até ${MAX_SUPPLIER_NAME_LENGTH} caracteres.`
   }
-  if (email === '') return { ok: false, message: 'Informe o e-mail.' }
-  if (!isPlausibleEmail(email)) {
-    return { ok: false, message: 'Esse e-mail não parece certo. Confira e tente de novo.' }
+  return null
+}
+
+/** O e-mail, do jeito que se digita (maiúsculas e espaços nas pontas não contam). */
+export function validateEmail(raw: string): string | null {
+  const email = raw.trim().toLowerCase()
+  if (email === '') return 'Informe o e-mail.'
+  if (!isPlausibleEmail(email)) return 'Esse e-mail não parece certo. Confira e tente de novo.'
+  return null
+}
+
+/** Na entrada só se confere que há senha: quem diz se está certa é o servidor. */
+export function validateLoginPassword(password: string): string | null {
+  return password === '' ? 'Informe a senha.' : null
+}
+
+/** No cadastro por convite o código é obrigatório; se está certo, quem diz é o servidor. */
+export function validateInviteCodeEntry(code: string): string | null {
+  return code.trim() === '' ? 'Informe o código de convite.' : null
+}
+
+/**
+ * Confere o que se digitou ao cadastrar um fornecedor. O e-mail sai em minúsculas e sem espaços.
+ * Cada campo tem a sua conferência (acima), que as telas usam ao sair do campo.
+ */
+export function validateSupplierInput(raw: SupplierInput): SupplierValidation {
+  const problem = validateSupplierName(raw.fullName) ?? validateEmail(raw.email)
+  if (problem !== null) return { ok: false, message: problem }
+  return {
+    ok: true,
+    value: { email: raw.email.trim().toLowerCase(), fullName: raw.fullName.trim() },
   }
-  return { ok: true, value: { email, fullName } }
 }
 
 /**
