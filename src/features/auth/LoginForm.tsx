@@ -33,46 +33,55 @@ export function LoginForm() {
   }
 
   return (
-    <form
-      onSubmit={(event) => {
-        void submit(event)
-      }}
-      className="mt-6 grid gap-4"
-    >
-      <div className="grid gap-2">
-        <Label htmlFor="login-email">E-mail</Label>
-        <Input
-          id="login-email"
-          type="email"
-          autoComplete="username"
-          required
-          value={email}
-          onChange={(event) => {
-            setEmail(event.target.value)
-          }}
-        />
+    <div className="grid gap-5">
+      <div>
+        <h2 className="font-display text-3xl leading-tight font-semibold">Entrar</h2>
+        <p className="text-muted-foreground">Reserve estandes de degustação nos mercados.</p>
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="login-password">Senha</Label>
-        <Input
-          id="login-password"
-          type="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(event) => {
-            setPassword(event.target.value)
-          }}
-        />
-      </div>
-      {error !== null && (
-        <p role="alert" className="text-destructive">
-          {MESSAGES[error]}
-        </p>
-      )}
-      <Button type="submit" disabled={pending}>
-        {pending ? 'Entrando…' : 'Entrar'}
-      </Button>
-    </form>
+      <form
+        onSubmit={(event) => {
+          void submit(event)
+        }}
+        className="grid gap-4"
+      >
+        <div className="grid gap-2">
+          <Label htmlFor="login-email">E-mail</Label>
+          <Input
+            id="login-email"
+            type="email"
+            autoComplete="username"
+            required
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value)
+            }}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="login-password">Senha</Label>
+          <Input
+            id="login-password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value)
+            }}
+          />
+        </div>
+        {error !== null && (
+          <p role="alert" className="text-destructive">
+            {MESSAGES[error]}
+          </p>
+        )}
+        <Button type="submit" size="lg" disabled={pending}>
+          {pending ? 'Entrando…' : 'Entrar'}
+        </Button>
+      </form>
+      <p className="text-sm text-muted-foreground">
+        Perdeu o acesso? Peça um novo link ao administrador dos mercados.
+      </p>
+    </div>
   )
 }

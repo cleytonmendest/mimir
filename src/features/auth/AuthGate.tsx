@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Button } from '@/design-system/components/ui/button'
 import type { UserProfile } from '@/lib/supabase/mappers'
 import { useAuth } from './auth-context'
+import { AuthLayout } from './AuthLayout'
 import { LoginForm } from './LoginForm'
 
 /** Só deixa passar quem está logado; para os demais mostra o que fazer. */
@@ -11,41 +12,29 @@ export function AuthGate({ children }: { children: (profile: UserProfile) => Rea
   switch (state.status) {
     case 'loading':
       return (
-        <p role="status" className="mt-6 text-muted-foreground">
-          Carregando…
-        </p>
+        <AuthLayout>
+          <p role="status" className="text-muted-foreground">
+            Carregando…
+          </p>
+        </AuthLayout>
       )
     case 'signedOut':
-      return <LoginForm />
+      return (
+        <AuthLayout>
+          <LoginForm />
+        </AuthLayout>
+      )
     case 'failed':
       return (
-        <div className="mt-6 grid gap-4">
-          <p role="alert" className="text-destructive">
-            {state.message}
-          </p>
-          <div className="flex gap-2">
-            <Button onClick={retry}>Tentar de novo</Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                void signOut()
-              }}
-            >
-              Sair
-            </Button>
-          </div>
-        </div>
-      )
-    case 'signedIn':
-      if (!state.profile.active) {
-        return (
-          <div className="mt-6 grid gap-4">
-            <p role="alert">
-              Sua conta foi desativada. Fale com o administrador dos mercados para voltar a usar o
-              app.
+        <AuthLayout>
+          <div className="grid gap-4">
+            <p role="alert" className="text-destructive">
+              {state.message}
             </p>
-            <div>
+            <div className="flex gap-2">
+              <Button onClick={retry}>Tentar de novo</Button>
               <Button
+                variant="outline"
                 onClick={() => {
                   void signOut()
                 }}
@@ -54,6 +43,28 @@ export function AuthGate({ children }: { children: (profile: UserProfile) => Rea
               </Button>
             </div>
           </div>
+        </AuthLayout>
+      )
+    case 'signedIn':
+      if (!state.profile.active) {
+        return (
+          <AuthLayout>
+            <div className="grid gap-4">
+              <p role="alert">
+                Sua conta foi desativada. Fale com o administrador dos mercados para voltar a usar o
+                app.
+              </p>
+              <div>
+                <Button
+                  onClick={() => {
+                    void signOut()
+                  }}
+                >
+                  Sair
+                </Button>
+              </div>
+            </div>
+          </AuthLayout>
         )
       }
       return <>{children(state.profile)}</>
