@@ -74,7 +74,7 @@ export function SetPasswordPage({
   }
 
   return (
-    <section aria-labelledby="activation-title" className="mt-6 grid max-w-[480px] gap-4">
+    <section aria-labelledby="activation-title" className="grid gap-4">
       <h2 id="activation-title" className="font-display text-3xl font-semibold">
         Defina a sua senha
       </h2>

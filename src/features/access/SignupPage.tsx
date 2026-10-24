@@ -65,7 +65,7 @@ export function SignupPage({
   }, [access, attempt])
 
   return (
-    <section aria-labelledby="signup-page-title" className="mt-6 grid max-w-[480px] gap-4">
+    <section aria-labelledby="signup-page-title" className="grid gap-4">
       <h2 id="signup-page-title" className="font-display text-3xl font-semibold">
         Cadastro de fornecedor
       </h2>
