@@ -1,9 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { MAX_SUPPLIER_NAME_LENGTH } from '@/domain/access'
+import { MAX_SUPPLIER_NAME_LENGTH, validateEmail, validateSupplierName } from '@/domain/access'
+import { TextField } from '@/design-system/components/TextField/TextField'
+import { InlineConfirm } from '@/design-system/components/InlineConfirm/InlineConfirm'
+import { useFocusReturn } from '@/design-system/components/InlineConfirm/useFocusReturn'
 import { Button } from '@/design-system/components/ui/button'
-import { Input } from '@/design-system/components/ui/input'
-import { Label } from '@/design-system/components/ui/label'
+import { FailureNotice } from '@/features/diagnostics/FailureNotice'
 import { AccessLinkPanel } from '@/features/access/AccessLinkPanel'
+import { DraftNotice } from '@/features/forms/DraftNotice'
+import { useDraft, useDraftSync } from '@/features/forms/useDraft'
+import { checkAll, useValidatedField } from '@/features/forms/useValidatedField'
 import { activationMessage } from '@/features/access/share'
 import { NoticeToast } from '@/features/booking/NoticeToast'
 import type { AccessGateway } from '@/lib/supabase/access-gateway'
@@ -14,6 +19,8 @@ import {
   type SuppliersReady,
 } from './suppliers-controller'
 import { useController } from './useController'
+
+const NEW_SUPPLIER_DRAFT = 'novo-fornecedor'
 
 /**
  * Os fornecedores: o administrador cadastra (nome e e-mail), recebe um link para o fornecedor
@@ -43,20 +50,14 @@ export function SuppliersView({
 
   if (state.status === 'failed') {
     return (
-      <div className="mt-6 grid gap-3">
-        <p role="alert" className="text-destructive">
-          {state.message}
-        </p>
-        <div>
-          <Button
-            onClick={() => {
-              void controller.start()
-            }}
-          >
-            Tentar de novo
-          </Button>
-        </div>
-      </div>
+      <FailureNotice
+        className="mt-6 grid gap-3"
+        message={state.message}
+        details={state.details}
+        onRetry={() => {
+          void controller.start()
+        }}
+      />
     )
   }
 
@@ -128,14 +129,22 @@ function NewSupplierForm({
   state: SuppliersReady
   controller: SuppliersController
 }) {
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
+  const draft = useDraft(NEW_SUPPLIER_DRAFT, ['fullName', 'email'])
+  const fullName = useValidatedField(validateSupplierName, draft.initial.fullName)
+  const email = useValidatedField(validateEmail, draft.initial.email)
+  useDraftSync(NEW_SUPPLIER_DRAFT, { fullName: fullName.value, email: email.value })
+
+  function startOver() {
+    fullName.reset()
+    email.reset()
+    draft.clear()
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (await controller.create({ fullName, email })) {
-      setFullName('')
-      setEmail('')
+    if (!checkAll([fullName, email])) return
+    if (await controller.create({ fullName: fullName.value, email: email.value })) {
+      startOver()
     }
   }
 
@@ -151,30 +160,35 @@ function NewSupplierForm({
       <h2 id="new-supplier-title" className="font-display text-2xl leading-tight font-semibold">
         Novo fornecedor
       </h2>
-      <div className="grid gap-1.5">
-        <Label htmlFor="new-supplier-name">Nome ou empresa</Label>
-        <Input
-          id="new-supplier-name"
-          value={fullName}
-          maxLength={MAX_SUPPLIER_NAME_LENGTH}
-          autoComplete="off"
-          onChange={(event) => {
-            setFullName(event.target.value)
-          }}
-        />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="new-supplier-email">E-mail</Label>
-        <Input
-          id="new-supplier-email"
-          type="email"
-          value={email}
-          autoComplete="off"
-          onChange={(event) => {
-            setEmail(event.target.value)
-          }}
-        />
-      </div>
+      {draft.recovered && <DraftNotice onDiscard={startOver} />}
+      <TextField
+        id="new-supplier-name"
+        label="Nome ou empresa"
+        maxLength={MAX_SUPPLIER_NAME_LENGTH}
+        autoComplete="off"
+        value={fullName.value}
+        error={fullName.error}
+        inputRef={fullName.ref}
+        onChange={(event) => {
+          fullName.change(event.target.value)
+        }}
+        onFocus={fullName.focus}
+        onBlur={fullName.blur}
+      />
+      <TextField
+        id="new-supplier-email"
+        label="E-mail"
+        type="email"
+        autoComplete="off"
+        value={email.value}
+        error={email.error}
+        inputRef={email.ref}
+        onChange={(event) => {
+          email.change(event.target.value)
+        }}
+        onFocus={email.focus}
+        onBlur={email.blur}
+      />
       {state.formError !== null && (
         <p role="alert" className="text-destructive">
           {state.formError}
@@ -197,6 +211,7 @@ function SupplierRow({
   controller: SuppliersController
 }) {
   const confirming = state.confirmingDeactivate === supplier.id
+  const deactivateTrigger = useFocusReturn<HTMLButtonElement>(confirming)
 
   return (
     <li className="grid gap-3 rounded-xl border border-border bg-card p-4">
@@ -223,6 +238,7 @@ function SupplierRow({
               Gerar novo link
             </Button>
             <Button
+              ref={deactivateTrigger}
               variant="outline"
               disabled={state.busy}
               aria-label={`Desativar ${supplier.fullName}`}
@@ -247,35 +263,20 @@ function SupplierRow({
         )}
       </div>
       {confirming && (
-        <div
-          role="group"
-          aria-label={`Confirmar a desativação de ${supplier.fullName}`}
-          className="grid gap-2"
-        >
-          <p>
-            Desativar {supplier.fullName}? A pessoa perde o acesso na hora e as reservas futuras
-            dela são canceladas.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="destructive"
-              disabled={state.busy}
-              onClick={() => {
-                void controller.setActive(supplier.id, false)
-              }}
-            >
-              Sim, desativar
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                controller.keepActive()
-              }}
-            >
-              Voltar
-            </Button>
-          </div>
-        </div>
+        <InlineConfirm
+          label={`Confirmar a desativação de ${supplier.fullName}`}
+          title={`Desativar ${supplier.fullName}?`}
+          description="A pessoa perde o acesso na hora e as reservas futuras dela são canceladas."
+          confirmLabel="Sim, desativar"
+          cancelLabel="Voltar"
+          busy={state.busy}
+          onConfirm={() => {
+            void controller.setActive(supplier.id, false)
+          }}
+          onCancel={() => {
+            controller.keepActive()
+          }}
+        />
       )}
     </li>
   )

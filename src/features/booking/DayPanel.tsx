@@ -7,7 +7,7 @@ import { cn } from '@/design-system/utils'
 import type { BookingController, ReadyState } from './booking-controller'
 import { CancelControl } from './CancelControl'
 
-const CARD = 'rounded-xl border border-border bg-card p-4 lg:[grid-area:pn]'
+const CARD = 'rounded-xl border border-border bg-card p-4'
 
 /** O dia escolhido no calendário: quantas vagas, e o que dá para fazer com ele. */
 export function DayPanel({
@@ -80,7 +80,7 @@ export function DayPanel({
           : `${plural(free, 'vaga livre', 'vagas livres')} de ${availability.capacity}`}
       </p>
 
-      <div className="mt-3.5 grid gap-2.5">
+      <div className="mt-4 grid gap-3">
         {entry.mine ? (
           <>
             <Notice tone="free">Você tem uma reserva neste dia.</Notice>
@@ -109,7 +109,7 @@ export function DayPanel({
           <div
             role="group"
             aria-label="Confirmar reserva"
-            className="grid gap-2.5 rounded-lg border border-input p-3"
+            className="grid gap-3 rounded-lg border border-input p-3"
           >
             <p>
               Reservar um estande em <strong>{market?.name}</strong> no dia{' '}
@@ -156,5 +156,5 @@ const TONES = {
 } as const
 
 function Notice({ tone, children }: { tone: keyof typeof TONES; children: ReactNode }) {
-  return <p className={cn('rounded-lg px-3 py-2.5 font-medium', TONES[tone])}>{children}</p>
+  return <p className={cn('rounded-lg px-3 py-3 font-medium', TONES[tone])}>{children}</p>
 }

@@ -98,7 +98,7 @@ describe('carregar', () => {
     await controller.start()
     expect(controller.getState()).toMatchObject({
       availability: null,
-      availabilityError: 'Não foi possível mostrar este mercado.',
+      availabilityError: { message: 'Não foi possível mostrar este mercado.', details: null },
     })
   })
 
@@ -113,7 +113,7 @@ describe('carregar', () => {
     })
     await controller.start()
     expect(controller.getState()).toMatchObject({
-      availabilityError: 'Algo deu errado. Tente de novo.',
+      availabilityError: { message: 'Algo deu errado. Tente de novo.', details: 'Error: quebrou' },
     })
   })
 })

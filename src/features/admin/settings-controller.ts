@@ -1,6 +1,7 @@
 import type { SignupMode } from '@/domain/access'
 import type { Notice } from '@/features/booking/booking-controller'
-import { describeFailure } from '@/features/booking/messages'
+import type { Failure } from '@/features/diagnostics/error-report'
+import { describeFailure, toFailure } from '@/features/booking/messages'
 import { inviteLink } from '@/features/access/routes'
 import type { AccessGateway } from '@/lib/supabase/access-gateway'
 import type { SignupSettings } from '@/lib/supabase/mappers'
@@ -15,8 +16,7 @@ export interface SettingsReady {
   notice: Notice | null
 }
 
-export type SettingsState =
-  { status: 'loading' } | { status: 'failed'; message: string } | SettingsReady
+export type SettingsState = { status: 'loading' } | ({ status: 'failed' } & Failure) | SettingsReady
 
 export interface SettingsController {
   getState(): SettingsState
@@ -76,7 +76,7 @@ export function createSettingsController(deps: {
         notice: null,
       })
     } catch (error) {
-      set({ status: 'failed', message: describeFailure(error) })
+      set({ status: 'failed', ...toFailure(error) })
     }
   }
 

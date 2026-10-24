@@ -1,7 +1,33 @@
 import { describe, expect, it } from 'vitest'
-import { busiestDay, MAX_ADDRESS_LENGTH, MAX_NAME_LENGTH, validateMarketInput } from './market'
+import {
+  busiestDay,
+  MAX_ADDRESS_LENGTH,
+  MAX_NAME_LENGTH,
+  validateMarketAddress,
+  validateMarketInput,
+  validateMarketName,
+} from './market'
 
 const ok = { name: 'Mercado Central', address: 'Rua 1, 100', capacity: 3 }
+
+describe('validateMarketName e validateMarketAddress (conferência de cada campo)', () => {
+  it('o nome é obrigatório, sem contar espaços, e tem tamanho máximo', () => {
+    expect(validateMarketName('Loja 07 - Leblon')).toBeNull()
+    expect(validateMarketName('   ')).toBe('Informe o nome do mercado.')
+    expect(validateMarketName('a'.repeat(MAX_NAME_LENGTH))).toBeNull()
+    expect(validateMarketName('a'.repeat(MAX_NAME_LENGTH + 1))).toBe(
+      `O nome pode ter até ${MAX_NAME_LENGTH} caracteres.`,
+    )
+  })
+
+  it('o endereço é opcional e só tem tamanho máximo', () => {
+    expect(validateMarketAddress('')).toBeNull()
+    expect(validateMarketAddress('a'.repeat(MAX_ADDRESS_LENGTH))).toBeNull()
+    expect(validateMarketAddress('a'.repeat(MAX_ADDRESS_LENGTH + 1))).toBe(
+      `O endereço pode ter até ${MAX_ADDRESS_LENGTH} caracteres.`,
+    )
+  })
+})
 
 describe('validateMarketInput', () => {
   it('aceita e tira os espaços das pontas', () => {

@@ -155,6 +155,25 @@ describe('Agenda', () => {
     await user.click(screen.getByRole('button', { name: 'Tentar de novo' }))
     expect(await screen.findByRole('heading', { name: 'Outubro de 2026' })).toBeInTheDocument()
   })
+
+  it('a tela que falhou deixa copiar os detalhes técnicos do erro', async () => {
+    const fake = createFakeBookingGateway({
+      actor: { id: 'u-lia', role: 'admin' },
+      today: TODAY,
+      markets: [market('m-a', 'Mercado A')],
+    })
+    fake.state.fail = 'NETWORK'
+    const user = userEvent.setup()
+    render(
+      <AdminScreen gateway={fake.gateway} access={createFakeAccessGateway().gateway} now={now} />,
+    )
+    await screen.findByRole('alert')
+    await user.click(screen.getByRole('button', { name: 'Copiar detalhes do erro' }))
+    expect(await screen.findByText('Detalhes copiados.')).toBeInTheDocument()
+    const copied = await navigator.clipboard.readText()
+    expect(copied).toContain('O que a tela disse: Sem conexão com o servidor.')
+    expect(copied).toMatch(/RequestFailure NETWORK: /)
+  })
 })
 
 describe('Mercados', () => {
@@ -167,6 +186,59 @@ describe('Mercados', () => {
     await screen.findByRole('heading', { name: 'Seus mercados' })
     return world
   }
+
+  it('o formulário de novo mercado só reclama ao sair do campo e leva o foco ao erro no envio', async () => {
+    const { user } = await openMarkets()
+    const form = screen.getByRole('form', { name: 'Novo mercado' })
+    const name = within(form).getByLabelText('Nome')
+    await user.type(name, 'Loja Nova')
+    await user.clear(name)
+    expect(within(form).queryByRole('alert')).not.toBeInTheDocument()
+
+    await user.tab()
+    expect(within(form).getByRole('alert')).toHaveTextContent('Informe o nome do mercado.')
+    await user.click(name)
+    expect(within(form).queryByRole('alert')).not.toBeInTheDocument()
+
+    await user.click(within(form).getByRole('button', { name: 'Cadastrar mercado' }))
+    expect(within(form).getByRole('alert')).toHaveTextContent('Informe o nome do mercado.')
+    expect(name).toHaveFocus()
+  })
+
+  it('guarda o que foi digitado: ao voltar à tela o formulário reaparece preenchido, e dá para descartar', async () => {
+    const { user } = await openMarkets()
+    await user.type(screen.getByLabelText('Nome'), 'Mercado Aurora')
+    await user.type(screen.getByLabelText('Endereço (opcional)'), 'Av. 2')
+    expect(screen.queryByText('Recuperamos o que você tinha digitado.')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Agenda' }))
+    await user.click(screen.getByRole('button', { name: 'Mercados' }))
+    expect(await screen.findByLabelText('Nome')).toHaveValue('Mercado Aurora')
+    expect(screen.getByLabelText('Endereço (opcional)')).toHaveValue('Av. 2')
+    expect(screen.getByText('Recuperamos o que você tinha digitado.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Descartar rascunho' }))
+    expect(screen.getByLabelText('Nome')).toHaveValue('')
+    expect(screen.getByLabelText('Endereço (opcional)')).toHaveValue('')
+    expect(screen.queryByText('Recuperamos o que você tinha digitado.')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Agenda' }))
+    await user.click(screen.getByRole('button', { name: 'Mercados' }))
+    expect(await screen.findByLabelText('Nome')).toHaveValue('')
+    expect(screen.queryByText('Recuperamos o que você tinha digitado.')).not.toBeInTheDocument()
+  })
+
+  it('cadastrar o mercado apaga o rascunho', async () => {
+    const { user } = await openMarkets()
+    await user.type(screen.getByLabelText('Nome'), 'Mercado Aurora')
+    await user.click(screen.getByRole('button', { name: 'Cadastrar mercado' }))
+    await screen.findByText('Mercado Aurora', { selector: 'h3' })
+
+    await user.click(screen.getByRole('button', { name: 'Agenda' }))
+    await user.click(screen.getByRole('button', { name: 'Mercados' }))
+    expect(await screen.findByLabelText('Nome')).toHaveValue('')
+    expect(screen.queryByText('Recuperamos o que você tinha digitado.')).not.toBeInTheDocument()
+  })
 
   it('lista os mercados, os arquivados marcados, cada um com o limite', async () => {
     await openMarkets()
@@ -244,8 +316,12 @@ describe('Mercados', () => {
     const { user, markets } = await openMarkets()
     await user.click(screen.getByRole('button', { name: 'Arquivar Mercado B' }))
     const confirm = screen.getByRole('group', { name: 'Confirmar arquivamento' })
+    expect(confirm).toHaveTextContent('Arquivar Mercado B?')
+    expect(within(confirm).getByRole('button', { name: 'Manter' })).toHaveFocus()
     await user.click(within(confirm).getByRole('button', { name: 'Manter' }))
     expect(screen.queryByRole('group', { name: 'Confirmar arquivamento' })).not.toBeInTheDocument()
+    // O botão que abriu a confirmação recebe o foco de volta.
+    expect(screen.getByRole('button', { name: 'Arquivar Mercado B' })).toHaveFocus()
 
     await user.click(screen.getByRole('button', { name: 'Arquivar Mercado B' }))
     await user.click(screen.getByRole('button', { name: 'Sim, arquivar' }))
@@ -283,5 +359,52 @@ describe('Mercados', () => {
     expect(screen.getByText('Escolha um mercado para ver os dias.')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Mercados' }))
     expect(await screen.findByText('Nenhum mercado cadastrado ainda.')).toBeInTheDocument()
+  })
+})
+
+describe('Buscar mercado', () => {
+  const lojas = [
+    { ...market('m-1', 'Loja 01 - Ipanema', 3), address: 'Rua Visconde de Pirajá 118 - Ipanema' },
+    { ...market('m-2', 'Loja 06 - Gávea', 2), address: 'Av Rodrigo Otavio 269 - Gávea' },
+    { ...market('m-3', 'Loja 07 - Leblon', 4), address: 'Rua Dias Ferreira 290 - Leblon' },
+  ]
+
+  function setupLojas() {
+    const fake = createFakeBookingGateway({
+      actor: { id: 'u-lia', role: 'admin' },
+      today: TODAY,
+      markets: lojas,
+      bookings: [],
+      closed: [],
+    })
+    const user = userEvent.setup()
+    render(
+      <AdminScreen gateway={fake.gateway} access={createFakeAccessGateway().gateway} now={now} />,
+    )
+    return { ...fake, user }
+  }
+
+  it('na agenda, filtra a lista de mercados pelo bairro', async () => {
+    const { user } = setupLojas()
+    await screen.findByRole('heading', { name: 'Outubro de 2026' })
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar por bairro ou nome' }), 'gavea')
+    expect(screen.getByRole('button', { name: /Loja 06 - Gávea/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Loja 07 - Leblon/ })).not.toBeInTheDocument()
+    expect(screen.getByText('1 de 3 mercados')).toBeInTheDocument()
+  })
+
+  it('em Mercados, filtra as linhas e o formulário de cadastro segue no lugar', async () => {
+    const { user } = setupLojas()
+    await screen.findByRole('heading', { name: 'Outubro de 2026' })
+    await user.click(screen.getByRole('button', { name: 'Mercados' }))
+    await screen.findByRole('heading', { name: 'Seus mercados' })
+
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar por bairro ou nome' }), 'ipanema')
+    expect(screen.getByRole('heading', { name: 'Loja 01 - Ipanema' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Loja 07 - Leblon' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cadastrar mercado' })).toBeInTheDocument()
+
+    await user.type(screen.getByRole('searchbox'), ' zzz')
+    expect(screen.getByText('Nenhum mercado encontrado.')).toBeInTheDocument()
   })
 })

@@ -3,7 +3,9 @@ import { resolveRoute } from '@/features/access/routes'
 import { SetPasswordPage } from '@/features/access/SetPasswordPage'
 import { SignupPage } from '@/features/access/SignupPage'
 import { AccountBar } from '@/features/auth/AccountBar'
+import { AppTitle } from '@/features/auth/AppTitle'
 import { AuthGate } from '@/features/auth/AuthGate'
+import { AuthLayout } from '@/features/auth/AuthLayout'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { SupplierScreen } from '@/features/booking/SupplierScreen'
 import type { AccessGateway } from '@/lib/supabase/access-gateway'
@@ -33,38 +35,36 @@ export default function App({
 }) {
   const route = resolveRoute(location)
   const origin = location.origin
-  const title = (
-    <h1 className="font-display text-4xl font-bold tracking-wide uppercase">
-      Agenda de Degustações
-    </h1>
-  )
-
   if (route.page === 'activation') {
     return (
-      <main className="mx-auto w-full max-w-[1240px] p-4">
-        {title}
-        <SetPasswordPage auth={auth} token={route.token} onDone={onDone} />
+      <main className="mx-auto w-full max-w-[1240px] p-3 sm:p-4">
+        <AuthLayout>
+          <SetPasswordPage auth={auth} token={route.token} onDone={onDone} />
+        </AuthLayout>
       </main>
     )
   }
 
   if (route.page === 'signup') {
     return (
-      <main className="mx-auto w-full max-w-[1240px] p-4">
-        {title}
-        <SignupPage access={access} auth={auth} code={route.code} onDone={onDone} />
+      <main className="mx-auto w-full max-w-[1240px] p-3 sm:p-4">
+        <AuthLayout>
+          <SignupPage access={access} auth={auth} code={route.code} onDone={onDone} />
+        </AuthLayout>
       </main>
     )
   }
 
   return (
     <AuthProvider gateway={auth}>
-      <main className="mx-auto w-full max-w-[1240px] p-4">
-        {title}
+      <main className="mx-auto w-full max-w-[1240px] p-3 sm:p-4">
         <AuthGate>
           {(profile) => (
             <>
-              <AccountBar profile={profile} />
+              <header>
+                <AppTitle />
+                <AccountBar profile={profile} />
+              </header>
               {profile.role === 'admin' ? (
                 <AdminScreen
                   key={profile.id}

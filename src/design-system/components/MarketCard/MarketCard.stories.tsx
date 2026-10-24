@@ -12,6 +12,16 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 export const Selecionado: Story = { args: { selected: true } }
+export const ComSelo: Story = {
+  args: {
+    badge: (
+      <>
+        <b className="block text-base font-semibold text-foreground tabular-nums">5</b>
+        <span>estandes</span>
+      </>
+    ),
+  },
+}
 export const ComRodape: Story = {
   args: {
     selected: true,

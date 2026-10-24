@@ -1,4 +1,5 @@
 import { BOOKING_WINDOW_DAYS, type BookingRefusal, type CancelRefusal } from '@/domain/booking'
+import { describeError, type Failure } from '@/features/diagnostics/error-report'
 import { RequestFailure } from '@/lib/supabase/errors'
 
 /** O que a pessoa lê quando o servidor recusa. Sem código técnico, com o que fazer em seguida. */
@@ -48,4 +49,9 @@ export function describeFailure(error: unknown): string {
     }
   }
   return 'Algo deu errado. Tente de novo.'
+}
+
+/** A falha para a tela: a frase para a pessoa e o lado técnico para ela copiar e mandar ao suporte. */
+export function toFailure(error: unknown): Failure {
+  return { message: describeFailure(error), details: describeError(error) }
 }

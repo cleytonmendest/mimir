@@ -1,14 +1,21 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import {
   formatInviteCode,
+  validateEmail,
+  validateInviteCodeEntry,
   validatePassword,
   validateSupplierInput,
+  validateSupplierName,
   type SignupMode,
 } from '@/domain/access'
+import { TextField } from '@/design-system/components/TextField/TextField'
 import { Button } from '@/design-system/components/ui/button'
-import { Input } from '@/design-system/components/ui/input'
-import { Label } from '@/design-system/components/ui/label'
-import { describeFailure } from '@/features/booking/messages'
+import { DraftNotice } from '@/features/forms/DraftNotice'
+import { useDraft, useDraftSync } from '@/features/forms/useDraft'
+import { checkAll, useValidatedField } from '@/features/forms/useValidatedField'
+import { describeFailure, toFailure } from '@/features/booking/messages'
+import type { Failure } from '@/features/diagnostics/error-report'
+import { FailureNotice } from '@/features/diagnostics/FailureNotice'
 import type { AccessGateway, SignUpRefusal } from '@/lib/supabase/access-gateway'
 import type { AuthGateway } from '@/lib/supabase/auth'
 import { PasswordField } from './PasswordField'
@@ -23,7 +30,9 @@ const REFUSALS: Record<SignUpRefusal | 'UNRECOGNIZED', string> = {
   UNRECOGNIZED: 'Não foi possível criar a conta agora. Tente de novo.',
 }
 
-type Loaded = { status: 'failed'; message: string } | { status: 'ready'; mode: SignupMode }
+const SIGNUP_DRAFT = 'cadastro'
+
+type Loaded = ({ status: 'failed' } & Failure) | { status: 'ready'; mode: SignupMode }
 type Load = { status: 'loading' } | Loaded
 
 /**
@@ -55,8 +64,7 @@ export function SignupPage({
         if (active) setResult({ attempt, value: { status: 'ready', mode } })
       },
       (error: unknown) => {
-        if (active)
-          setResult({ attempt, value: { status: 'failed', message: describeFailure(error) } })
+        if (active) setResult({ attempt, value: { status: 'failed', ...toFailure(error) } })
       },
     )
     return () => {
@@ -65,7 +73,7 @@ export function SignupPage({
   }, [access, attempt])
 
   return (
-    <section aria-labelledby="signup-page-title" className="mt-6 grid max-w-[480px] gap-4">
+    <section aria-labelledby="signup-page-title" className="grid gap-4">
       <h2 id="signup-page-title" className="font-display text-3xl font-semibold">
         Cadastro de fornecedor
       </h2>
@@ -77,20 +85,13 @@ export function SignupPage({
       )}
 
       {load.status === 'failed' && (
-        <>
-          <p role="alert" className="text-destructive">
-            {load.message}
-          </p>
-          <div>
-            <Button
-              onClick={() => {
-                setAttempt((count) => count + 1)
-              }}
-            >
-              Tentar de novo
-            </Button>
-          </div>
-        </>
+        <FailureNotice
+          message={load.message}
+          details={load.details}
+          onRetry={() => {
+            setAttempt((count) => count + 1)
+          }}
+        />
       )}
 
       {load.status === 'ready' && load.mode === 'closed' && (
@@ -139,30 +140,28 @@ function SignupForm({
   onDone: () => void
   onClosed: () => void
 }) {
-  const [inviteCode, setInviteCode] = useState(
+  const code = useValidatedField(
+    validateInviteCodeEntry,
     initialCode === '' ? '' : formatInviteCode(initialCode),
   )
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const draft = useDraft(SIGNUP_DRAFT, ['fullName', 'email'])
+  const fullName = useValidatedField(validateSupplierName, draft.initial.fullName)
+  const email = useValidatedField(validateEmail, draft.initial.email)
+  const password = useValidatedField(validatePassword)
+  // Só o nome e o e-mail ficam no rascunho: a senha e o código de convite nunca são guardados.
+  useDraftSync(SIGNUP_DRAFT, { fullName: fullName.value, email: email.value })
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null)
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const person = validateSupplierInput({ fullName, email })
+    const fields =
+      mode === 'invite' ? [code, fullName, email, password] : [fullName, email, password]
+    if (!checkAll(fields)) return
+    const person = validateSupplierInput({ fullName: fullName.value, email: email.value })
     if (!person.ok) {
       setError(person.message)
-      return
-    }
-    const passwordProblem = validatePassword(password)
-    if (passwordProblem !== null) {
-      setError(passwordProblem)
-      return
-    }
-    if (mode === 'invite' && inviteCode.trim() === '') {
-      setError('Informe o código de convite.')
       return
     }
 
@@ -171,21 +170,22 @@ function SignupForm({
     try {
       const result = await access.signUp({
         ...person.value,
-        password,
-        ...(mode === 'invite' ? { code: inviteCode } : {}),
+        password: password.value,
+        ...(mode === 'invite' ? { code: code.value } : {}),
       })
       if (!result.ok) {
         if (result.code === 'SIGNUP_CLOSED') onClosed()
         setError(REFUSALS[result.code])
         return
       }
+      draft.clear()
       if (result.status === 'CONFIRM_EMAIL') {
         setConfirmEmail(person.value.email)
         return
       }
       // Conta criada e confirmada: entra já, com a senha que acabou de escolher.
       try {
-        await auth.signIn(person.value.email, password)
+        await auth.signIn(person.value.email, password.value)
         onDone()
       } catch {
         setError('Conta criada! Mas não conseguimos entrar agora. Use "Entre aqui", abaixo.')
@@ -226,49 +226,68 @@ function SignupForm({
           ? 'Use o código de convite que você recebeu para criar a sua conta e reservar estandes de degustação.'
           : 'Crie a sua conta para reservar estandes de degustação nos mercados.'}
       </p>
-      {mode === 'invite' && (
-        <div className="grid gap-1.5">
-          <Label htmlFor="signup-code">Código de convite</Label>
-          <Input
-            id="signup-code"
-            value={inviteCode}
-            autoComplete="off"
-            autoCapitalize="characters"
-            className="font-mono tracking-widest uppercase"
-            onChange={(event) => {
-              setInviteCode(event.target.value)
-            }}
-          />
-        </div>
+      {draft.recovered && (
+        <DraftNotice
+          onDiscard={() => {
+            fullName.reset()
+            email.reset()
+            draft.clear()
+          }}
+        />
       )}
-      <div className="grid gap-1.5">
-        <Label htmlFor="signup-name">Nome ou empresa</Label>
-        <Input
-          id="signup-name"
-          value={fullName}
-          autoComplete="organization"
+      {mode === 'invite' && (
+        <TextField
+          id="signup-code"
+          label="Código de convite"
+          autoComplete="off"
+          autoCapitalize="characters"
+          className="font-mono tracking-widest uppercase"
+          value={code.value}
+          error={code.error}
+          inputRef={code.ref}
           onChange={(event) => {
-            setFullName(event.target.value)
+            code.change(event.target.value)
           }}
+          onFocus={code.focus}
+          onBlur={code.blur}
         />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="signup-email">E-mail</Label>
-        <Input
-          id="signup-email"
-          type="email"
-          value={email}
-          autoComplete="email"
-          onChange={(event) => {
-            setEmail(event.target.value)
-          }}
-        />
-      </div>
+      )}
+      <TextField
+        id="signup-name"
+        label="Nome ou empresa"
+        autoComplete="organization"
+        value={fullName.value}
+        error={fullName.error}
+        inputRef={fullName.ref}
+        onChange={(event) => {
+          fullName.change(event.target.value)
+        }}
+        onFocus={fullName.focus}
+        onBlur={fullName.blur}
+      />
+      <TextField
+        id="signup-email"
+        label="E-mail"
+        type="email"
+        autoComplete="email"
+        value={email.value}
+        error={email.error}
+        inputRef={email.ref}
+        onChange={(event) => {
+          email.change(event.target.value)
+        }}
+        onFocus={email.focus}
+        onBlur={email.blur}
+      />
       <PasswordField
         id="signup-password"
         label="Escolha uma senha"
-        value={password}
-        onChange={setPassword}
+        value={password.value}
+        onChange={password.change}
+        error={password.error}
+        onFocus={password.focus}
+        onBlur={password.blur}
+        inputRef={password.ref}
       />
       {error !== null && (
         <p role="alert" className="text-destructive">

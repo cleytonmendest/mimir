@@ -1,10 +1,24 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { DEFAULT_CAPACITY, MAX_CAPACITY, MIN_CAPACITY } from '@/domain/booking'
+import {
+  MAX_ADDRESS_LENGTH,
+  MAX_NAME_LENGTH,
+  validateMarketAddress,
+  validateMarketName,
+} from '@/domain/market'
+import { InlineConfirm } from '@/design-system/components/InlineConfirm/InlineConfirm'
+import { useFocusReturn } from '@/design-system/components/InlineConfirm/useFocusReturn'
 import { NumberStepper } from '@/design-system/components/NumberStepper/NumberStepper'
 import { Button } from '@/design-system/components/ui/button'
-import { Input } from '@/design-system/components/ui/input'
-import { Label } from '@/design-system/components/ui/label'
+import { TextField } from '@/design-system/components/TextField/TextField'
+import { cn } from '@/design-system/utils'
+import { FailureNotice } from '@/features/diagnostics/FailureNotice'
 import { NoticeToast } from '@/features/booking/NoticeToast'
+import { DraftNotice } from '@/features/forms/DraftNotice'
+import { useDraft, useDraftSync } from '@/features/forms/useDraft'
+import { checkAll, useValidatedField } from '@/features/forms/useValidatedField'
+import { MarketSearchField } from '@/features/market-search/MarketSearchField'
+import { useMarketSearch } from '@/features/market-search/useMarketSearch'
 import type { BookingGateway } from '@/lib/supabase/booking-gateway'
 import type { Market } from '@/lib/supabase/mappers'
 import {
@@ -15,6 +29,8 @@ import {
 import { useController } from './useController'
 
 /** Os mercados e o limite de estandes de cada um: cadastrar, editar, mudar o limite, arquivar. */
+const NEW_MARKET_DRAFT = 'novo-mercado'
+
 export function MarketsView({ gateway, now }: { gateway: BookingGateway; now?: () => Date }) {
   const [controller] = useState(() =>
     createMarketsController({ gateway, ...(now === undefined ? {} : { now }) }),
@@ -35,20 +51,14 @@ export function MarketsView({ gateway, now }: { gateway: BookingGateway; now?: (
 
   if (state.status === 'failed') {
     return (
-      <div className="mt-6 grid gap-3">
-        <p role="alert" className="text-destructive">
-          {state.message}
-        </p>
-        <div>
-          <Button
-            onClick={() => {
-              void controller.start()
-            }}
-          >
-            Tentar de novo
-          </Button>
-        </div>
-      </div>
+      <FailureNotice
+        className="mt-6 grid gap-3"
+        message={state.message}
+        details={state.details}
+        onRetry={() => {
+          void controller.start()
+        }}
+      />
     )
   }
 
@@ -67,15 +77,7 @@ export function MarketsView({ gateway, now }: { gateway: BookingGateway; now?: (
             O limite vale para todos os dias do mercado. Reduzir o limite não cancela reservas que
             já existem.
           </p>
-          {state.markets.length === 0 ? (
-            <p className="mt-3">Nenhum mercado cadastrado ainda.</p>
-          ) : (
-            <ul className="mt-3 grid gap-3">
-              {state.markets.map((market) => (
-                <MarketRow key={market.id} market={market} state={state} controller={controller} />
-              ))}
-            </ul>
-          )}
+          <MarketRows state={state} controller={controller} />
         </section>
       </div>
       <NoticeToast
@@ -88,6 +90,22 @@ export function MarketsView({ gateway, now }: { gateway: BookingGateway; now?: (
   )
 }
 
+/** As linhas de mercado, com a busca (o hook precisa ficar fora dos retornos antecipados da tela). */
+function MarketRows({ state, controller }: { state: MarketsReady; controller: MarketsController }) {
+  const search = useMarketSearch(state.markets)
+  if (state.markets.length === 0) return <p className="mt-3">Nenhum mercado cadastrado ainda.</p>
+  return (
+    <>
+      <MarketSearchField search={search} />
+      <ul className="mt-3 grid gap-3">
+        {search.shown.map((market) => (
+          <MarketRow key={market.id} market={market} state={state} controller={controller} />
+        ))}
+      </ul>
+    </>
+  )
+}
+
 function NewMarketForm({
   state,
   controller,
@@ -95,23 +113,32 @@ function NewMarketForm({
   state: MarketsReady
   controller: MarketsController
 }) {
-  const [name, setName] = useState('')
-  const [address, setAddress] = useState('')
+  const draft = useDraft(NEW_MARKET_DRAFT, ['name', 'address'])
+  const name = useValidatedField(validateMarketName, draft.initial.name)
+  const address = useValidatedField(validateMarketAddress, draft.initial.address)
   const [capacity, setCapacity] = useState(DEFAULT_CAPACITY)
+  useDraftSync(NEW_MARKET_DRAFT, { name: name.value, address: address.value })
   // O erro de validação é do formulário aberto: o de edição aparece na linha do mercado.
   const error = state.editing === null ? state.formError : null
 
+  function startOver() {
+    name.reset()
+    address.reset()
+    setCapacity(DEFAULT_CAPACITY)
+    draft.clear()
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (await controller.create({ name, address, capacity })) {
-      setName('')
-      setAddress('')
-      setCapacity(DEFAULT_CAPACITY)
+    if (!checkAll([name, address])) return
+    if (await controller.create({ name: name.value, address: address.value, capacity })) {
+      startOver()
     }
   }
 
   return (
     <form
+      noValidate
       onSubmit={(event) => {
         void submit(event)
       }}
@@ -121,29 +148,34 @@ function NewMarketForm({
       <h2 id="new-market-title" className="font-display text-2xl leading-tight font-semibold">
         Novo mercado
       </h2>
-      <div className="grid gap-1.5">
-        <Label htmlFor="new-market-name">Nome</Label>
-        <Input
-          id="new-market-name"
-          value={name}
-          maxLength={100}
-          onChange={(event) => {
-            setName(event.target.value)
-          }}
-        />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="new-market-address">Endereço (opcional)</Label>
-        <Input
-          id="new-market-address"
-          value={address}
-          maxLength={200}
-          onChange={(event) => {
-            setAddress(event.target.value)
-          }}
-        />
-      </div>
-      <div className="grid gap-1.5">
+      {draft.recovered && <DraftNotice onDiscard={startOver} />}
+      <TextField
+        id="new-market-name"
+        label="Nome"
+        maxLength={MAX_NAME_LENGTH}
+        value={name.value}
+        error={name.error}
+        inputRef={name.ref}
+        onChange={(event) => {
+          name.change(event.target.value)
+        }}
+        onFocus={name.focus}
+        onBlur={name.blur}
+      />
+      <TextField
+        id="new-market-address"
+        label="Endereço (opcional)"
+        maxLength={MAX_ADDRESS_LENGTH}
+        value={address.value}
+        error={address.error}
+        inputRef={address.ref}
+        onChange={(event) => {
+          address.change(event.target.value)
+        }}
+        onFocus={address.focus}
+        onBlur={address.blur}
+      />
+      <div className="grid gap-2">
         <span className="text-sm leading-none font-medium">Estandes por dia</span>
         <NumberStepper
           label="Estandes por dia do novo mercado"
@@ -176,14 +208,67 @@ function MarketRow({
 }) {
   const editing = state.editing === market.id
   const archiving = state.confirmingArchive === market.id
+  const archiveTrigger = useFocusReturn<HTMLButtonElement>(archiving)
 
+  const stepper = (
+    <NumberStepper
+      label={`Limite de estandes por dia, ${market.name}`}
+      value={market.capacity}
+      min={MIN_CAPACITY}
+      max={MAX_CAPACITY}
+      unit="por dia"
+      onChange={(value) => {
+        void controller.setCapacity(market.id, value)
+      }}
+    />
+  )
+
+  const archiveControl = archiving ? null : market.archived ? (
+    <Button
+      variant="outline"
+      disabled={state.busy}
+      aria-label={`Reativar ${market.name}`}
+      onClick={() => {
+        void controller.setArchived(market.id, false)
+      }}
+    >
+      Reativar
+    </Button>
+  ) : (
+    <Button
+      ref={archiveTrigger}
+      variant="outline"
+      disabled={state.busy}
+      aria-label={`Arquivar ${market.name}`}
+      onClick={() => {
+        controller.askArchive(market.id)
+      }}
+    >
+      Arquivar
+    </Button>
+  )
+
+  // Com dezenas de lojas, cada uma ocupa o mínimo de altura: no computador, uma linha só (nome,
+  // limite, Editar, Arquivar); no celular, duas (nome e Editar; limite e Arquivar).
   return (
-    <li className="grid gap-3 rounded-xl border border-border bg-card p-4">
+    <li
+      className={cn(
+        'grid gap-3 rounded-xl border border-border bg-card p-3',
+        !editing &&
+          'grid-cols-[minmax(0,1fr)_auto] gap-y-2 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:items-center md:gap-x-3',
+      )}
+    >
       {editing ? (
-        <EditForm market={market} state={state} controller={controller} />
+        <>
+          <EditForm market={market} state={state} controller={controller} />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {stepper}
+            {archiveControl}
+          </div>
+        </>
       ) : (
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
+        <>
+          <div className="min-w-0">
             <h3 className="font-display text-xl leading-tight font-semibold">{market.name}</h3>
             {market.address !== null && (
               <p className="text-sm text-muted-foreground">{market.address}</p>
@@ -194,8 +279,10 @@ function MarketRow({
               </p>
             )}
           </div>
+          <div className="max-md:col-start-1 max-md:row-start-2">{stepper}</div>
           <Button
             variant="outline"
+            className="max-md:col-start-2 max-md:row-start-1"
             disabled={state.busy}
             aria-label={`Editar ${market.name}`}
             onClick={() => {
@@ -204,71 +291,27 @@ function MarketRow({
           >
             Editar
           </Button>
-        </div>
+          <div className="max-md:col-start-2 max-md:row-start-2">{archiveControl}</div>
+        </>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <NumberStepper
-          label={`Limite de estandes por dia, ${market.name}`}
-          value={market.capacity}
-          min={MIN_CAPACITY}
-          max={MAX_CAPACITY}
-          unit="por dia"
-          onChange={(value) => {
-            void controller.setCapacity(market.id, value)
+      {archiving && (
+        <InlineConfirm
+          label="Confirmar arquivamento"
+          title={`Arquivar ${market.name}?`}
+          description="Ele deixa de aparecer para os fornecedores e não aceita novas reservas. As que já existem continuam."
+          confirmLabel="Sim, arquivar"
+          cancelLabel="Manter"
+          busy={state.busy}
+          className="col-span-full"
+          onConfirm={() => {
+            void controller.setArchived(market.id, true)
+          }}
+          onCancel={() => {
+            controller.keepActive()
           }}
         />
-        {archiving ? (
-          <div role="group" aria-label="Confirmar arquivamento" className="grid gap-2">
-            <p className="max-w-[40ch] text-sm">
-              Arquivar este mercado? Ele deixa de aparecer para os fornecedores e não aceita novas
-              reservas. As que já existem continuam.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="destructive"
-                disabled={state.busy}
-                onClick={() => {
-                  void controller.setArchived(market.id, true)
-                }}
-              >
-                Sim, arquivar
-              </Button>
-              <Button
-                variant="outline"
-                disabled={state.busy}
-                onClick={() => {
-                  controller.keepActive()
-                }}
-              >
-                Manter
-              </Button>
-            </div>
-          </div>
-        ) : market.archived ? (
-          <Button
-            variant="outline"
-            disabled={state.busy}
-            aria-label={`Reativar ${market.name}`}
-            onClick={() => {
-              void controller.setArchived(market.id, false)
-            }}
-          >
-            Reativar
-          </Button>
-        ) : (
-          <Button
-            variant="outline"
-            disabled={state.busy}
-            aria-label={`Arquivar ${market.name}`}
-            onClick={() => {
-              controller.askArchive(market.id)
-            }}
-          >
-            Arquivar
-          </Button>
-        )}
-      </div>
+      )}
     </li>
   )
 }
@@ -282,40 +325,46 @@ function EditForm({
   state: MarketsReady
   controller: MarketsController
 }) {
-  const [name, setName] = useState(market.name)
-  const [address, setAddress] = useState(market.address ?? '')
+  const name = useValidatedField(validateMarketName, market.name)
+  const address = useValidatedField(validateMarketAddress, market.address ?? '')
 
   return (
     <form
+      noValidate
       aria-label={`Editar ${market.name}`}
       className="grid gap-3"
       onSubmit={(event) => {
         event.preventDefault()
-        void controller.save(market.id, { name, address })
+        if (!checkAll([name, address])) return
+        void controller.save(market.id, { name: name.value, address: address.value })
       }}
     >
-      <div className="grid gap-1.5">
-        <Label htmlFor={`name-${market.id}`}>Nome</Label>
-        <Input
-          id={`name-${market.id}`}
-          value={name}
-          maxLength={100}
-          onChange={(event) => {
-            setName(event.target.value)
-          }}
-        />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor={`address-${market.id}`}>Endereço (opcional)</Label>
-        <Input
-          id={`address-${market.id}`}
-          value={address}
-          maxLength={200}
-          onChange={(event) => {
-            setAddress(event.target.value)
-          }}
-        />
-      </div>
+      <TextField
+        id={`name-${market.id}`}
+        label="Nome"
+        maxLength={MAX_NAME_LENGTH}
+        value={name.value}
+        error={name.error}
+        inputRef={name.ref}
+        onChange={(event) => {
+          name.change(event.target.value)
+        }}
+        onFocus={name.focus}
+        onBlur={name.blur}
+      />
+      <TextField
+        id={`address-${market.id}`}
+        label="Endereço (opcional)"
+        maxLength={MAX_ADDRESS_LENGTH}
+        value={address.value}
+        error={address.error}
+        inputRef={address.ref}
+        onChange={(event) => {
+          address.change(event.target.value)
+        }}
+        onFocus={address.focus}
+        onBlur={address.blur}
+      />
       {state.formError !== null && (
         <p role="alert" className="text-destructive">
           {state.formError}

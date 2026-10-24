@@ -31,12 +31,19 @@ afterEach(() => {
 })
 
 describe('no-service-role', () => {
-  it('deixa passar um front limpo e ignora o .env.example', () => {
+  it('deixa passar um front limpo, com o .env.example e a cópia dele', () => {
+    const example = 'VITE_SUPABASE_URL=http://127.0.0.1:54321\nVITE_SUPABASE_ANON_KEY=\n'
     const root = project({
       'src/app.ts': 'const key = import.meta.env.VITE_SUPABASE_ANON_KEY',
-      '.env.example': '# NUNCA usar a service_role aqui',
+      '.env.example': example,
+      '.env.local': example,
     })
     expect(noServiceRole.check(root).violations).toEqual([])
+  })
+
+  it('barra o .env.example que cite a chave, nem que seja num comentário: a cópia vira .env.local', () => {
+    const root = project({ '.env.example': '# NUNCA colocar a service_role aqui' })
+    expect(noServiceRole.check(root).violations).toEqual([expect.stringContaining('.env.example')])
   })
 
   it.each([

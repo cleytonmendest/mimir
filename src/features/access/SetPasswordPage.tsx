@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { validatePassword } from '@/domain/access'
 import { Button } from '@/design-system/components/ui/button'
+import { checkAll, useValidatedField } from '@/features/forms/useValidatedField'
 import { AuthFailure, type AuthGateway } from '@/lib/supabase/auth'
 import { PasswordField } from './PasswordField'
 
@@ -15,7 +16,7 @@ type Step =
 
 /**
  * A página que o fornecedor abre pelo link que o administrador enviou. O link só é trocado por
- * uma sessão depois do toque em "Continuar": programas que abrem links sozinhos (prévia do
+ * uma sessão depois do toque em "Definir minha senha": programas que abrem links sozinhos (prévia do
  * WhatsApp, antivírus) não gastam o link, que só vale uma vez.
  */
 export function SetPasswordPage({
@@ -29,7 +30,7 @@ export function SetPasswordPage({
   onDone: () => void
 }) {
   const [step, setStep] = useState<Step>(token === null ? 'invalid' : 'intro')
-  const [password, setPassword] = useState('')
+  const password = useValidatedField(validatePassword)
   const [error, setError] = useState<string | null>(null)
 
   async function redeem() {
@@ -42,7 +43,7 @@ export function SetPasswordPage({
       setStep('intro')
       setError(
         failure instanceof AuthFailure && failure.code === 'NETWORK'
-          ? 'Sem conexão com o servidor. Verifique a internet e toque em Continuar de novo.'
+          ? 'Sem conexão com o servidor. Verifique a internet e toque em Definir minha senha de novo.'
           : 'Não foi possível abrir o link agora. Tente de novo.',
       )
     }
@@ -50,15 +51,11 @@ export function SetPasswordPage({
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const problem = validatePassword(password)
-    if (problem !== null) {
-      setError(problem)
-      return
-    }
+    if (!checkAll([password])) return
     setStep('saving')
     setError(null)
     try {
-      await auth.setPassword(password)
+      await auth.setPassword(password.value)
       setStep('done')
       onDone()
     } catch (failure) {
@@ -74,7 +71,7 @@ export function SetPasswordPage({
   }
 
   return (
-    <section aria-labelledby="activation-title" className="mt-6 grid max-w-[480px] gap-4">
+    <section aria-labelledby="activation-title" className="grid gap-4">
       <h2 id="activation-title" className="font-display text-3xl font-semibold">
         Defina a sua senha
       </h2>
@@ -92,7 +89,7 @@ export function SetPasswordPage({
                 void redeem()
               }}
             >
-              {step === 'checking' ? 'Abrindo…' : 'Continuar'}
+              {step === 'checking' ? 'Abrindo…' : 'Definir minha senha'}
             </Button>
           </div>
         </>
@@ -109,8 +106,12 @@ export function SetPasswordPage({
           <PasswordField
             id="activation-password"
             label="Escolha a sua senha"
-            value={password}
-            onChange={setPassword}
+            value={password.value}
+            onChange={password.change}
+            error={password.error}
+            onFocus={password.focus}
+            onBlur={password.blur}
+            inputRef={password.ref}
           />
           <Button type="submit" disabled={step === 'saving'}>
             {step === 'saving' ? 'Salvando…' : 'Salvar senha e entrar'}

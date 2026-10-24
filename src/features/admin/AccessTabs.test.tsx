@@ -88,11 +88,36 @@ describe('aba Fornecedores', () => {
     expect(screen.queryByRole('region', { name: 'Link de acesso' })).not.toBeInTheDocument()
   })
 
+  it('guarda o nome e o e-mail digitados e os devolve ao voltar; cadastrar apaga o rascunho', async () => {
+    const { user } = setup()
+    await openTab(user, 'Fornecedores')
+    await user.type(await screen.findByLabelText('Nome ou empresa'), 'Café do Caio')
+    await user.type(screen.getByLabelText('E-mail'), 'caio@loja.com')
+
+    await openTab(user, 'Configurações')
+    await openTab(user, 'Fornecedores')
+    expect(await screen.findByLabelText('Nome ou empresa')).toHaveValue('Café do Caio')
+    expect(screen.getByLabelText('E-mail')).toHaveValue('caio@loja.com')
+    expect(screen.getByText('Recuperamos o que você tinha digitado.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Cadastrar fornecedor' }))
+    await screen.findByRole('region', { name: 'Link de acesso' })
+    await openTab(user, 'Configurações')
+    await openTab(user, 'Fornecedores')
+    expect(await screen.findByLabelText('Nome ou empresa')).toHaveValue('')
+    expect(screen.queryByText('Recuperamos o que você tinha digitado.')).not.toBeInTheDocument()
+  })
+
   it('dados inválidos e e-mail repetido mostram o erro no formulário', async () => {
     const { user } = setup()
     await openTab(user, 'Fornecedores')
     await user.click(await screen.findByRole('button', { name: 'Cadastrar fornecedor' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Informe o nome do fornecedor.')
+    // O envio mostra o erro de cada campo e leva o foco ao primeiro.
+    expect((await screen.findAllByRole('alert')).map((alert) => alert.textContent)).toEqual([
+      'Informe o nome do fornecedor.',
+      'Informe o e-mail.',
+    ])
+    expect(screen.getByLabelText('Nome ou empresa')).toHaveFocus()
 
     await user.type(screen.getByLabelText('Nome ou empresa'), 'Outra Ana')
     await user.type(screen.getByLabelText('E-mail'), 'u-ana@loja.com')

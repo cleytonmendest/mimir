@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
 import { Button } from '@/design-system/components/ui/button'
+import { FailureNotice } from '@/features/diagnostics/FailureNotice'
 import type { UserProfile } from '@/lib/supabase/mappers'
 import { useAuth } from './auth-context'
+import { AuthLayout } from './AuthLayout'
 import { LoginForm } from './LoginForm'
 
 /** Só deixa passar quem está logado; para os demais mostra o que fazer. */
@@ -11,20 +13,27 @@ export function AuthGate({ children }: { children: (profile: UserProfile) => Rea
   switch (state.status) {
     case 'loading':
       return (
-        <p role="status" className="mt-6 text-muted-foreground">
-          Carregando…
-        </p>
+        <AuthLayout>
+          <p role="status" className="text-muted-foreground">
+            Carregando…
+          </p>
+        </AuthLayout>
       )
     case 'signedOut':
-      return <LoginForm />
+      return (
+        <AuthLayout>
+          <LoginForm />
+        </AuthLayout>
+      )
     case 'failed':
       return (
-        <div className="mt-6 grid gap-4">
-          <p role="alert" className="text-destructive">
-            {state.message}
-          </p>
-          <div className="flex gap-2">
-            <Button onClick={retry}>Tentar de novo</Button>
+        <AuthLayout>
+          <FailureNotice
+            className="grid gap-4"
+            message={state.message}
+            details={state.details}
+            onRetry={retry}
+          >
             <Button
               variant="outline"
               onClick={() => {
@@ -33,27 +42,29 @@ export function AuthGate({ children }: { children: (profile: UserProfile) => Rea
             >
               Sair
             </Button>
-          </div>
-        </div>
+          </FailureNotice>
+        </AuthLayout>
       )
     case 'signedIn':
       if (!state.profile.active) {
         return (
-          <div className="mt-6 grid gap-4">
-            <p role="alert">
-              Sua conta foi desativada. Fale com o administrador dos mercados para voltar a usar o
-              app.
-            </p>
-            <div>
-              <Button
-                onClick={() => {
-                  void signOut()
-                }}
-              >
-                Sair
-              </Button>
+          <AuthLayout>
+            <div className="grid gap-4">
+              <p role="alert">
+                Sua conta foi desativada. Fale com o administrador dos mercados para voltar a usar o
+                app.
+              </p>
+              <div>
+                <Button
+                  onClick={() => {
+                    void signOut()
+                  }}
+                >
+                  Sair
+                </Button>
+              </div>
             </div>
-          </div>
+          </AuthLayout>
         )
       }
       return <>{children(state.profile)}</>

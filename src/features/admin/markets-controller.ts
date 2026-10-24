@@ -5,7 +5,8 @@ import { BOOKING_WINDOW_DAYS, MAX_CAPACITY, MIN_CAPACITY } from '@/domain/bookin
 import type { BookingGateway } from '@/lib/supabase/booking-gateway'
 import type { Market } from '@/lib/supabase/mappers'
 import type { Notice } from '@/features/booking/booking-controller'
-import { describeFailure } from '@/features/booking/messages'
+import type { Failure } from '@/features/diagnostics/error-report'
+import { describeFailure, toFailure } from '@/features/booking/messages'
 
 export interface MarketsReady {
   status: 'ready'
@@ -21,8 +22,7 @@ export interface MarketsReady {
   notice: Notice | null
 }
 
-export type MarketsState =
-  { status: 'loading' } | { status: 'failed'; message: string } | MarketsReady
+export type MarketsState = { status: 'loading' } | ({ status: 'failed' } & Failure) | MarketsReady
 
 export interface MarketsController {
   getState(): MarketsState
@@ -89,7 +89,7 @@ export function createMarketsController(deps: {
         notice: null,
       })
     } catch (error) {
-      set({ status: 'failed', message: describeFailure(error) })
+      set({ status: 'failed', ...toFailure(error) })
     }
   }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AvailabilityCalendar } from '@/design-system/components/AvailabilityCalendar/AvailabilityCalendar'
-import { Button } from '@/design-system/components/ui/button'
+import { FailureNotice } from '@/features/diagnostics/FailureNotice'
 import type { BookingGateway } from '@/lib/supabase/booking-gateway'
 import { createBookingController } from './booking-controller'
 import { DayPanel } from './DayPanel'
@@ -29,13 +29,12 @@ export function SupplierScreen({ gateway, now }: { gateway: BookingGateway; now?
   }, [controller])
 
   return (
-    <section className="mt-6" aria-labelledby="bookings-title">
+    <section className="mt-4" aria-labelledby="bookings-title">
       <h2 id="bookings-title" className="font-display text-3xl font-semibold">
         Reservas
       </h2>
-      <p className="mt-1 max-w-[52ch] text-muted-foreground">
-        Reserve um estande de degustação no mercado e no dia que quiser. O sistema não deixa passar
-        do limite de estandes.
+      <p className="mt-1 max-w-[64ch] text-muted-foreground">
+        Reserve um estande de degustação no mercado e no dia que quiser.
       </p>
 
       {state.status === 'loading' && (
@@ -45,48 +44,38 @@ export function SupplierScreen({ gateway, now }: { gateway: BookingGateway; now?
       )}
 
       {state.status === 'failed' && (
-        <div className="mt-6 grid gap-3">
-          <p role="alert" className="text-destructive">
-            {state.message}
-          </p>
-          <div>
-            <Button
-              onClick={() => {
-                void controller.start()
-              }}
-            >
-              Tentar de novo
-            </Button>
-          </div>
-        </div>
+        <FailureNotice
+          className="mt-6 grid gap-3"
+          message={state.message}
+          details={state.details}
+          onRetry={() => {
+            void controller.start()
+          }}
+        />
       )}
 
       {state.status === 'ready' && (
         <>
-          <div className="mt-4 grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)_320px] lg:items-start lg:[grid-template-areas:'mk_cal_pn'_'mine_cal_pn']">
+          <div className="mt-4">
+            <MyBookings state={state} controller={controller} />
+          </div>
+          <div className="mt-4 grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)_320px] lg:items-start">
             <MarketList state={state} controller={controller} />
 
             <section
               aria-label="Calendário de reservas"
-              className="min-w-0 rounded-xl border border-border bg-card p-4 lg:[grid-area:cal]"
+              className="min-w-0 rounded-xl border border-border bg-card p-4 max-sm:-mx-3 max-sm:rounded-none max-sm:border-x-0 max-sm:px-2"
             >
               {state.marketId === null ? (
                 <p>Escolha um mercado para ver os dias.</p>
               ) : state.availabilityError !== null ? (
-                <div className="grid gap-3">
-                  <p role="alert" className="text-destructive">
-                    {state.availabilityError}
-                  </p>
-                  <div>
-                    <Button
-                      onClick={() => {
-                        void controller.refresh()
-                      }}
-                    >
-                      Tentar de novo
-                    </Button>
-                  </div>
-                </div>
+                <FailureNotice
+                  message={state.availabilityError.message}
+                  details={state.availabilityError.details}
+                  onRetry={() => {
+                    void controller.refresh()
+                  }}
+                />
               ) : state.availability === null ? (
                 <p role="status" className="text-muted-foreground">
                   Carregando o calendário…
@@ -111,7 +100,6 @@ export function SupplierScreen({ gateway, now }: { gateway: BookingGateway; now?
             </section>
 
             <DayPanel state={state} controller={controller} />
-            <MyBookings state={state} controller={controller} />
           </div>
           <NoticeToast
             notice={state.notice}

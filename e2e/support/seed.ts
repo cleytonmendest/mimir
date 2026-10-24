@@ -62,17 +62,18 @@ export interface SeededSupplier extends SeededUser {
   client: ReturnType<typeof createClient<Database>>
 }
 
-/** Um mercado novo (nome único) com o limite pedido. */
+/** Um mercado novo (nome único) com o limite pedido e, se quiser, o endereço. */
 export async function createMarket(
   db: SeededUsers['db'],
   capacity: number,
   name = 'Mercado de teste',
+  address: string | null = null,
 ): Promise<{ id: string; name: string }> {
   const unique = `${Date.now()}-${Math.floor(Math.random() * 10_000)}`
   const fullName = `${name} ${unique}`
   const created = await db
     .from('markets')
-    .insert({ name: fullName, capacity })
+    .insert({ name: fullName, capacity, address })
     .select('id')
     .single()
   if (created.error !== null) throw created.error

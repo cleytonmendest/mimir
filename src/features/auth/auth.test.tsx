@@ -29,6 +29,46 @@ async function fillAndSubmit(
   await user.click(screen.getByRole('button', { name: 'Entrar' }))
 }
 
+describe('login: validação ao sair do campo', () => {
+  it('não reclama enquanto digita; ao sair do campo vazio diz o que falta, e some ao voltar', async () => {
+    const { user } = setup()
+    const email = await screen.findByLabelText('E-mail')
+    await user.type(email, 'ana')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+    await user.clear(email)
+    await user.tab()
+    expect(screen.getByRole('alert')).toHaveTextContent('Informe o e-mail.')
+    expect(email).toHaveAttribute('aria-invalid', 'true')
+
+    await user.click(email)
+    expect(screen.queryByText('Informe o e-mail.')).not.toBeInTheDocument()
+    expect(email).not.toHaveAttribute('aria-invalid')
+  })
+
+  it('e-mail torto é apontado ao sair do campo', async () => {
+    const { user } = setup()
+    await user.type(await screen.findByLabelText('E-mail'), 'ana@')
+    await user.tab()
+    expect(screen.getByRole('alert')).toHaveTextContent('Esse e-mail não parece certo.')
+  })
+
+  it('o botão nunca fica desligado; enviar vazio mostra os dois erros e leva o foco ao primeiro, sem chamar o servidor', async () => {
+    const { gateway, user } = setup()
+    const signIn = vi.spyOn(gateway, 'signIn')
+    const button = await screen.findByRole('button', { name: 'Entrar' })
+    expect(button).toBeEnabled()
+
+    await user.click(button)
+    expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toEqual([
+      'Informe o e-mail.',
+      'Informe a senha.',
+    ])
+    expect(screen.getByLabelText('E-mail')).toHaveFocus()
+    expect(signIn).not.toHaveBeenCalled()
+  })
+})
+
 describe('login', () => {
   it('sem sessão no aparelho mostra o formulário (e nenhum "criar conta")', async () => {
     setup()
@@ -135,6 +175,17 @@ describe('sair', () => {
     expect(screen.queryByText('Ana · Fornecedor')).not.toBeInTheDocument()
   })
 
+  it('sair apaga os rascunhos de formulário: o que foi digitado não passa para a próxima pessoa', async () => {
+    sessionStorage.setItem('rascunho:novo-mercado', JSON.stringify({ name: 'Mercado Aurora' }))
+    const { user } = setup({ signedInAs: 'ana@test.dev' })
+    await screen.findByText('Ana · Fornecedor')
+
+    await user.click(screen.getByRole('button', { name: 'Sair' }))
+
+    await screen.findByLabelText('E-mail')
+    expect(sessionStorage.getItem('rascunho:novo-mercado')).toBeNull()
+  })
+
   it('se sair falhar, avisa em vez de fingir que saiu', async () => {
     const gateway = createFakeGateway({ accounts: ACCOUNTS, signedInAs: 'ana@test.dev' })
     gateway.signOut = () => Promise.reject(new Error('sem armazenamento'))
@@ -184,6 +235,22 @@ describe('falhas ao abrir o app', () => {
     await userEvent.setup().click(screen.getByRole('button', { name: 'Tentar de novo' }))
 
     expect(await screen.findByText('Ana · Fornecedor')).toBeInTheDocument()
+  })
+
+  it('a falha de conexão deixa copiar os detalhes do erro e ainda oferece "Sair"', async () => {
+    const gateway = createFakeGateway({ accounts: ACCOUNTS, signedInAs: 'ana@test.dev' })
+    gateway.setFault('offline')
+    render(
+      <AuthProvider gateway={gateway}>
+        <AuthGate>{(profile) => <AccountBar profile={profile} />}</AuthGate>
+      </AuthProvider>,
+    )
+    await screen.findByRole('alert')
+    expect(screen.getByRole('button', { name: 'Sair' })).toBeInTheDocument()
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Copiar detalhes do erro' }))
+    expect(await screen.findByText('Detalhes copiados.')).toBeInTheDocument()
+    expect(await navigator.clipboard.readText()).toContain('Versão:')
   })
 
   it('usuário sem perfil: avisa para falar com o administrador e permite sair', async () => {

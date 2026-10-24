@@ -8,7 +8,7 @@ export type AuthState =
   | { status: 'loading' }
   | { status: 'signedOut' }
   | { status: 'signedIn'; profile: UserProfile }
-  | { status: 'failed'; message: string }
+  | { status: 'failed'; message: string; details: string | null }
 
 export interface AuthContextValue {
   state: AuthState

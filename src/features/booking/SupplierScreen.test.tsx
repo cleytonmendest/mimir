@@ -37,8 +37,11 @@ describe('SupplierScreen: abrir', () => {
       'aria-pressed',
       'true',
     )
-    expect(screen.getAllByText('estandes por dia', { exact: false })).toHaveLength(2)
+    expect(screen.getAllByText('estandes/dia', { exact: false })).toHaveLength(2)
     expect(screen.getByText('Você ainda não tem reservas.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Escolha um mercado e um dia abaixo para fazer a primeira.'),
+    ).toBeInTheDocument()
     expect(
       screen.getByText('Escolha um dia no calendário. Dias verdes e amarelos têm vaga.'),
     ).toBeInTheDocument()
@@ -229,6 +232,21 @@ describe('SupplierScreen: cancelar', () => {
     expect(await day(/^Sábado, 24 de outubro: 3 vagas livres de 3$/)).toBeInTheDocument()
   })
 
+  it('a confirmação diz qual reserva vai embora, leva o foco a "Manter" e Esc devolve o foco ao botão', async () => {
+    const { user } = setup({ bookings: [own] })
+    const mine = await screen.findByRole('region', { name: 'Minhas reservas' })
+    within(mine).getByRole('button', { name: 'Cancelar reserva' }).focus()
+    await user.keyboard('{Enter}')
+
+    const confirm = within(mine).getByRole('group', { name: 'Confirmar cancelamento' })
+    expect(confirm).toHaveTextContent('Cancelar a reserva de sáb 24/10 em Mercado A?')
+    expect(within(confirm).getByRole('button', { name: 'Manter' })).toHaveFocus()
+
+    await user.keyboard('{Escape}')
+    expect(within(mine).queryByRole('group')).not.toBeInTheDocument()
+    expect(within(mine).getByRole('button', { name: 'Cancelar reserva' })).toHaveFocus()
+  })
+
   it('cancela pelo painel do dia, e "Manter" desiste', async () => {
     const { user, bookings } = setup({ bookings: [own] })
     await user.click(await day(/^Sábado, 24 de outubro.*Sua reserva/))
@@ -287,5 +305,119 @@ describe('SupplierScreen: escolher e atualizar', () => {
       await Promise.resolve()
     })
     expect(await day(/^Sábado, 24 de outubro: 2 vagas livres de 3/)).toBeInTheDocument()
+  })
+})
+
+describe('SupplierScreen: buscar mercado', () => {
+  const lojas = [
+    { ...market('m-1', 'Loja 01 - Ipanema', 3), address: 'Rua Visconde de Pirajá 118 - Ipanema' },
+    { ...market('m-2', 'Loja 06 - Gávea', 2), address: 'Av Rodrigo Otavio 269 - Gávea' },
+    { ...market('m-3', 'Loja 07 - Leblon', 4), address: 'Rua Dias Ferreira 290 - Leblon' },
+    { ...market('m-4', 'Loja 22 - São Conrado', 3), address: 'Estrada da Gávea 870 - São Conrado' },
+  ]
+
+  function setupLojas(markets = lojas) {
+    const fake = createFakeBookingGateway({
+      actor: { id: 'u-ana', role: 'supplier' },
+      today: TODAY,
+      markets,
+      bookings: [],
+      closed: [],
+    })
+    const user = userEvent.setup()
+    render(<SupplierScreen gateway={fake.gateway} now={now} />)
+    return { ...fake, user }
+  }
+
+  it('filtra pelo bairro sem ligar para acento nem maiúscula, e diz quantos sobraram', async () => {
+    const { user } = setupLojas()
+    await screen.findByRole('heading', { name: 'Outubro de 2026' })
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar por bairro ou nome' }), 'GAVEA')
+
+    // A Gávea pelo nome e a São Conrado, que só tem "Gávea" na rua.
+    expect(screen.getByRole('button', { name: /Loja 06 - Gávea/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Loja 22 - São Conrado/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Loja 07 - Leblon/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Loja 01 - Ipanema/ })).not.toBeInTheDocument()
+    expect(screen.getByText('2 de 4 mercados')).toBeInTheDocument()
+  })
+
+  it('sem resultado diz isso, e o "x" limpa a busca e traz todos de volta', async () => {
+    const { user } = setupLojas()
+    await screen.findByRole('heading', { name: 'Outubro de 2026' })
+    await user.type(screen.getByRole('searchbox'), 'zzz')
+    expect(screen.getByText('Nenhum mercado encontrado.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Loja 07/ })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Limpar busca' }))
+    expect(screen.getAllByRole('button', { name: /^Loja \d\d - / })).toHaveLength(4)
+    expect(screen.queryByText('Nenhum mercado encontrado.')).not.toBeInTheDocument()
+  })
+
+  it('o mercado escolhido continua escolhido (e com o calendário) mesmo fora do filtro', async () => {
+    const { user } = setupLojas()
+    await screen.findByRole('heading', { name: 'Outubro de 2026' })
+    expect(screen.getByRole('button', { name: /Loja 01 - Ipanema/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await user.type(screen.getByRole('searchbox'), 'leblon')
+    expect(screen.queryByRole('button', { name: /Loja 01 - Ipanema/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Outubro de 2026' })).toBeInTheDocument()
+    expect(
+      screen.getByText('Loja 01 - Ipanema', { exact: false, selector: 'p' }),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Loja 07 - Leblon/ }))
+    expect(screen.getByRole('button', { name: /Loja 07 - Leblon/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
+  it('com um mercado só, não há o que buscar', async () => {
+    setupLojas([lojas[0]!])
+    await screen.findByRole('heading', { name: 'Outubro de 2026' })
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument()
+  })
+})
+
+describe('SupplierScreen: minhas reservas no topo', () => {
+  const own = (days: string[]): FakeBooking[] =>
+    days.map((day, index) => ({
+      id: `b${index}`,
+      marketId: 'm-a',
+      day,
+      supplierId: 'u-ana',
+    }))
+
+  it('mostra as três primeiras e "Ver todas" abre o resto (e "Mostrar menos" fecha)', async () => {
+    const { user } = setup({
+      bookings: own(['2026-10-22', '2026-10-23', '2026-10-24', '2026-10-26']),
+    })
+    const mine = await screen.findByRole('region', { name: 'Minhas reservas' })
+    expect(within(mine).getAllByRole('listitem')).toHaveLength(3)
+
+    const all = within(mine).getByRole('button', { name: 'Ver todas (4)' })
+    expect(all).toHaveAttribute('aria-expanded', 'false')
+    await user.click(all)
+    expect(within(mine).getAllByRole('listitem')).toHaveLength(4)
+
+    await user.click(within(mine).getByRole('button', { name: 'Mostrar menos' }))
+    expect(within(mine).getAllByRole('listitem')).toHaveLength(3)
+  })
+
+  it('com até três reservas não há "Ver todas"', async () => {
+    setup({ bookings: own(['2026-10-22', '2026-10-23', '2026-10-24']) })
+    const mine = await screen.findByRole('region', { name: 'Minhas reservas' })
+    expect(within(mine).getAllByRole('listitem')).toHaveLength(3)
+    expect(within(mine).queryByRole('button', { name: /Ver todas/ })).not.toBeInTheDocument()
+  })
+
+  it('vem antes da lista de mercados na página', async () => {
+    setup({ bookings: own(['2026-10-22']) })
+    const mine = await screen.findByRole('region', { name: 'Minhas reservas' })
+    const markets = screen.getByRole('region', { name: 'Mercados' })
+    expect(mine.compareDocumentPosition(markets) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

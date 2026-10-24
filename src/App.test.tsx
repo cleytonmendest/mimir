@@ -35,6 +35,9 @@ describe('App', () => {
     )
 
     expect(await screen.findByLabelText('E-mail')).toBeInTheDocument()
+    // O login é um cartão com título próprio e diz o que fazer sem a senha (não há "esqueci a senha").
+    expect(screen.getByRole('heading', { name: 'Entrar' })).toBeInTheDocument()
+    expect(screen.getByText(/Perdeu o acesso\?/)).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /^Reservas$/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Administração' })).not.toBeInTheDocument()
   })

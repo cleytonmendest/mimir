@@ -72,7 +72,10 @@ test('o administrador cadastra um mercado e muda o limite; o fornecedor vê o li
     const supplierPage = await context.newPage()
     await signIn(supplierPage, seed.supplier.email, seed.supplier.password)
     await openMarket(supplierPage, name)
-    await expect(supplierPage.getByText('4 estandes por dia')).toBeVisible()
+    // No cartão deste mercado (o pai do botão com o nome): o banco local de desenvolvimento (seed) tem
+    // outros mercados com 4 estandes, então o texto solto na página casaria com mais de um.
+    const card = supplierPage.getByRole('button', { name: new RegExp(`^${name}`) }).locator('..')
+    await expect(card).toContainText('4 estandes/dia')
     await context.close()
 
     // Arquiva: some para o fornecedor.
