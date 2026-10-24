@@ -250,6 +250,30 @@ describe('SEED_PLAN', () => {
     }
   })
 
+  it('põe as lojas reais do Zona Sul como mercados, com limite de 1 a 20', () => {
+    expect(markets).toHaveLength(31)
+    expect(new Set(markets.map((market) => market.name)).size).toBe(markets.length)
+    for (const market of markets) {
+      expect(market.name).toMatch(/^Loja \d\d - /)
+      expect(market.capacity).toBeGreaterThanOrEqual(1)
+      expect(market.capacity).toBeLessThanOrEqual(20)
+    }
+  })
+
+  it('tira os mercados fictícios antigos, sem confundir com nenhuma loja do plano', () => {
+    const names = new Set(markets.map((market) => market.name))
+    expect(SEED_PLAN.retiredMarkets.length).toBeGreaterThan(0)
+    for (const retired of SEED_PLAN.retiredMarkets) expect(names).not.toContain(retired)
+  })
+
+  it('dá limite fixo às lojas dos cenários e o de demonstração às demais', () => {
+    const capacity = new Map(markets.map((market) => [market.name, market.capacity]))
+    expect(capacity.get('Loja 07 - Leblon')).toBe(3)
+    expect(capacity.get('Loja 01 - Ipanema')).toBe(5)
+    expect(capacity.get('Loja 36 - Arnaldo Quintela')).toBe(2)
+    expect(capacity.get('Loja 17 - Barra da Tijuca')).toBe(4)
+  })
+
   it('mostra cada situação das telas: dia lotado, dia com vaga, data fechada, reserva cancelada, conta desativada', () => {
     const capacity = new Map(markets.map((market) => [market.name, market.capacity]))
     const counts = new Map<string, number>()
