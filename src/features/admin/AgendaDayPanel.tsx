@@ -164,7 +164,7 @@ function DayBookingRow({
   const who = booking.supplierName || 'fornecedor sem nome'
 
   return (
-    <li className="grid gap-2 rounded-md border border-border p-2.5">
+    <li className="grid gap-2 rounded-md border border-border p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-medium">{booking.supplierName || 'Fornecedor sem nome'}</span>
         {!asking && canChange && (
@@ -197,7 +197,7 @@ function DayBookingRow({
             controller.keepBooking()
           }}
         >
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="cancel-reason">Motivo (opcional)</Label>
             <Input
               id="cancel-reason"

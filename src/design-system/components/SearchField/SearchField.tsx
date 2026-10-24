@@ -1,5 +1,6 @@
 import { Search, X } from 'lucide-react'
 import { useId } from 'react'
+import { IconButton } from '../IconButton/IconButton'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 
@@ -24,7 +25,7 @@ export function SearchField({
 }) {
   const id = useId()
   return (
-    <div className="grid gap-1.5">
+    <div className="grid gap-2">
       <Label htmlFor={id}>{label}</Label>
       <div className="relative">
         <Search
@@ -45,17 +46,17 @@ export function SearchField({
           className="px-10 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-cancel-button]:appearance-none"
         />
         {value !== '' && (
-          <button
-            type="button"
-            aria-label="Limpar busca"
+          <IconButton
+            label="Limpar busca"
+            variant="ghost"
             onClick={() => {
               onChange('')
               document.getElementById(id)?.focus()
             }}
-            className="absolute top-0 right-0 grid size-11 place-items-center rounded-lg text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring"
+            className="absolute top-0 right-0 text-muted-foreground hover:text-foreground"
           >
             <X aria-hidden className="size-4" />
-          </button>
+          </IconButton>
         )}
       </div>
       <p aria-live="polite" className="text-sm text-muted-foreground">

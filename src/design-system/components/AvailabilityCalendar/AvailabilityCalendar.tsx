@@ -19,8 +19,8 @@ import { addDays } from '@/domain/dates'
 import { longDate, monthTitle, plural, weekdayLabels } from '@/domain/format'
 import type { IsoDate } from '@/domain/types'
 import { cn } from '../../utils'
+import { IconButton } from '../IconButton/IconButton'
 import { SlotMeter } from '../SlotMeter/SlotMeter'
-import { Button } from '../ui/button'
 
 /** Setas: ←→ um dia, ↑↓ uma semana. */
 const ARROW_STEPS: Record<string, number> = {
@@ -146,37 +146,33 @@ export function AvailabilityCalendar({
           {subtitle !== undefined && <p className="text-muted-foreground">{subtitle}</p>}
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Mês anterior"
+          <IconButton
+            label="Mês anterior"
             disabled={compareMonths(month, first) <= 0}
             onClick={() => {
               onMonthChange(addMonths(month, -1))
             }}
           >
             <ChevronLeft />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Próximo mês"
+          </IconButton>
+          <IconButton
+            label="Próximo mês"
             disabled={compareMonths(month, last) >= 0}
             onClick={() => {
               onMonthChange(addMonths(month, 1))
             }}
           >
             <ChevronRight />
-          </Button>
+          </IconButton>
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-7 gap-1.5 max-sm:gap-1">
+      <div className="mt-3 grid grid-cols-7 gap-2 max-sm:gap-1">
         {labels.map((label) => (
           <div
             key={label.full}
             aria-hidden
-            className="pb-0.5 text-center text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+            className="pb-1 text-center text-xs font-semibold tracking-wider text-muted-foreground uppercase"
           >
             {label.short}
           </div>
@@ -219,17 +215,17 @@ export function AvailabilityCalendar({
                 onSelect(date)
               }}
               className={cn(
-                'relative flex min-h-[74px] min-w-0 flex-col items-start justify-between gap-1 rounded-md border p-1.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring max-sm:min-h-[62px]',
+                'relative flex min-h-[72px] min-w-0 flex-col items-start justify-between gap-1 rounded-md border p-2 max-sm:p-1 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring max-sm:min-h-16',
                 CELL[status],
                 !disabled && 'cursor-pointer',
-                mine && 'border-2 border-slot-mine p-[5px]',
+                mine && 'border-slot-mine shadow-[inset_0_0_0_1px_var(--slot-mine)]',
                 selected === date && 'outline-3 outline-offset-1 outline-foreground',
               )}
             >
               <span
                 className={cn(
                   'font-display text-[22px] leading-none font-semibold text-foreground tabular-nums max-sm:text-[19px]',
-                  date === today && 'underline decoration-2 underline-offset-[3px]',
+                  date === today && 'underline decoration-2 underline-offset-4',
                 )}
               >
                 {Number(date.slice(8))}
@@ -248,14 +244,14 @@ export function AvailabilityCalendar({
         })}
       </div>
 
-      <ul className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+      <ul className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
         <Legend swatch="border-slot-free/35 bg-slot-free-bg">Livre</Legend>
         <Legend swatch="border-slot-partial/40 bg-slot-partial-bg">Algumas vagas</Legend>
         <Legend swatch="border-slot-full/40 bg-slot-full-bg">Lotado</Legend>
         <Legend swatch="border-border bg-slot-closed-bg">Fechado</Legend>
         {showMine && <Legend swatch="border-2 border-slot-mine bg-card">Sua reserva</Legend>}
       </ul>
-      <p className="mt-2.5 text-sm text-muted-foreground">
+      <p className="mt-3 text-sm text-muted-foreground">
         Cada traço é um estande: cheio = reservado, vazio = livre. Dá para reservar de amanhã até{' '}
         {windowDays} dias à frente.
       </p>
@@ -265,7 +261,7 @@ export function AvailabilityCalendar({
 
 function Legend({ swatch, children }: { swatch: string; children: string }) {
   return (
-    <li className="inline-flex items-center gap-1.5">
+    <li className="inline-flex items-center gap-2">
       <i aria-hidden className={cn('inline-block size-4 rounded-sm border', swatch)} />
       {children}
     </li>

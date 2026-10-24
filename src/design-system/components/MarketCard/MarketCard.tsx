@@ -34,8 +34,8 @@ export function MarketCard({
         aria-pressed={selected}
         onClick={onSelect}
         className={cn(
-          'block min-h-11 w-full rounded-lg py-2 pl-3.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring',
-          badge === undefined ? 'pr-3.5' : 'pr-24',
+          'block min-h-11 w-full rounded-lg py-2 pl-4 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring',
+          badge === undefined ? 'pr-4' : 'pr-24',
         )}
       >
         <span className="block font-display text-lg leading-tight font-semibold">{name}</span>
@@ -44,12 +44,12 @@ export function MarketCard({
         )}
       </button>
       {badge !== undefined && (
-        <span className="pointer-events-none absolute top-2 right-3.5 text-right text-xs leading-tight text-muted-foreground">
+        <span className="pointer-events-none absolute top-2 right-4 text-right text-xs leading-tight text-muted-foreground">
           {badge}
         </span>
       )}
       {children !== undefined && children !== null && (
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-3.5 pb-2.5 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 pb-3 text-sm text-muted-foreground">
           {children}
         </div>
       )}

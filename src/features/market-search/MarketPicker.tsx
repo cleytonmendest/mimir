@@ -148,7 +148,7 @@ export function MarketPicker<T extends PickableMarket>({
                 </Button>
               </div>
             ) : (
-              <ul className="mt-3 grid max-h-[min(26rem,55dvh)] gap-2 overflow-y-auto overscroll-contain pr-0.5 lg:max-h-[calc(100dvh-15rem)]">
+              <ul className="mt-3 grid max-h-[min(26rem,55dvh)] gap-2 overflow-y-auto overscroll-contain pr-1 lg:max-h-[calc(100dvh-15rem)]">
                 {search.shown.map((market) => (
                   <li key={market.id}>{row(market)}</li>
                 ))}

@@ -32,7 +32,7 @@ export function PasswordField({
 }) {
   const [visible, setVisible] = useState(false)
   return (
-    <div className="grid gap-1.5">
+    <div className="grid gap-2">
       <Label htmlFor={id}>{label}</Label>
       <div className="flex gap-2">
         <Input

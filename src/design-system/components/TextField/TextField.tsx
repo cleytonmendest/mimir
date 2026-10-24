@@ -28,7 +28,7 @@ export function TextField({
     .join(' ')
 
   return (
-    <div className="grid gap-1.5">
+    <div className="grid gap-2">
       <Label htmlFor={id}>{label}</Label>
       <Input
         id={id}
