@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type FocusEvent, type Ref } from 'react'
 import { MIN_PASSWORD_LENGTH } from '@/domain/access'
 import { Button } from '@/design-system/components/ui/button'
 import { Input } from '@/design-system/components/ui/input'
@@ -14,12 +14,21 @@ export function PasswordField({
   value,
   onChange,
   autoComplete = 'new-password',
+  error = null,
+  onFocus,
+  onBlur,
+  inputRef,
 }: {
   id: string
   label: string
   value: string
   onChange: (value: string) => void
   autoComplete?: 'new-password' | 'current-password'
+  /** O erro de agora (a tela só o mostra depois que a pessoa sai do campo). */
+  error?: string | null
+  onFocus?: () => void
+  onBlur?: (event: FocusEvent<HTMLInputElement>) => void
+  inputRef?: Ref<HTMLInputElement>
 }) {
   const [visible, setVisible] = useState(false)
   return (
@@ -32,8 +41,12 @@ export function PasswordField({
           autoComplete={autoComplete}
           required
           minLength={MIN_PASSWORD_LENGTH}
-          aria-describedby={`${id}-hint`}
+          ref={inputRef}
+          aria-invalid={error === null ? undefined : true}
+          aria-describedby={error === null ? `${id}-hint` : `${id}-hint ${id}-error`}
           value={value}
+          onFocus={onFocus}
+          onBlur={onBlur}
           onChange={(event) => {
             onChange(event.target.value)
           }}
@@ -52,6 +65,11 @@ export function PasswordField({
       <p id={`${id}-hint`} className="text-sm text-muted-foreground">
         Pelo menos {MIN_PASSWORD_LENGTH} caracteres.
       </p>
+      {error !== null && (
+        <p id={`${id}-error`} role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

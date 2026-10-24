@@ -92,7 +92,12 @@ describe('aba Fornecedores', () => {
     const { user } = setup()
     await openTab(user, 'Fornecedores')
     await user.click(await screen.findByRole('button', { name: 'Cadastrar fornecedor' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Informe o nome do fornecedor.')
+    // O envio mostra o erro de cada campo e leva o foco ao primeiro.
+    expect((await screen.findAllByRole('alert')).map((alert) => alert.textContent)).toEqual([
+      'Informe o nome do fornecedor.',
+      'Informe o e-mail.',
+    ])
+    expect(screen.getByLabelText('Nome ou empresa')).toHaveFocus()
 
     await user.type(screen.getByLabelText('Nome ou empresa'), 'Outra Ana')
     await user.type(screen.getByLabelText('E-mail'), 'u-ana@loja.com')

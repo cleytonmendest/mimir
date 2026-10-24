@@ -220,3 +220,47 @@ describe('carregar a página', () => {
     expect(await screen.findByLabelText('Nome ou empresa')).toBeInTheDocument()
   })
 })
+
+describe('cadastro: validação ao sair do campo', () => {
+  it('cada campo reclama ao sair, nunca enquanto se digita', async () => {
+    const { user } = setup({ mode: 'open', inviteCode: null })
+    const name = await screen.findByLabelText('Nome ou empresa')
+    await user.type(screen.getByLabelText('E-mail'), 'nova@')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+    await user.click(name)
+    await user.tab()
+    expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toEqual([
+      'Informe o nome do fornecedor.',
+    ])
+    await user.tab()
+    expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toContain(
+      'Esse e-mail não parece certo. Confira e tente de novo.',
+    )
+  })
+
+  it('enviar vazio, no modo com código, mostra todos os erros e foca o código', async () => {
+    const { user } = setup({ mode: 'invite', inviteCode: 'K7QD4MXA' })
+    await screen.findByLabelText('Código de convite')
+    const create = screen.getByRole('button', { name: 'Criar conta' })
+    expect(create).toBeEnabled()
+
+    await submit(user)
+    expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toEqual([
+      'Informe o código de convite.',
+      'Informe o nome do fornecedor.',
+      'Informe o e-mail.',
+      'A senha precisa ter pelo menos 10 caracteres.',
+    ])
+    expect(screen.getByLabelText('Código de convite')).toHaveFocus()
+  })
+
+  it('no modo livre não pede código', async () => {
+    const { user } = setup({ mode: 'open', inviteCode: null })
+    await screen.findByLabelText('Nome ou empresa')
+    await submit(user)
+    expect(screen.queryByLabelText('Código de convite')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('alert')).toHaveLength(3)
+    expect(screen.getByLabelText('Nome ou empresa')).toHaveFocus()
+  })
+})

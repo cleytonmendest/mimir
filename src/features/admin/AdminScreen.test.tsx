@@ -168,6 +168,24 @@ describe('Mercados', () => {
     return world
   }
 
+  it('o formulário de novo mercado só reclama ao sair do campo e leva o foco ao erro no envio', async () => {
+    const { user } = await openMarkets()
+    const form = screen.getByRole('form', { name: 'Novo mercado' })
+    const name = within(form).getByLabelText('Nome')
+    await user.type(name, 'Loja Nova')
+    await user.clear(name)
+    expect(within(form).queryByRole('alert')).not.toBeInTheDocument()
+
+    await user.tab()
+    expect(within(form).getByRole('alert')).toHaveTextContent('Informe o nome do mercado.')
+    await user.click(name)
+    expect(within(form).queryByRole('alert')).not.toBeInTheDocument()
+
+    await user.click(within(form).getByRole('button', { name: 'Cadastrar mercado' }))
+    expect(within(form).getByRole('alert')).toHaveTextContent('Informe o nome do mercado.')
+    expect(name).toHaveFocus()
+  })
+
   it('lista os mercados, os arquivados marcados, cada um com o limite', async () => {
     await openMarkets()
     expect(
