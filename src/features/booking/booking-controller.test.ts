@@ -56,6 +56,7 @@ describe('carregar', () => {
     expect(controller.getState()).toEqual({
       status: 'failed',
       message: 'Sem conexão com o servidor. Confira a internet e tente de novo.',
+      details: expect.stringMatching(/^RequestFailure NETWORK: /) as string,
     })
   })
 
@@ -113,7 +114,10 @@ describe('carregar', () => {
     expect(broken.getState()).toMatchObject({
       status: 'ready',
       availability: null,
-      availabilityError: 'O servidor não conseguiu atender agora. Tente de novo em instantes.',
+      availabilityError: {
+        message: 'O servidor não conseguiu atender agora. Tente de novo em instantes.',
+        details: 'RequestFailure SERVER: boom',
+      },
     })
     await controller.start()
     expect(ready().availabilityError).toBeNull()
@@ -130,7 +134,7 @@ describe('carregar', () => {
     })
     await controller.start()
     expect(controller.getState()).toMatchObject({
-      availabilityError: 'Não foi possível mostrar este mercado.',
+      availabilityError: { message: 'Não foi possível mostrar este mercado.', details: null },
     })
   })
 })

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { describeError } from '@/features/diagnostics/error-report'
 import { clearDrafts } from '@/features/forms/useDraft'
 import { AuthFailure, type AuthGateway } from '@/lib/supabase/auth'
 import { ConfigError } from '@/lib/supabase/errors'
@@ -18,6 +19,7 @@ function failure(error: unknown): AuthState {
   return {
     status: 'failed',
     message: error instanceof ConfigError ? error.message : OFFLINE_MESSAGE,
+    details: describeError(error),
   }
 }
 
@@ -49,7 +51,7 @@ export function AuthProvider({ gateway, children }: { gateway: AuthGateway; chil
           if (!active || current !== userId) return
           setState(
             profile === null
-              ? { status: 'failed', message: NO_PROFILE_MESSAGE }
+              ? { status: 'failed', message: NO_PROFILE_MESSAGE, details: null }
               : { status: 'signedIn', profile },
           )
         },

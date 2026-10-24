@@ -1,6 +1,7 @@
 import { validateSupplierInput } from '@/domain/access'
 import type { Notice } from '@/features/booking/booking-controller'
-import { describeFailure } from '@/features/booking/messages'
+import type { Failure } from '@/features/diagnostics/error-report'
+import { describeFailure, toFailure } from '@/features/booking/messages'
 import { activationLink } from '@/features/access/routes'
 import type { AccessGateway } from '@/lib/supabase/access-gateway'
 import type { Supplier } from '@/lib/supabase/mappers'
@@ -26,7 +27,7 @@ export interface SuppliersReady {
 }
 
 export type SuppliersState =
-  { status: 'loading' } | { status: 'failed'; message: string } | SuppliersReady
+  { status: 'loading' } | ({ status: 'failed' } & Failure) | SuppliersReady
 
 export interface SuppliersController {
   getState(): SuppliersState
@@ -89,7 +90,7 @@ export function createSuppliersController(deps: {
         notice: null,
       })
     } catch (error) {
-      set({ status: 'failed', message: describeFailure(error) })
+      set({ status: 'failed', ...toFailure(error) })
     }
   }
 

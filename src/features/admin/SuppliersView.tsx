@@ -4,6 +4,7 @@ import { TextField } from '@/design-system/components/TextField/TextField'
 import { InlineConfirm } from '@/design-system/components/InlineConfirm/InlineConfirm'
 import { useFocusReturn } from '@/design-system/components/InlineConfirm/useFocusReturn'
 import { Button } from '@/design-system/components/ui/button'
+import { FailureNotice } from '@/features/diagnostics/FailureNotice'
 import { AccessLinkPanel } from '@/features/access/AccessLinkPanel'
 import { DraftNotice } from '@/features/forms/DraftNotice'
 import { useDraft, useDraftSync } from '@/features/forms/useDraft'
@@ -49,20 +50,14 @@ export function SuppliersView({
 
   if (state.status === 'failed') {
     return (
-      <div className="mt-6 grid gap-3">
-        <p role="alert" className="text-destructive">
-          {state.message}
-        </p>
-        <div>
-          <Button
-            onClick={() => {
-              void controller.start()
-            }}
-          >
-            Tentar de novo
-          </Button>
-        </div>
-      </div>
+      <FailureNotice
+        className="mt-6 grid gap-3"
+        message={state.message}
+        details={state.details}
+        onRetry={() => {
+          void controller.start()
+        }}
+      />
     )
   }
 

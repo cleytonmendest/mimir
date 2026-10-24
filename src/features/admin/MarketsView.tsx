@@ -12,6 +12,7 @@ import { NumberStepper } from '@/design-system/components/NumberStepper/NumberSt
 import { Button } from '@/design-system/components/ui/button'
 import { TextField } from '@/design-system/components/TextField/TextField'
 import { cn } from '@/design-system/utils'
+import { FailureNotice } from '@/features/diagnostics/FailureNotice'
 import { NoticeToast } from '@/features/booking/NoticeToast'
 import { DraftNotice } from '@/features/forms/DraftNotice'
 import { useDraft, useDraftSync } from '@/features/forms/useDraft'
@@ -50,20 +51,14 @@ export function MarketsView({ gateway, now }: { gateway: BookingGateway; now?: (
 
   if (state.status === 'failed') {
     return (
-      <div className="mt-6 grid gap-3">
-        <p role="alert" className="text-destructive">
-          {state.message}
-        </p>
-        <div>
-          <Button
-            onClick={() => {
-              void controller.start()
-            }}
-          >
-            Tentar de novo
-          </Button>
-        </div>
-      </div>
+      <FailureNotice
+        className="mt-6 grid gap-3"
+        message={state.message}
+        details={state.details}
+        onRetry={() => {
+          void controller.start()
+        }}
+      />
     )
   }
 
