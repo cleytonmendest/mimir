@@ -15,7 +15,7 @@ type Step =
 
 /**
  * A página que o fornecedor abre pelo link que o administrador enviou. O link só é trocado por
- * uma sessão depois do toque em "Continuar": programas que abrem links sozinhos (prévia do
+ * uma sessão depois do toque em "Definir minha senha": programas que abrem links sozinhos (prévia do
  * WhatsApp, antivírus) não gastam o link, que só vale uma vez.
  */
 export function SetPasswordPage({
@@ -42,7 +42,7 @@ export function SetPasswordPage({
       setStep('intro')
       setError(
         failure instanceof AuthFailure && failure.code === 'NETWORK'
-          ? 'Sem conexão com o servidor. Verifique a internet e toque em Continuar de novo.'
+          ? 'Sem conexão com o servidor. Verifique a internet e toque em Definir minha senha de novo.'
           : 'Não foi possível abrir o link agora. Tente de novo.',
       )
     }
@@ -92,7 +92,7 @@ export function SetPasswordPage({
                 void redeem()
               }}
             >
-              {step === 'checking' ? 'Abrindo…' : 'Continuar'}
+              {step === 'checking' ? 'Abrindo…' : 'Definir minha senha'}
             </Button>
           </div>
         </>

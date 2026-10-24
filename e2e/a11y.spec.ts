@@ -69,7 +69,7 @@ test('telas do fornecedor, do administrador e as páginas públicas, nos dois te
     await audit(page, 'entrada', found)
 
     await page.goto('/definir-senha?token=qualquer')
-    await page.getByRole('button', { name: 'Continuar' }).waitFor()
+    await page.getByRole('button', { name: 'Definir minha senha' }).waitFor()
     await audit(page, 'definir senha', found)
 
     await page.goto('/cadastro')

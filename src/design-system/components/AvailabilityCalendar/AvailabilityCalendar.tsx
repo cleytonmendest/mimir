@@ -240,7 +240,7 @@ export function AvailabilityCalendar({
               {(status === 'free' || status === 'partial' || status === 'full') && (
                 <SlotMeter decorative booked={entry.booked} capacity={capacity} />
               )}
-              <span className="text-[11px] leading-tight font-semibold text-current max-sm:hidden">
+              <span className="text-xs leading-tight font-semibold text-current max-sm:hidden">
                 {shortLabel(status, free)}
               </span>
             </button>

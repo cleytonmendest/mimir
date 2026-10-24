@@ -5,7 +5,7 @@ export function AppTitle({ centered = false }: { centered?: boolean }) {
   return (
     <h1
       className={cn(
-        'font-display text-3xl font-bold tracking-wide uppercase sm:text-4xl',
+        'font-display text-3xl font-semibold tracking-wide uppercase sm:text-4xl',
         centered && 'text-center',
       )}
     >

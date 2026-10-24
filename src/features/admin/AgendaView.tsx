@@ -71,7 +71,7 @@ export function AgendaView({ gateway, now }: { gateway: BookingGateway; now?: ()
 
         <section
           aria-label="Calendário da agenda"
-          className="min-w-0 rounded-xl border border-border bg-card p-4"
+          className="min-w-0 rounded-xl border border-border bg-card p-4 max-sm:-mx-3 max-sm:rounded-none max-sm:border-x-0 max-sm:px-2"
         >
           {state.marketId === null ? (
             <p>Escolha um mercado para ver os dias.</p>

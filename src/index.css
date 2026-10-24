@@ -4,7 +4,6 @@
 @import '@fontsource-variable/hanken-grotesk/wght.css';
 @import '@fontsource/barlow-condensed/latin-500.css';
 @import '@fontsource/barlow-condensed/latin-600.css';
-@import '@fontsource/barlow-condensed/latin-700.css';
 @import './design-system/tokens.css';
 
 /* Sem isso, `dark:` dos componentes do shadcn seguiria o modo escuro do sistema (e quebraria o tema claro). */
@@ -16,5 +15,27 @@
   }
   body {
     @apply bg-background font-sans text-foreground antialiased;
+  }
+  /* O app usa três pesos (400, 500 e 600): o "mais pesado" do navegador (700) fica de fora. */
+  b,
+  strong {
+    font-weight: 600;
+  }
+  /* O Tailwind 4 deixa o cursor de seta nos botões; num computador, o que se clica mostra a mãozinha. */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* Quem pede menos movimento não ganha transições nem rolagem suave. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
