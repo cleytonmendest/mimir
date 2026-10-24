@@ -15,13 +15,13 @@ npm ci
 npm run dev:local        # sobe o banco, cria os dados de teste e abre o app em http://localhost:5173
 ```
 
-Na primeira vez o Docker baixa as imagens e leva alguns minutos. O `dev:local` faz quatro coisas, que também dá para rodar separadas: `npm run db:start` (sobe o Supabase local: banco, login, API e Edge Functions), `npm run db:migrate` (aplica as migrations que o seu banco ainda não tem, sem apagar nada), `npm run db:seed-dev` (os dados de teste, abaixo, e o `.env.local` que o app precisa) e `npm run dev` (o Vite).
+Na primeira vez o Docker baixa as imagens e leva alguns minutos. O `dev:local` faz quatro coisas, que também dá para rodar separadas: `npm run db:start` (sobe o Supabase local: banco, login, API, Edge Functions e o Studio), `npm run db:migrate` (aplica as migrations que o seu banco ainda não tem, sem apagar nada), `npm run db:seed-dev` (os dados de teste, abaixo, e o `.env.local` que o app precisa) e `npm run dev` (o Vite).
 
 Depois de um `git pull` é só rodar o `npm run dev:local` de novo: o `db:start` não atualiza um banco que já estava rodando, e é o `db:migrate` que traz as migrations novas. Se o seed reclamar que uma coluna ou tabela "não existe", é o banco atrás das migrations: rode `npm run db:migrate`, e se não resolver, `npx supabase db reset` recria o banco do zero (ele só tem dados de teste). O servidor de login só lê o `supabase/config.toml` quando o contêiner é criado, e nem o `db reset` nem o `db:start` recriam um que já estava rodando. Por isso, depois de um `git pull` que muda o `config.toml`, e num Supabase local criado numa versão antiga do projeto (o primeiro commit tinha o login por e-mail desligado), o login pode seguir falhando: o navegador mostra `422` em `auth/v1/token` e o app diz "Não foi possível entrar". O seed detecta isso e avisa; a cura é `npx supabase stop` e depois `npm run dev:local` (os dados ficam).
 
 ### Dados de teste (o seed)
 
-O Supabase do `db:start` é um banco só seu, dentro do Docker: mexer nele não toca em nenhum banco de verdade. `npm run db:seed-dev` o enche de dados fictícios:
+O Supabase do `db:start` é um banco só seu, dentro do Docker: mexer nele não toca em nenhum banco de verdade. Para olhar as tabelas, rodar SQL e ver os usuários, abra o Studio em <http://127.0.0.1:54323> (a primeira subida baixa a imagem dele). `npm run db:seed-dev` enche o banco de dados fictícios:
 
 | Quem                  | E-mail                                                | Senha        |
 | --------------------- | ----------------------------------------------------- | ------------ |
