@@ -19,7 +19,7 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "e2e": "playwright test",
-    "db:start": "supabase start -x realtime,storage-api,imgproxy,mailpit,studio,logflare,vector,supavisor",
+    "db:start": "supabase start -x realtime,storage-api,imgproxy,mailpit,logflare,vector,supavisor",
     "db:migrate": "supabase migration up --local",
     "db:test": "supabase test db",
     "db:gen-cases": "node scripts/gen-booking-cases.ts",
