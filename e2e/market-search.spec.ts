@@ -64,8 +64,18 @@ test('o fornecedor acha a loja pelo bairro, sem acento e sem ligar para caixa', 
 
     // Do resultado da busca ao calendário: é o mesmo caminho de sempre.
     await field.fill('vila opala')
-    await marketButton(page, markets.sul.name).click()
     await openMarket(page, markets.sul.name)
+
+    // No celular a lista se recolhe: sobra o mercado escolhido e o botão "Trocar de mercado".
+    const change = page.getByRole('button', { name: 'Trocar de mercado' })
+    await expect(change).toBeVisible()
+    await expect(marketButton(page, markets.sul.name)).toBeVisible()
+    await expect(marketButton(page, markets.norte.name)).toHaveCount(0)
+    // Trocar traz a lista inteira de volta, com a busca limpa e o foco nela.
+    await change.click()
+    await expect(field).toBeFocused()
+    await expect(field).toHaveValue('')
+    await expect(marketButton(page, markets.norte.name)).toBeVisible()
   } finally {
     await seed.db.from('markets').delete().in('id', markets.all)
     await seed.cleanup()

@@ -2,18 +2,22 @@ import type { ReactNode } from 'react'
 import { cn } from '../../utils'
 
 /**
- * Um mercado para escolher. O nome é o botão (aria-pressed); o rodapé (`children`) fica de fora
- * dele, para poder ter controles próprios, como o limite de estandes.
+ * Um mercado para escolher, numa linha compacta: com dezenas de mercados a lista precisa caber
+ * na tela. O nome é o botão (aria-pressed); o selo (`badge`, canto direito) é só para olhar e deixa
+ * passar o toque, e o rodapé (`children`) fica fora do botão, para poder ter controles próprios.
  */
 export function MarketCard({
   name,
   subtitle,
+  badge,
   selected,
   onSelect,
   children,
 }: {
   name: string
   subtitle?: string
+  /** Um dado curto, como o limite de estandes. */
+  badge?: ReactNode
   selected: boolean
   onSelect: () => void
   children?: ReactNode
@@ -21,7 +25,7 @@ export function MarketCard({
   return (
     <div
       className={cn(
-        'rounded-lg border bg-card text-card-foreground',
+        'relative rounded-lg border bg-card text-card-foreground',
         selected ? 'border-primary ring-1 ring-primary' : 'border-border',
       )}
     >
@@ -29,15 +33,23 @@ export function MarketCard({
         type="button"
         aria-pressed={selected}
         onClick={onSelect}
-        className="block min-h-11 w-full rounded-lg px-3.5 pt-3 pb-1 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring"
+        className={cn(
+          'block min-h-11 w-full rounded-lg py-2 pl-3.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring',
+          badge === undefined ? 'pr-3.5' : 'pr-24',
+        )}
       >
-        <span className="block font-display text-xl leading-tight font-semibold">{name}</span>
+        <span className="block font-display text-lg leading-tight font-semibold">{name}</span>
         {subtitle !== undefined && (
-          <span className="block text-sm text-muted-foreground">{subtitle}</span>
+          <span className="block text-sm leading-snug text-muted-foreground">{subtitle}</span>
         )}
       </button>
-      {children !== undefined && (
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 px-3.5 pb-3 text-sm text-muted-foreground">
+      {badge !== undefined && (
+        <span className="pointer-events-none absolute top-2 right-3.5 text-right text-xs leading-tight text-muted-foreground">
+          {badge}
+        </span>
+      )}
+      {children !== undefined && children !== null && (
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-3.5 pb-2.5 text-sm text-muted-foreground">
           {children}
         </div>
       )}

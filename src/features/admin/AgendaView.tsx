@@ -1,16 +1,10 @@
 import { useEffect, useState } from 'react'
 import { AvailabilityCalendar } from '@/design-system/components/AvailabilityCalendar/AvailabilityCalendar'
-import { MarketCard } from '@/design-system/components/MarketCard/MarketCard'
 import { Button } from '@/design-system/components/ui/button'
 import { NoticeToast } from '@/features/booking/NoticeToast'
-import { MarketSearchField } from '@/features/market-search/MarketSearchField'
-import { useMarketSearch } from '@/features/market-search/useMarketSearch'
+import { MarketPicker } from '@/features/market-search/MarketPicker'
 import type { BookingGateway } from '@/lib/supabase/booking-gateway'
-import {
-  createAgendaController,
-  type AgendaController,
-  type AgendaReady,
-} from './agenda-controller'
+import { createAgendaController } from './agenda-controller'
 import { AgendaDayPanel } from './AgendaDayPanel'
 import { UpcomingBookings } from './UpcomingBookings'
 import { useController } from './useController'
@@ -63,23 +57,21 @@ export function AgendaView({ gateway, now }: { gateway: BookingGateway; now?: ()
   const market = state.markets.find((entry) => entry.id === state.marketId)
   return (
     <>
-      <div className="mt-4 grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)_340px] lg:items-start lg:[grid-template-areas:'mk_cal_pn'_'mine_cal_pn']">
-        <section
-          aria-labelledby="agenda-markets-title"
-          className="rounded-xl border border-border bg-card p-4 lg:[grid-area:mk]"
-        >
-          <h2
-            id="agenda-markets-title"
-            className="font-display text-2xl leading-tight font-semibold"
-          >
-            Mercados
-          </h2>
-          <AgendaMarkets state={state} controller={controller} />
-        </section>
+      <div className="mt-4 grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)_340px] lg:items-start">
+        <MarketPicker
+          headingId="agenda-markets-title"
+          hint="Escolha de qual mercado ver a agenda."
+          emptyMessage="Nenhum mercado ativo. Cadastre um na aba Mercados."
+          markets={state.markets}
+          selectedId={state.marketId}
+          onSelect={(id) => {
+            void controller.selectMarket(id)
+          }}
+        />
 
         <section
           aria-label="Calendário da agenda"
-          className="min-w-0 rounded-xl border border-border bg-card p-4 lg:[grid-area:cal]"
+          className="min-w-0 rounded-xl border border-border bg-card p-4"
         >
           {state.marketId === null ? (
             <p>Escolha um mercado para ver os dias.</p>
@@ -120,8 +112,10 @@ export function AgendaView({ gateway, now }: { gateway: BookingGateway; now?: ()
           )}
         </section>
 
-        <AgendaDayPanel state={state} controller={controller} />
-        <UpcomingBookings state={state} />
+        <div className="grid gap-4">
+          <AgendaDayPanel state={state} controller={controller} />
+          <UpcomingBookings state={state} />
+        </div>
       </div>
       <NoticeToast
         notice={state.notice}
@@ -129,47 +123,6 @@ export function AgendaView({ gateway, now }: { gateway: BookingGateway; now?: ()
           controller.dismissNotice()
         }}
       />
-    </>
-  )
-}
-
-/** A lista de mercados da agenda, com a busca (o hook precisa ficar fora dos retornos antecipados da tela). */
-function AgendaMarkets({
-  state,
-  controller,
-}: {
-  state: AgendaReady
-  controller: AgendaController
-}) {
-  const search = useMarketSearch(state.markets)
-  return (
-    <>
-      <p className="text-muted-foreground">Escolha de qual mercado ver a agenda.</p>
-      {state.markets.length === 0 ? (
-        <p className="mt-3">Nenhum mercado ativo. Cadastre um na aba Mercados.</p>
-      ) : (
-        <>
-          <MarketSearchField search={search} />
-          <div className="mt-3 grid gap-2.5">
-            {search.shown.map((entry) => (
-              <MarketCard
-                key={entry.id}
-                name={entry.name}
-                {...(entry.address === null ? {} : { subtitle: entry.address })}
-                selected={entry.id === state.marketId}
-                onSelect={() => {
-                  void controller.selectMarket(entry.id)
-                }}
-              >
-                <span>
-                  <b className="font-semibold text-foreground tabular-nums">{entry.capacity}</b>{' '}
-                  {entry.capacity === 1 ? 'estande por dia' : 'estandes por dia'}
-                </span>
-              </MarketCard>
-            ))}
-          </div>
-        </>
-      )}
     </>
   )
 }

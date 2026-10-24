@@ -34,7 +34,7 @@ export function CancelControl({
     <div
       role="group"
       aria-label="Confirmar cancelamento"
-      className="grid gap-2.5 rounded-lg border border-input p-3"
+      className="grid w-full gap-2.5 rounded-lg border border-input p-3"
     >
       <p>Cancelar esta reserva? A vaga volta a ficar livre para outros fornecedores.</p>
       <div className="flex flex-wrap gap-2">

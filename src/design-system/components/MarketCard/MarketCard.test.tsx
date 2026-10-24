@@ -30,6 +30,19 @@ describe('MarketCard', () => {
     expect(screen.getByText('3 estandes por dia')).toBeInTheDocument()
   })
 
+  it('o selo mostra um dado curto, sem entrar no nome do botão', () => {
+    render(
+      <MarketCard
+        name="Mercado Jardim"
+        selected={false}
+        onSelect={() => undefined}
+        badge={<span>3 por dia</span>}
+      />,
+    )
+    expect(screen.getByText('3 por dia')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Mercado Jardim' })).toBeInTheDocument()
+  })
+
   it('sem subtítulo nem rodapé', () => {
     render(<MarketCard name="Mercado Vila Nova" selected={false} onSelect={() => undefined} />)
     expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'false')

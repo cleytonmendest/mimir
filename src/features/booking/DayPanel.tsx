@@ -7,7 +7,7 @@ import { cn } from '@/design-system/utils'
 import type { BookingController, ReadyState } from './booking-controller'
 import { CancelControl } from './CancelControl'
 
-const CARD = 'rounded-xl border border-border bg-card p-4 lg:[grid-area:pn]'
+const CARD = 'rounded-xl border border-border bg-card p-4'
 
 /** O dia escolhido no calendário: quantas vagas, e o que dá para fazer com ele. */
 export function DayPanel({

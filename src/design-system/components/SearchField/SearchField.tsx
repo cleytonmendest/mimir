@@ -58,7 +58,7 @@ export function SearchField({
           </button>
         )}
       </div>
-      <p aria-live="polite" className="min-h-5 text-sm text-muted-foreground">
+      <p aria-live="polite" className="text-sm text-muted-foreground">
         {summary}
       </p>
     </div>

@@ -29,13 +29,12 @@ export function SupplierScreen({ gateway, now }: { gateway: BookingGateway; now?
   }, [controller])
 
   return (
-    <section className="mt-6" aria-labelledby="bookings-title">
+    <section className="mt-4" aria-labelledby="bookings-title">
       <h2 id="bookings-title" className="font-display text-3xl font-semibold">
         Reservas
       </h2>
-      <p className="mt-1 max-w-[52ch] text-muted-foreground">
-        Reserve um estande de degustação no mercado e no dia que quiser. O sistema não deixa passar
-        do limite de estandes.
+      <p className="mt-1 max-w-[64ch] text-muted-foreground">
+        Reserve um estande de degustação no mercado e no dia que quiser.
       </p>
 
       {state.status === 'loading' && (
@@ -63,12 +62,15 @@ export function SupplierScreen({ gateway, now }: { gateway: BookingGateway; now?
 
       {state.status === 'ready' && (
         <>
-          <div className="mt-4 grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)_320px] lg:items-start lg:[grid-template-areas:'mk_cal_pn'_'mine_cal_pn']">
+          <div className="mt-4">
+            <MyBookings state={state} controller={controller} />
+          </div>
+          <div className="mt-4 grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)_320px] lg:items-start">
             <MarketList state={state} controller={controller} />
 
             <section
               aria-label="Calendário de reservas"
-              className="min-w-0 rounded-xl border border-border bg-card p-4 lg:[grid-area:cal]"
+              className="min-w-0 rounded-xl border border-border bg-card p-4"
             >
               {state.marketId === null ? (
                 <p>Escolha um mercado para ver os dias.</p>
@@ -111,7 +113,6 @@ export function SupplierScreen({ gateway, now }: { gateway: BookingGateway; now?
             </section>
 
             <DayPanel state={state} controller={controller} />
-            <MyBookings state={state} controller={controller} />
           </div>
           <NoticeToast
             notice={state.notice}
